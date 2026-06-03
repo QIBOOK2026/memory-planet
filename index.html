@@ -5438,15 +5438,15 @@
 
         if (!hovered || !sprite.userData.locked) {
           if (isWall) {
-            const visibleW = 2 * 7.3 * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight)) * 0.82;
-            const visibleH = 2 * 7.3 * Math.tan(24 * Math.PI / 180) * 0.82;
+            const visibleW = 2 * 4.5 * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight)) * 0.92;
+            const visibleH = 2 * 4.5 * Math.tan(24 * Math.PI / 180) * 0.92;
             layoutOffset.copy(photoGridOffset(index, count, visibleW, visibleH));
             worldPosition.copy(layoutCenter)
               .addScaledVector(cameraRight, layoutOffset.x + state.wallPanX)
               .addScaledVector(cameraUp, layoutOffset.y + state.wallPanY);
           } else if (neatLayout) {
-            const visibleW = 2 * 7.3 * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight)) * 0.82;
-            const visibleH = 2 * 7.3 * Math.tan(24 * Math.PI / 180) * 0.82;
+            const visibleW = 2 * 4.5 * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight)) * 0.92;
+            const visibleH = 2 * 4.5 * Math.tan(24 * Math.PI / 180) * 0.92;
             layoutOffset.copy(photoGridOffset(index, count, visibleW, visibleH));
             worldPosition.copy(layoutCenter)
               .addScaledVector(cameraRight, layoutOffset.x)
@@ -5464,7 +5464,7 @@
           if (!hovered) sprite.userData.locked = false;
         }
 
-        const zoomComp = state.zoom / 7.3;
+        const zoomComp = Math.min(1.5, Math.max(1.0, state.zoom / 4.5));
         const wallFactor = isWall ? 1.15 : 1;
         const targetScale = (hovered ? 0.56 : selected ? 0.5 : 0.3) * (universeItem ? 0.58 : 1) * (neatLayout ? 1.08 : 1) * zoomComp * wallFactor;
         const targetOpacity = hovered || selected ? 1 : 0.88 * smoothReveal;
