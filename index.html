@@ -7510,7 +7510,7 @@
         globe.rotation.x += state.angularVelocity.x * dt * 60;
         globe.rotation.y += state.angularVelocity.y * dt * 60;
         globe.rotation.z += Math.sin(state.time * 0.45) * 0.0007;
-        state.angularVelocity.multiplyScalar(state.autoSpin === 0 ? 0.94 : 0.985);
+        state.angularVelocity.multiplyScalar(state.autoSpin === 0 ? 0.92 : 0.975);
         if ((state.mouseMode === "rotate" || state.hand.gesture === "rotate") && state.autoSpin > 0 && state.shape !== "wave") {
           state.angularVelocity.y += 0.00022 * state.autoSpin;
         }
