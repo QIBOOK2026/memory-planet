@@ -4022,7 +4022,7 @@
     }
 
     function setPhotoLayout(layout, options = {}) {
-      const nextLayout = layout === "grid" ? "grid" : "orbit";
+      const nextLayout = (layout === "grid" || layout === "wall") ? layout : "orbit";
       if (state.viewMode === "universe" && !options.silent) {
         const updated = updateSelectedUniverseRenderSettings({ photoLayout: nextLayout });
         if (updated) {
