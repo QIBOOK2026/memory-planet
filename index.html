@@ -5354,21 +5354,23 @@
         : shapePoint(index, count, shape);
       const len = Math.max(0.001, p.length());
       const normal = p.clone().multiplyScalar(1 / len);
-      const spreadBase = state.viewMode === "universe" ? 2.18 : 2.72;
-      const spreadNoise = state.viewMode === "universe" ? 0.28 : 0.52;
-      const spreadWave = state.viewMode === "universe" ? 0.18 : 0.34;
+      const isMobile = window.innerWidth < 768;
+      const spreadBase = state.viewMode === "universe" ? 2.18 : (isMobile ? 2.05 : 2.72);
+      const spreadNoise = state.viewMode === "universe" ? 0.28 : (isMobile ? 0.20 : 0.52);
+      const spreadWave = state.viewMode === "universe" ? 0.18 : (isMobile ? 0.12 : 0.34);
       const spread = spreadBase + spreadNoise * Math.sin(index * 12.9898) + spreadWave * Math.cos(index * 4.1414);
       return p.lerp(normal.multiplyScalar(spread), state.explosion);
     }
 
     function photoGridOffset(index, count, compact = false) {
-      const maxColumns = compact ? 6 : 8;
+      const isMobile = window.innerWidth < 768;
+      const maxColumns = isMobile ? 3 : (compact ? 6 : 8);
       const columns = Math.max(1, Math.min(maxColumns, count));
       const rows = Math.max(1, Math.ceil(count / columns));
       const column = index % columns;
       const row = Math.floor(index / columns);
-      const spacingX = compact ? 0.28 : 0.5;
-      const spacingY = compact ? 0.22 : 0.38;
+      const spacingX = isMobile ? 0.26 : (compact ? 0.28 : 0.5);
+      const spacingY = isMobile ? 0.20 : (compact ? 0.22 : 0.38);
       const x = (column - (columns - 1) * 0.5) * spacingX;
       const y = ((rows - 1) * 0.5 - row) * spacingY;
       return new THREE.Vector3(x, y, 0);
@@ -5437,7 +5439,8 @@
           if (!hovered) sprite.userData.locked = false;
         }
 
-        const targetScale = (hovered ? 0.56 : selected ? 0.5 : 0.3) * (universeItem ? 0.58 : 1) * (neatLayout ? 1.08 : 1);
+        const zoomComp = state.zoom / 7.3;
+        const targetScale = (hovered ? 0.56 : selected ? 0.5 : 0.3) * (universeItem ? 0.58 : 1) * (neatLayout ? 1.08 : 1) * zoomComp;
         const targetOpacity = hovered || selected ? 1 : 0.88 * smoothReveal;
         const scaleEase = hovered || selected ? 0.35 : 0.18;
         sprite.scale.setScalar(lerp(sprite.scale.x, targetScale, scaleEase));
