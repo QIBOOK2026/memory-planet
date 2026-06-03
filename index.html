@@ -6981,6 +6981,7 @@
     mount.addEventListener("pointerdown", (event) => {
       if (state.labelEditor) removeLabelEditor({ commit: true });
       state.drag = true;
+      state.angularVelocity.set(0, 0);
       state.pointerMoved = false;
       state.pointerStart.x = event.clientX;
       state.pointerStart.y = event.clientY;
@@ -7510,9 +7511,11 @@
         globe.rotation.x += state.angularVelocity.x * dt * 60;
         globe.rotation.y += state.angularVelocity.y * dt * 60;
         globe.rotation.z += Math.sin(state.time * 0.45) * 0.0007;
-        state.angularVelocity.multiplyScalar(state.autoSpin === 0 ? 0.92 : 0.975);
-        if ((state.mouseMode === "rotate" || state.hand.gesture === "rotate") && state.autoSpin > 0 && state.shape !== "wave") {
-          state.angularVelocity.y += 0.00022 * state.autoSpin;
+        if (!state.drag) {
+          state.angularVelocity.multiplyScalar(state.autoSpin === 0 ? 0.92 : 0.975);
+          if ((state.mouseMode === "rotate" || state.hand.gesture === "rotate") && state.autoSpin > 0 && state.shape !== "wave") {
+            state.angularVelocity.y += 0.00022 * state.autoSpin;
+          }
         }
         if (state.hoveredPhoto >= 0) {
           state.angularVelocity.multiplyScalar(0.82);
