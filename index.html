@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
@@ -1700,6 +1700,7 @@
       collapseStart: null,
       mouseMode: "rotate",
       drag: false,
+      touchPointers: new Set(),
       pointerMoved: false,
       lastPointer: { x: 0, y: 0 },
       pointerStart: { x: 0, y: 0 },
@@ -6811,6 +6812,7 @@
         }
       }
       mount.setPointerCapture(event.pointerId);
+      if (event.pointerType === 'touch') state.touchPointers.add(event.pointerId);
       updateGestureDisplay(state.mouseMode === "drag" ? "drag" : "rotate");
     });
 
@@ -6837,6 +6839,7 @@
     mount.addEventListener("pointermove", (event) => {
       if (state.viewMode !== "universe" || state.universeDetailOpen) queueHoverPhoto(event.clientX, event.clientY);
       if (!state.drag) return;
+      if (event.pointerType === 'touch' && state.touchPointers.size >= 2) return;
       const dx = event.clientX - state.lastPointer.x;
       const dy = event.clientY - state.lastPointer.y;
       const now = event.timeStamp || performance.now();
@@ -6879,6 +6882,7 @@
 
     mount.addEventListener("pointerup", async (event) => {
       const releaseDistance = Math.hypot(event.clientX - state.pointerStart.x, event.clientY - state.pointerStart.y);
+      state.touchPointers.delete(event.pointerId);
       const wasMoved = state.pointerMoved || (state.viewMode === "universe" ? releaseDistance > 3 : releaseDistance > 6);
       const rotatedAlbumId = state.universeRotatingAlbumId;
       state.universeRotatingAlbumId = "";
