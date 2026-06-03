@@ -1158,6 +1158,18 @@
         bottom: 10px;
       }
     }
+
+    /* --- 生成星球表单 --- */
+    .task-card { max-height: 85vh; overflow-y: auto; }
+    .task-form { padding: 0 4px; }
+    .tf-row { margin-bottom: 12px; }
+    .tf-row label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    .tf-row label b { color: var(--ink); font-weight: 600; }
+    .tf-row input[type="text"] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,0.06); color: var(--ink); font-size: 14px; }
+    .tf-row input[type="range"] { width: 100%; margin-top: 2px; }
+    .tf-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tf-btn { flex: 1 1 70px; min-width: 60px; padding: 10px 8px; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; text-align: center; user-select: none; -webkit-user-select: none; transition: border-color 0.15s, background 0.15s, color 0.15s; }
+    .tf-btn.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); color: #fff; }
   </style>
 </head>
 <body>
@@ -1430,28 +1442,22 @@
           <label>形态</label>
           <div class="tf-btns" id="tfShape"></div>
         </div>
-        <div class="tf-row">
-          <label>粒子密度 <b id="tfDensityVal">50%</b></label>
+        <div class="tf-row" style="display:none"><label>粒子密度 <b id="tfDensityVal">50%</b></label>
           <input id="tfDensity" type="range" min="2500" max="14000" step="500" value="8250" />
         </div>
-        <div class="tf-row">
-          <label>爆发强度 <b id="tfEnergyVal">50%</b></label>
+        <div class="tf-row" style="display:none"><label>爆发强度 <b id="tfEnergyVal">50%</b></label>
           <input id="tfEnergy" type="range" min="0.6" max="2.4" step="0.1" value="1.5" />
         </div>
-        <div class="tf-row">
-          <label>荧光半径 <b id="tfGlowVal">25%</b></label>
+        <div class="tf-row" style="display:none"><label>荧光半径 <b id="tfGlowVal">25%</b></label>
           <input id="tfGlow" type="range" min="0.6" max="2.2" step="0.1" value="1.0" />
         </div>
-        <div class="tf-row">
-          <label>星球大小 <b id="tfScaleVal">1.0x</b></label>
+        <div class="tf-row" style="display:none"><label>星球大小 <b id="tfScaleVal">1.0x</b></label>
           <input id="tfScale" type="range" min="1" max="3" step="0.1" value="1" />
         </div>
-        <div class="tf-row">
-          <label>旋转速度 <b id="tfSpinVal">40%</b></label>
+        <div class="tf-row" style="display:none"><label>旋转速度 <b id="tfSpinVal">40%</b></label>
           <input id="tfSpin" type="range" min="0" max="3" step="0.1" value="1.2" />
         </div>
-        <label class="field checkbox-field" style="margin-top:10px">
-          <input id="tfGlowCloud" type="checkbox" />
+        <label class="field checkbox-field" style="display:none;margin-top:10px"><input id="tfGlowCloud" type="checkbox" />
           <span>星球光团</span>
         </label>
       </div>
@@ -6253,6 +6259,18 @@
       color: #fff;
       font-size: 24px;
     }
+
+    /* --- 生成星球表单 --- */
+    .task-card { max-height: 85vh; overflow-y: auto; }
+    .task-form { padding: 0 4px; }
+    .tf-row { margin-bottom: 12px; }
+    .tf-row label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    .tf-row label b { color: var(--ink); font-weight: 600; }
+    .tf-row input[type="text"] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,0.06); color: var(--ink); font-size: 14px; }
+    .tf-row input[type="range"] { width: 100%; margin-top: 2px; }
+    .tf-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tf-btn { flex: 1 1 70px; min-width: 60px; padding: 10px 8px; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; text-align: center; user-select: none; -webkit-user-select: none; transition: border-color 0.15s, background 0.15s, color 0.15s; }
+    .tf-btn.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); color: #fff; }
   </style>
 </head>
 <body>
