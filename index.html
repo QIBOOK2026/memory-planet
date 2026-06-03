@@ -5366,26 +5366,24 @@
 
     function photoGridOffset(index, count, compact = false, layoutMode = "orbit") {
       const isMobile = window.innerWidth < 768;
-      let maxColumns, spacingX, spacingY;
-      if (layoutMode === "wall") {
-        maxColumns = isMobile ? 2 : 4;
-        spacingX = isMobile ? 0.30 : 0.36;
-        spacingY = isMobile ? 0.24 : 0.28;
-      } else if (isMobile) {
-        maxColumns = 3;
-        spacingX = 0.26;
-        spacingY = 0.20;
-      } else {
-        maxColumns = compact ? 6 : 8;
-        spacingX = compact ? 0.28 : 0.5;
-        spacingY = compact ? 0.22 : 0.38;
-      }
-      const columns = Math.max(1, Math.min(maxColumns, count));
-      const rows = Math.max(1, Math.ceil(count / columns));
-      const column = index % columns;
+      const photoW = isMobile ? 0.22 : 0.30;
+      const photoH = isMobile ? 0.26 : 0.35;
+      const gap = isMobile ? 0.06 : 0.10;
+
+      // Calculate how many columns fit in visible area
+      // Visible width in world-space at default zoom ~ 5.5 units
+      const visibleWidth = isMobile ? 3.8 : 5.6;
+      const columns = Math.max(1, Math.floor((visibleWidth + gap) / (photoW + gap)));
+      const totalWidth = columns * photoW + (columns - 1) * gap;
+      const rows = Math.ceil(count / columns);
+      const totalHeight = rows * photoH + (rows - 1) * gap;
+
+      const col = index % columns;
       const row = Math.floor(index / columns);
-      const x = (column - (columns - 1) * 0.5) * spacingX;
-      const y = ((rows - 1) * 0.5 - row) * spacingY;
+
+      // Left-to-right, top-to-bottom, entire block centered
+      const x = col * (photoW + gap) - totalWidth * 0.5 + photoW * 0.5;
+      const y = totalHeight * 0.5 - row * (photoH + gap) - photoH * 0.5;
       return new THREE.Vector3(x, y, 0);
     }
 
@@ -5436,7 +5434,7 @@
 
         if (!hovered || !sprite.userData.locked) {
           if (isWall) {
-            layoutOffset.copy(photoGridOffset(index, count, false, "wall"));
+            layoutOffset.copy(photoGridOffset(index, count));
             worldPosition.copy(layoutCenter)
               .addScaledVector(cameraRight, layoutOffset.x + state.wallPanX)
               .addScaledVector(cameraUp, layoutOffset.y + state.wallPanY);
