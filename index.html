@@ -7058,7 +7058,8 @@
         state.universeVelocity.y = lerp(state.universeVelocity.y, inertialDx * 0.0022, 0.48);
         state.universeVelocity.x = 0;
       } else {
-        rotateBy(inertialDx, inertialDy);
+        globe.rotation.y += dx * 0.006;
+        globe.rotation.x += dy * 0.006;
       }
       state.lastPointer.x = event.clientX;
       state.lastPointer.y = event.clientY;
