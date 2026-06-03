@@ -4144,13 +4144,21 @@
       audio.preload = "auto";
       audio.volume = state.audio.volume;
       audio.addEventListener("error", () => {
-        setStatus(`本地音乐加载失败：${track.url}。已切回主题合成氛围。`, "warn");
+        setStatus("本地音乐加载失败，已切回主题合成氛围。", "warn");
         state.audio.track = "synth";
         musicTrack.value = "synth";
         ensureAudio();
         updateAmbientMusic();
       }, { once: true });
       state.audio.musicElement = audio;
+      // Wait for enough data before playing to avoid stutter
+      if (audio.readyState < 2) {
+        await new Promise((resolve, reject) => {
+          audio.addEventListener("canplaythrough", resolve, { once: true });
+          audio.addEventListener("error", reject, { once: true });
+          audio.load();
+        });
+      }
       await audio.play();
       return true;
     }
@@ -4181,27 +4189,42 @@
     }
 
     async function tryStartDefaultMusic() {
-      chooseRandomMusicTrack();
+      state.audio.track = "synth";
+      musicTrack.value = "synth";
       state.audio.sfxEnabled = true;
       sfxBtn.textContent = "音效开启";
       setStatus("点击页面任意位置即可开启音乐。", "ready");
-      const unlock = async () => {
+
+      // Preload MP3 tracks in background for later switching
+      const preloadAudio = (url) => {
+        const a = new Audio();
+        a.preload = "auto";
+        a.src = url;
+        a.load();
+      };
+      Object.values(MUSIC_TRACKS).forEach((t) => { if (t.url) preloadAudio(t.url); });
+
+      const unlock = () => {
         document.removeEventListener("pointerdown", unlock);
         document.removeEventListener("touchstart", unlock);
         if (state.audio.enabled) return;
         state.audio.enabled = true;
         musicBtn.textContent = "关闭氛围音乐";
-        try {
-          const context = ensureAudio();
-          if (context?.state === "suspended") await context.resume();
-          await playSelectedTrack();
+
+        // Create AudioContext synchronously during user gesture (required by iOS)
+        const context = ensureAudio();
+        if (context?.state === "suspended") context.resume();
+
+        // Play synth (reliable, no file loading needed)
+        playSelectedTrack().then(() => {
+          refreshMusicCredit();
           setStatus(`已随机播放：${currentMusicTrack().name}。`, "ready");
-        } catch (retryError) {
+        }).catch(retryError => {
           console.warn(retryError);
           state.audio.enabled = false;
           musicBtn.textContent = "开启氛围音乐";
           setStatus('浏览器阻止了自动播放，请点击"开启氛围音乐"按钮。', "warn");
-        }
+        });
       };
       document.addEventListener("pointerdown", unlock, { once: true });
       document.addEventListener("touchstart", unlock, { once: true });
