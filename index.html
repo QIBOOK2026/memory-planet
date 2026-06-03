@@ -1336,10 +1336,10 @@
           <span>张开排列</span>
           <div class="layout-strip" id="layoutStrip">
             <button class="layout-btn active" type="button" data-layout="orbit">环绕散开</button>
-            <button class="layout-btn" type="button" data-layout="grid">整齐铺开</button>
+            <button class="layout-btn" type="button" data-layout="grid">整齐铺开</button><button class="layout-btn" type="button" data-layout="wall">照片墙</button>
           </div>
         </div>
-        <div class="hint">主题会同步改变背景、粒子光色和按钮状态；整齐铺开不会跟着星球一起旋转。</div>
+        <div class="hint">主题会同步改变背景、粒子光色和按钮状态；整齐铺开和照片墙不会跟着星球一起旋转。</div>
       </div>
 
       <div class="tab-panel" data-panel="shape">
@@ -1749,6 +1749,8 @@
       lastPointer: { x: 0, y: 0 },
       pointerStart: { x: 0, y: 0 },
       lastDragDelta: null,
+      wallPanX: 0,
+      wallPanY: 0,
       lastPointerAt: 0,
       angularVelocity: new THREE.Vector2(0.0015, 0.0025),
       autoSpin: 1,
@@ -1886,7 +1888,7 @@
     }
 
     function normalizeRenderSettings(settings = {}) {
-      const photoLayout = settings.photoLayout === "grid" ? "grid" : "orbit";
+      const photoLayout = (settings.photoLayout === "grid" || settings.photoLayout === "wall") ? settings.photoLayout : "orbit";
       return {
         density: Math.round(clamp(Number(settings.density ?? DEFAULT_RENDER_SETTINGS.density), 2500, 14000) / 500) * 500,
         energy: clamp(Number(settings.energy ?? DEFAULT_RENDER_SETTINGS.energy), 0.6, 2.4),
@@ -1901,7 +1903,7 @@
     }
 
     function currentPhotoLayoutControlValue() {
-      return layoutStrip.querySelector(".layout-btn.active")?.dataset.layout === "grid" ? "grid" : "orbit";
+      const activeLayout = layoutStrip.querySelector(".layout-btn.active")?.dataset.layout; return (activeLayout === "grid" || activeLayout === "wall") ? activeLayout : "orbit";
     }
 
     function currentRenderSettingsPayload() {
@@ -4025,7 +4027,7 @@
         const updated = updateSelectedUniverseRenderSettings({ photoLayout: nextLayout });
         if (updated) {
           syncPhotoLayoutButtons(nextLayout);
-          setStatus(nextLayout === "grid" ? "张开排列已切到整齐铺开。" : "张开排列已切到环绕散开。", "ready");
+          const ln = { orbit: "环绕散开", grid: "整齐铺开", wall: "照片墙" }; setStatus(`张开排列已切到${ln[nextLayout] || "环绕散开"}。`, "ready");
         }
         return;
       }
@@ -4040,7 +4042,7 @@
       }
       if (!options.silent) {
         saveProject();
-        setStatus(nextLayout === "grid" ? "张开排列已切到整齐铺开。" : "张开排列已切到环绕散开。", "ready");
+        const ln = { orbit: "环绕散开", grid: "整齐铺开", wall: "照片墙" }; setStatus(`张开排列已切到${ln[nextLayout] || "环绕散开"}。`, "ready");
       }
     }
 
@@ -5362,15 +5364,26 @@
       return p.lerp(normal.multiplyScalar(spread), state.explosion);
     }
 
-    function photoGridOffset(index, count, compact = false) {
+    function photoGridOffset(index, count, compact = false, layoutMode = "orbit") {
       const isMobile = window.innerWidth < 768;
-      const maxColumns = isMobile ? 3 : (compact ? 6 : 8);
+      let maxColumns, spacingX, spacingY;
+      if (layoutMode === "wall") {
+        maxColumns = isMobile ? 2 : 4;
+        spacingX = isMobile ? 0.30 : 0.36;
+        spacingY = isMobile ? 0.24 : 0.28;
+      } else if (isMobile) {
+        maxColumns = 3;
+        spacingX = 0.26;
+        spacingY = 0.20;
+      } else {
+        maxColumns = compact ? 6 : 8;
+        spacingX = compact ? 0.28 : 0.5;
+        spacingY = compact ? 0.22 : 0.38;
+      }
       const columns = Math.max(1, Math.min(maxColumns, count));
       const rows = Math.max(1, Math.ceil(count / columns));
       const column = index % columns;
       const row = Math.floor(index / columns);
-      const spacingX = isMobile ? 0.26 : (compact ? 0.28 : 0.5);
-      const spacingY = isMobile ? 0.20 : (compact ? 0.22 : 0.38);
       const x = (column - (columns - 1) * 0.5) * spacingX;
       const y = ((rows - 1) * 0.5 - row) * spacingY;
       return new THREE.Vector3(x, y, 0);
@@ -5400,7 +5413,8 @@
         : albumRenderSettings(activeAlbum()).photoLayout;
       const activeShape = universeItem ? (universeItem.album.shape || "sphere") : state.shape;
       const blackHoleSpinPhase = universeItem ? (universeItem.blackHoleSpinPhase || 0) : state.blackHoleSpinPhase;
-      const neatLayout = layout === "grid";
+      const neatLayout = layout === "grid" || layout === "wall";
+      const isWall = layout === "wall";
 
       if (neatLayout) {
         if (universeItem) {
@@ -5421,7 +5435,12 @@
         const selected = index === state.selectedPhoto;
 
         if (!hovered || !sprite.userData.locked) {
-          if (neatLayout) {
+          if (isWall) {
+            layoutOffset.copy(photoGridOffset(index, count, false, "wall"));
+            worldPosition.copy(globe.getWorldPosition(new THREE.Vector3()))
+              .addScaledVector(cameraRight, layoutOffset.x + state.wallPanX)
+              .addScaledVector(cameraUp, layoutOffset.y + state.wallPanY);
+          } else if (neatLayout) {
             layoutOffset.copy(photoGridOffset(index, count, Boolean(universeItem)));
             worldPosition.copy(layoutCenter)
               .addScaledVector(cameraRight, layoutOffset.x)
@@ -5440,7 +5459,8 @@
         }
 
         const zoomComp = state.zoom / 7.3;
-        const targetScale = (hovered ? 0.56 : selected ? 0.5 : 0.3) * (universeItem ? 0.58 : 1) * (neatLayout ? 1.08 : 1) * zoomComp;
+        const wallFactor = isWall ? 1.15 : 1;
+        const targetScale = (hovered ? 0.56 : selected ? 0.5 : 0.3) * (universeItem ? 0.58 : 1) * (neatLayout ? 1.08 : 1) * zoomComp * wallFactor;
         const targetOpacity = hovered || selected ? 1 : 0.88 * smoothReveal;
         const scaleEase = hovered || selected ? 0.35 : 0.18;
         sprite.scale.setScalar(lerp(sprite.scale.x, targetScale, scaleEase));
@@ -6986,6 +7006,7 @@
       if (state.labelEditor) removeLabelEditor({ commit: true });
       state.drag = true;
       state.angularVelocity.set(0, 0);
+      state.wallPanX = 0; state.wallPanY = 0;
       state.pointerMoved = false;
       state.pointerStart.x = event.clientX;
       state.pointerStart.y = event.clientY;
@@ -7062,8 +7083,13 @@
         state.universeVelocity.y = lerp(state.universeVelocity.y, inertialDx * 0.0022, 0.48);
         state.universeVelocity.x = 0;
       } else {
-        globe.rotation.y += dx * 0.006;
-        globe.rotation.x += dy * 0.006;
+        if (albumRenderSettings(activeAlbum()).photoLayout === "wall" && state.targetMode === "explode") {
+          state.wallPanX += dx * 0.006;
+          state.wallPanY -= dy * 0.006;
+        } else {
+          globe.rotation.y += dx * 0.006;
+          globe.rotation.x += dy * 0.006;
+        }
         state.lastDragDelta = { x: dx, y: dy };
       }
       state.lastPointer.x = event.clientX;
