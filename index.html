@@ -4206,7 +4206,6 @@
       document.addEventListener("pointerdown", unlock, { once: true });
       document.addEventListener("touchstart", unlock, { once: true });
     }
-    }
 
     function setAudioVolume(value) {
       state.audio.volume = clamp(Number(value) / 100, 0, 1);
@@ -4784,7 +4783,6 @@
         console.warn(error);
         setStatus("全屏切换被浏览器拦截，请在页面中再次点击全屏按钮。", "warn");
       }
-    }
     }
 
     function loadScript(src) {
@@ -7019,7 +7017,7 @@
     };
     document.addEventListener("fullscreenchange", onFsChange);
     document.addEventListener("webkitfullscreenchange", onFsChange);
-    document.addEventListener("msfullscreenchange", onFsChange)
+    document.addEventListener("msfullscreenchange", onFsChange);
     cameraBtn.addEventListener("click", startCamera);
     stopCameraBtn.addEventListener("click", () => stopCamera());
     musicBtn.addEventListener("click", toggleMusic);
