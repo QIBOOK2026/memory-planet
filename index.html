@@ -5364,16 +5364,20 @@
       return p.lerp(normal.multiplyScalar(spread), state.explosion);
     }
 
-    function photoGridOffset(index, count, compact = false, layoutMode = "orbit") {
+    function photoGridOffset(index, count, visibleW, visibleH) {
       const isMobile = window.innerWidth < 768;
-      const photoW = isMobile ? 0.22 : 0.30;
-      const photoH = isMobile ? 0.26 : 0.35;
-      const gap = isMobile ? 0.06 : 0.10;
+      const basePhotoW = isMobile ? 0.22 : 0.30;
+      const basePhotoH = isMobile ? 0.26 : 0.35;
+      const baseGap = isMobile ? 0.06 : 0.10;
 
-      // Calculate how many columns fit in visible area
-      // Visible width in world-space at default zoom ~ 5.5 units
-      const visibleWidth = isMobile ? 3.8 : 5.6;
-      const columns = Math.max(1, Math.floor((visibleWidth + gap) / (photoW + gap)));
+      // Constrain: fit photos within visible world-space bounds
+      // Scale down if needed so the grid doesn't exceed visible area
+      const maxCols = Math.max(1, Math.floor((visibleW + baseGap) / (basePhotoW + baseGap)));
+      const columns = Math.min(maxCols, count);
+      const photoW = (visibleW - (columns - 1) * baseGap) / columns;
+      const photoH = photoW * (basePhotoH / basePhotoW);
+      const gap = baseGap;
+
       const totalWidth = columns * photoW + (columns - 1) * gap;
       const rows = Math.ceil(count / columns);
       const totalHeight = rows * photoH + (rows - 1) * gap;
@@ -5434,12 +5438,16 @@
 
         if (!hovered || !sprite.userData.locked) {
           if (isWall) {
-            layoutOffset.copy(photoGridOffset(index, count));
+            const visibleW = 2 * state.zoom * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight));
+            const visibleH = 2 * state.zoom * Math.tan(24 * Math.PI / 180);
+            layoutOffset.copy(photoGridOffset(index, count, visibleW, visibleH));
             worldPosition.copy(layoutCenter)
               .addScaledVector(cameraRight, layoutOffset.x + state.wallPanX)
               .addScaledVector(cameraUp, layoutOffset.y + state.wallPanY);
           } else if (neatLayout) {
-            layoutOffset.copy(photoGridOffset(index, count, Boolean(universeItem)));
+            const visibleW = 2 * state.zoom * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight));
+            const visibleH = 2 * state.zoom * Math.tan(24 * Math.PI / 180);
+            layoutOffset.copy(photoGridOffset(index, count, visibleW, visibleH));
             worldPosition.copy(layoutCenter)
               .addScaledVector(cameraRight, layoutOffset.x)
               .addScaledVector(cameraUp, layoutOffset.y);
