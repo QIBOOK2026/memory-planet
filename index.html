@@ -4015,7 +4015,7 @@
     }
 
     function syncPhotoLayoutButtons(layout) {
-      const next = layout === "grid" ? "grid" : "orbit";
+      const next = (layout === "grid" || layout === "wall") ? layout : "orbit";
       layoutStrip.querySelectorAll(".layout-btn").forEach((button) => {
         button.classList.toggle("active", button.dataset.layout === next);
       });
