@@ -4184,35 +4184,28 @@
       chooseRandomMusicTrack();
       state.audio.sfxEnabled = true;
       sfxBtn.textContent = "音效开启";
-      state.audio.enabled = true;
-      musicBtn.textContent = "关闭氛围音乐";
-      try {
-        const context = ensureAudio();
-        if (context?.state === "suspended") await context.resume();
-        await playSelectedTrack();
-        setStatus(`已随机播放：${currentMusicTrack().name}。`, "ready");
-      } catch (error) {
-        console.warn(error);
-        state.audio.enabled = false;
-        musicBtn.textContent = "开启氛围音乐";
-        const unlock = async () => {
-          document.removeEventListener("pointerdown", unlock);
-          if (state.audio.enabled) return;
-          state.audio.enabled = true;
-          musicBtn.textContent = "关闭氛围音乐";
-          try {
-            const context = ensureAudio();
-            if (context?.state === "suspended") await context.resume();
-            await playSelectedTrack();
-            setStatus(`已随机播放：${currentMusicTrack().name}。`, "ready");
-          } catch (retryError) {
-            console.warn(retryError);
-            state.audio.enabled = false;
-            musicBtn.textContent = "开启氛围音乐";
-          }
-        };
-        document.addEventListener("pointerdown", unlock, { once: true });
-      }
+      setStatus("点击页面任意位置即可开启音乐。", "ready");
+      const unlock = async () => {
+        document.removeEventListener("pointerdown", unlock);
+        document.removeEventListener("touchstart", unlock);
+        if (state.audio.enabled) return;
+        state.audio.enabled = true;
+        musicBtn.textContent = "关闭氛围音乐";
+        try {
+          const context = ensureAudio();
+          if (context?.state === "suspended") await context.resume();
+          await playSelectedTrack();
+          setStatus(`已随机播放：${currentMusicTrack().name}。`, "ready");
+        } catch (retryError) {
+          console.warn(retryError);
+          state.audio.enabled = false;
+          musicBtn.textContent = "开启氛围音乐";
+          setStatus("浏览器阻止了自动播放，请点击"开启氛围音乐"按钮。", "warn");
+        }
+      };
+      document.addEventListener("pointerdown", unlock, { once: true });
+      document.addEventListener("touchstart", unlock, { once: true });
+    }
     }
 
     function setAudioVolume(value) {
@@ -4774,20 +4767,24 @@
 
     async function toggleFullscreen() {
       try {
-        if (!document.fullscreenElement) {
+        const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+        if (!fsEl) {
           const target = document.documentElement;
-          if (!target.requestFullscreen) {
+          const requestFS = target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen;
+          if (!requestFS) {
             setStatus("当前浏览器不支持网页全屏，可以用浏览器菜单进入全屏。", "warn");
             return;
           }
-          await target.requestFullscreen();
+          await requestFS.call(target);
         } else {
-          await document.exitFullscreen();
+          const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+          if (exitFS) await exitFS.call(document);
         }
       } catch (error) {
         console.warn(error);
         setStatus("全屏切换被浏览器拦截，请在页面中再次点击全屏按钮。", "warn");
       }
+    }
     }
 
     function loadScript(src) {
@@ -7013,13 +7010,16 @@
     fullscreenToggle.addEventListener("click", toggleFullscreen);
     musicSettingsToggle.addEventListener("click", () => setFloatingSettingsPanel("music"));
     advancedSettingsToggle.addEventListener("click", () => setFloatingSettingsPanel("advanced"));
-    document.addEventListener("fullscreenchange", () => {
-      const active = Boolean(document.fullscreenElement);
+    const onFsChange = () => {
+      const active = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
       fullscreenToggle.textContent = active ? "×" : "⛶";
       fullscreenToggle.setAttribute("aria-label", active ? "退出全屏" : "全屏显示");
       setStatus(active ? "已进入全屏模式，按 Esc 或点击 × 可退出。" : "已退出全屏模式。", "ready");
       resize();
-    });
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    document.addEventListener("msfullscreenchange", onFsChange)
     cameraBtn.addEventListener("click", startCamera);
     stopCameraBtn.addEventListener("click", () => stopCamera());
     musicBtn.addEventListener("click", toggleMusic);
