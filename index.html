@@ -5438,19 +5438,15 @@
 
         if (!hovered || !sprite.userData.locked) {
           if (isWall) {
-            const rawW = 2 * state.zoom * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight));
-            const visibleW = rawW * 0.82;
-            const rawH = 2 * state.zoom * Math.tan(24 * Math.PI / 180);
-            const visibleH = rawH * 0.82;
+            const visibleW = 2 * 7.3 * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight)) * 0.82;
+            const visibleH = 2 * 7.3 * Math.tan(24 * Math.PI / 180) * 0.82;
             layoutOffset.copy(photoGridOffset(index, count, visibleW, visibleH));
             worldPosition.copy(layoutCenter)
               .addScaledVector(cameraRight, layoutOffset.x + state.wallPanX)
               .addScaledVector(cameraUp, layoutOffset.y + state.wallPanY);
           } else if (neatLayout) {
-            const rawW = 2 * state.zoom * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight));
-            const visibleW = rawW * 0.82;
-            const rawH = 2 * state.zoom * Math.tan(24 * Math.PI / 180);
-            const visibleH = rawH * 0.82;
+            const visibleW = 2 * 7.3 * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight)) * 0.82;
+            const visibleH = 2 * 7.3 * Math.tan(24 * Math.PI / 180) * 0.82;
             layoutOffset.copy(photoGridOffset(index, count, visibleW, visibleH));
             worldPosition.copy(layoutCenter)
               .addScaledVector(cameraRight, layoutOffset.x)
