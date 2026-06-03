@@ -1417,6 +1417,44 @@
       <h2 id="taskTitle">正在处理</h2>
       <p id="taskMessage">请稍候...</p>
       <input id="taskInput" type="text" />
+      <div id="taskForm" class="task-form" style="display:none">
+        <div class="tf-row">
+          <label for="tfTitle">星球名称</label>
+          <input id="tfTitle" type="text" maxlength="36" />
+        </div>
+        <div class="tf-row">
+          <label>主题</label>
+          <div class="tf-btns" id="tfTheme"></div>
+        </div>
+        <div class="tf-row">
+          <label>形态</label>
+          <div class="tf-btns" id="tfShape"></div>
+        </div>
+        <div class="tf-row">
+          <label>粒子密度 <b id="tfDensityVal">50%</b></label>
+          <input id="tfDensity" type="range" min="2500" max="14000" step="500" value="8250" />
+        </div>
+        <div class="tf-row">
+          <label>爆发强度 <b id="tfEnergyVal">50%</b></label>
+          <input id="tfEnergy" type="range" min="0.6" max="2.4" step="0.1" value="1.5" />
+        </div>
+        <div class="tf-row">
+          <label>荧光半径 <b id="tfGlowVal">25%</b></label>
+          <input id="tfGlow" type="range" min="0.6" max="2.2" step="0.1" value="1.0" />
+        </div>
+        <div class="tf-row">
+          <label>星球大小 <b id="tfScaleVal">1.0x</b></label>
+          <input id="tfScale" type="range" min="1" max="3" step="0.1" value="1" />
+        </div>
+        <div class="tf-row">
+          <label>旋转速度 <b id="tfSpinVal">40%</b></label>
+          <input id="tfSpin" type="range" min="0" max="3" step="0.1" value="1.2" />
+        </div>
+        <label class="field checkbox-field" style="margin-top:10px">
+          <input id="tfGlowCloud" type="checkbox" />
+          <span>星球光团</span>
+        </label>
+      </div>
       <div id="taskProgress" class="task-progress"><i id="taskProgressBar"></i></div>
       <div id="taskActions" class="task-actions">
         <button id="taskCancelBtn" type="button">取消</button>
@@ -5754,22 +5792,132 @@
       syncActiveAlbum();
       const galaxy = activeGalaxy();
       if (!galaxy) return;
-      const title = await requestAppInput({
-        title: "生成星球",
-        message: "给新的星球起一个名字。",
-        value: `星球 ${galaxy.albums.length + 1}`,
-        placeholder: "例如：夏天的旅行"
+
+      const result = await new Promise((resolve) => {
+        const form = document.getElementById("taskForm");
+        const tfTitle = document.getElementById("tfTitle");
+        const tfTheme = document.getElementById("tfTheme");
+        const tfShape = document.getElementById("tfShape");
+
+        // Build theme buttons
+        const themes = [
+          { key: "tech", name: "科技蓝" },
+          { key: "gold", name: "暖金" },
+          { key: "violet", name: "粉紫" },
+          { key: "starlight", name: "星空" }
+        ];
+        tfTheme.innerHTML = "";
+        let selectedTheme = "tech";
+        themes.forEach((t) => {
+          const btn = document.createElement("button");
+          btn.className = "tf-btn" + (t.key === selectedTheme ? " active" : "");
+          btn.textContent = t.name;
+          btn.type = "button";
+          btn.addEventListener("click", () => {
+            selectedTheme = t.key;
+            tfTheme.querySelectorAll(".tf-btn").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+          });
+          tfTheme.appendChild(btn);
+        });
+
+        // Build shape buttons
+        const shapes = [
+          { key: "sphere", name: "星球" },
+          { key: "nebula", name: "银河" },
+          { key: "heart", name: "爱心" },
+          { key: "ring", name: "记忆环" },
+          { key: "wave", name: "时间波" }
+        ];
+        tfShape.innerHTML = "";
+        let selectedShape = "sphere";
+        shapes.forEach((s) => {
+          const btn = document.createElement("button");
+          btn.className = "tf-btn" + (s.key === selectedShape ? " active" : "");
+          btn.textContent = s.name;
+          btn.type = "button";
+          btn.addEventListener("click", () => {
+            selectedShape = s.key;
+            tfShape.querySelectorAll(".tf-btn").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+          });
+          tfShape.appendChild(btn);
+        });
+
+        // Slider display helpers
+        const densityRange = [2500, 14000];
+        const energyRange = [0.6, 2.4];
+        const glowRange = [0.6, 2.2];
+        const spinRange = [0, 3];
+
+        const pct = (val, min, max) => Math.round((val - min) / (max - min) * 100) + "%";
+        document.getElementById("tfDensity").addEventListener("input", (e) => {
+          document.getElementById("tfDensityVal").textContent = pct(Number(e.target.value), densityRange[0], densityRange[1]);
+        });
+        document.getElementById("tfEnergy").addEventListener("input", (e) => {
+          document.getElementById("tfEnergyVal").textContent = pct(Number(e.target.value), energyRange[0], energyRange[1]);
+        });
+        document.getElementById("tfGlow").addEventListener("input", (e) => {
+          document.getElementById("tfGlowVal").textContent = pct(Number(e.target.value), glowRange[0], glowRange[1]);
+        });
+        document.getElementById("tfScale").addEventListener("input", (e) => {
+          document.getElementById("tfScaleVal").textContent = Number(e.target.value).toFixed(1) + "x";
+        });
+        document.getElementById("tfSpin").addEventListener("input", (e) => {
+          document.getElementById("tfSpinVal").textContent = pct(Number(e.target.value), spinRange[0], spinRange[1]);
+        });
+
+        // Show form
+        tfTitle.value = `星球 ${galaxy.albums.length + 1}`;
+        taskTitle.textContent = "生成星球";
+        taskMessage.textContent = "";
+        taskInput.style.display = "none";
+        form.style.display = "block";
+        taskProgress.style.display = "none";
+        taskActions.style.display = "flex";
+        taskOkBtn.textContent = "确定";
+        taskCancelBtn.textContent = "取消";
+        taskDialog.classList.add("show");
+        window.setTimeout(() => tfTitle.focus(), 60);
+
+        const finish = (confirmed) => {
+          hideTaskDialog();
+          form.style.display = "none";
+          taskInput.style.display = "none";
+          if (!confirmed) { resolve(null); return; }
+          const title = tfTitle.value.trim();
+          if (!title) { resolve(null); return; }
+          resolve({
+            title,
+            theme: selectedTheme,
+            shape: selectedShape,
+            settings: {
+              density: Number(document.getElementById("tfDensity").value),
+              energy: Number(document.getElementById("tfEnergy").value),
+              glow: Number(document.getElementById("tfGlow").value),
+              planetScale: Number(document.getElementById("tfScale").value),
+              rotationSpeed: Number(document.getElementById("tfSpin").value),
+              glowCloud: document.getElementById("tfGlowCloud").checked
+            }
+          });
+        };
+
+        taskOkBtn.onclick = () => finish(true);
+        taskCancelBtn.onclick = () => finish(false);
+        tfTitle.onkeydown = (event) => {
+          if (event.key === "Enter") finish(true);
+          if (event.key === "Escape") finish(false);
+        };
       });
-      if (!title) return;
+
+      if (!result) return;
+
       const album = makeAlbum({
-        title,
+        title: result.title,
         subtitle: "把这一组记忆放进新的星球",
-        theme: state.project.theme,
-        shape: state.shape,
-        settings: {
-          ...currentRenderSettingsPayload(),
-          glowCloud: false
-        }
+        theme: result.theme,
+        shape: result.shape,
+        settings: result.settings
       });
       galaxy.albums.push(album);
       state.activeGalaxyId = galaxy.id;
