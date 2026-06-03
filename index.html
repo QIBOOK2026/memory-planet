@@ -5437,7 +5437,7 @@
         if (!hovered || !sprite.userData.locked) {
           if (isWall) {
             layoutOffset.copy(photoGridOffset(index, count, false, "wall"));
-            worldPosition.copy(globe.getWorldPosition(new THREE.Vector3()))
+            worldPosition.copy(layoutCenter)
               .addScaledVector(cameraRight, layoutOffset.x + state.wallPanX)
               .addScaledVector(cameraUp, layoutOffset.y + state.wallPanY);
           } else if (neatLayout) {
@@ -7083,7 +7083,7 @@
         state.universeVelocity.y = lerp(state.universeVelocity.y, inertialDx * 0.0022, 0.48);
         state.universeVelocity.x = 0;
       } else {
-        if (albumRenderSettings(activeAlbum()).photoLayout === "wall" && state.targetMode === "explode") {
+        if (state.targetMode === "explode" && albumRenderSettings(activeAlbum()).photoLayout === "wall") {
           state.wallPanX += dx * 0.006;
           state.wallPanY -= dy * 0.006;
         } else {
