@@ -1,0 +1,107 @@
+﻿# Chrome profile / debug directories
+.chrome-*/
+Crashpad/
+Default/
+Crowd Deny/
+Safe Browsing/
+SafetyTips/
+WidevineCdm/
+component_crx_cache/
+extensions_crx_cache/
+ShaderCache/
+GPUCache/
+Code Cache/
+Cache/
+Local Storage/
+Session Storage/
+Service Worker/
+Sessions/
+WebStorage/
+blob_storage/
+Network/
+Extension Rules/
+Extension Scripts/
+Extension State/
+Extensions/
+Sync Data/
+Shared Dictionary/
+shared_proto_db/
+Segmentation Platform/
+DawnGraphiteCache/
+DawnWebGPUCache/
+GraphiteDawnCache/
+GrShaderCache/
+segmentation_platform/
+Site Characteristics Database/
+PersistentOriginTrials/
+commerce_subscription_db/
+discounts_db/
+discount_infos_db/
+parcel_tracking_db/
+chrome_cart_db/
+optimization_guide_hint_cache_store/
+AutofillAiModelCache/
+AutofillStrikeDatabase/
+BudgetDatabase/
+GCM Store/
+Web Applications/
+Storage/
+
+# Chrome config/data files
+ActorSafetyLists/
+AmountExtractionHeuristicRegexes/
+CaptchaProviders/
+CertificateRevocation/
+FileTypePolicies/
+FirstPartySetsPreloaded/
+hyphen-data/
+MEIPreload/
+OnDeviceHeadSuggestModel/
+OptimizationHints/
+OriginTrials/
+PKIMetadata/
+PrivacySandboxAttestationsPreloaded/
+RecoveryImproved/
+SSLErrorAssistant/
+Subresource Filter/
+TrustTokenKeyCommitments/
+WasmTtsEngine/
+ZxcvbnData/
+Unindexed Rules/
+ClientCertificates/
+attachments/
+reports/
+
+# Chrome DB files
+*.db
+*.db-journal
+*.pma
+*.bdic
+LOG
+LOG.old
+LOCK
+CrashpadMetrics-active.pma
+Last Version
+Last Browser
+Local State
+Variations
+metadata
+settings.dat
+metadata.json
+Secure Preferences
+PreferredApps
+trusted_vault.pb
+BookmarkMergedSurfaceOrdering
+BrowsingTopicsSiteData*
+DIPS
+Network Action Predictor*
+
+# Assets zip (source files already in assets/)
+assets.zip
+
+# Exported standalone HTML
+我的记忆星球-fixed.html
+
+# Preview screenshots
+preview-*.png
+verify-*.png
