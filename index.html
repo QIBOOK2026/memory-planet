@@ -1751,6 +1751,8 @@
       lastDragDelta: null,
       wallPanX: 0,
       wallPanY: 0,
+      wallSnapTarget: null,
+      wallSnapActive: false,
       lastPointerAt: 0,
       angularVelocity: new THREE.Vector2(0.0015, 0.0025),
       autoSpin: 1,
@@ -7013,6 +7015,7 @@
       state.drag = true;
       state.angularVelocity.set(0, 0);
       state.wallPanX = 0; state.wallPanY = 0;
+      state.wallSnapActive = false;
       state.pointerMoved = false;
       state.pointerStart.x = event.clientX;
       state.pointerStart.y = event.clientY;
@@ -7090,8 +7093,8 @@
         state.universeVelocity.x = 0;
       } else {
         if (state.targetMode === "explode" && albumRenderSettings(activeAlbum()).photoLayout === "wall") {
-          state.wallPanX += dx * 0.006;
-          state.wallPanY -= dy * 0.006;
+          state.wallPanX -= dx * 0.005;
+          state.wallPanY += dy * 0.005;
         } else {
           globe.rotation.y += dx * 0.006;
           globe.rotation.x += dy * 0.006;
@@ -7109,6 +7112,21 @@
       const wasMoved = state.pointerMoved || (state.viewMode === "universe" ? releaseDistance > 3 : releaseDistance > 6);
       const rotatedAlbumId = state.universeRotatingAlbumId;
       state.universeRotatingAlbumId = "";
+      // Wall mode: snap nearest photo to center
+      if (state.targetMode === "explode" && albumRenderSettings(activeAlbum()).photoLayout === "wall" && state.photoSprites.length) {
+        let bestIdx = -1; let bestDist = Infinity;
+        const center = new THREE.Vector3();
+        state.photoSprites.forEach((sprite, i) => {
+          if (!sprite.visible) return;
+          const d = Math.hypot(sprite.position.x - state.wallPanX, sprite.position.y + state.wallPanY);
+          if (d < bestDist) { bestDist = d; bestIdx = i; }
+        });
+        if (bestIdx >= 0) {
+          const snapTarget = state.photoSprites[bestIdx].position;
+          state.wallSnapTarget = { x: snapTarget.x, y: -snapTarget.y };
+          state.wallSnapActive = true;
+        }
+      }
       state.drag = false;
       if (state.lastDragDelta && state.viewMode !== "universe") {
         state.angularVelocity.y = state.lastDragDelta.x * 0.003;
@@ -7555,7 +7573,16 @@
         globe.rotation.z += Math.sin(state.time * 0.45) * 0.0007;
         if (!state.drag) {
           state.angularVelocity.multiplyScalar(state.autoSpin === 0 ? 0.92 : 0.975);
-          if ((state.mouseMode === "rotate" || state.hand.gesture === "rotate") && state.autoSpin > 0 && state.shape !== "wave") {
+          // Wall snap animation
+        if (state.wallSnapActive && state.wallSnapTarget) {
+          state.wallPanX = lerp(state.wallPanX, state.wallSnapTarget.x, 0.12);
+          state.wallPanY = lerp(state.wallPanY, state.wallSnapTarget.y, 0.12);
+          if (Math.abs(state.wallPanX - state.wallSnapTarget.x) < 0.002 && Math.abs(state.wallPanY - state.wallSnapTarget.y) < 0.002) {
+            state.wallSnapActive = false;
+          }
+        }
+
+        if ((state.mouseMode === "rotate" || state.hand.gesture === "rotate") && state.autoSpin > 0 && state.shape !== "wave") {
             state.angularVelocity.y += 0.00022 * state.autoSpin;
           }
         }
