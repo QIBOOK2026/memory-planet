@@ -4200,7 +4200,7 @@
           console.warn(retryError);
           state.audio.enabled = false;
           musicBtn.textContent = "开启氛围音乐";
-          setStatus("浏览器阻止了自动播放，请点击"开启氛围音乐"按钮。", "warn");
+          setStatus('浏览器阻止了自动播放，请点击"开启氛围音乐"按钮。', "warn");
         }
       };
       document.addEventListener("pointerdown", unlock, { once: true });
