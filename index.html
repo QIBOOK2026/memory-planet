@@ -1748,6 +1748,7 @@
       pointerMoved: false,
       lastPointer: { x: 0, y: 0 },
       pointerStart: { x: 0, y: 0 },
+      lastDragDelta: null,
       lastPointerAt: 0,
       angularVelocity: new THREE.Vector2(0.0015, 0.0025),
       autoSpin: 1,
@@ -7060,6 +7061,7 @@
       } else {
         globe.rotation.y += dx * 0.006;
         globe.rotation.x += dy * 0.006;
+        state.lastDragDelta = { x: dx, y: dy };
       }
       state.lastPointer.x = event.clientX;
       state.lastPointer.y = event.clientY;
@@ -7073,6 +7075,10 @@
       const rotatedAlbumId = state.universeRotatingAlbumId;
       state.universeRotatingAlbumId = "";
       state.drag = false;
+      if (state.lastDragDelta && state.viewMode !== "universe") {
+        state.angularVelocity.y = state.lastDragDelta.x * 0.003;
+        state.angularVelocity.x = state.lastDragDelta.y * 0.003;
+      }
       if (state.viewMode === "universe") {
         if (rotatedAlbumId && wasMoved) {
           const found = findAlbum(rotatedAlbumId);
