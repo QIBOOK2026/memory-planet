@@ -647,6 +647,8 @@
       border-bottom: 1px solid var(--line);
     }
 
+    .fs-close { appearance: none; border: none; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; padding: 2px 6px; line-height: 1; border-radius: 4px; transition: color 0.15s; }
+    .fs-close:hover { color: var(--ink); }
     .floating-settings h2 {
       margin: 0;
       font-size: 14px;
@@ -1185,6 +1187,7 @@
   <aside id="musicSettingsPanel" class="floating-settings" aria-label="音乐设置">
     <header>
       <h2>音乐设置</h2>
+      <button class="fs-close" type="button" aria-label="关闭">×</button>
     </header>
     <div class="settings-body">
       <div class="sound-row">
@@ -1208,6 +1211,7 @@
   <aside id="advancedSettingsPanel" class="floating-settings" aria-label="高级设置">
     <header>
       <h2>高级设置</h2>
+      <button class="fs-close" type="button" aria-label="关闭">×</button>
     </header>
     <div class="settings-body">
       <div class="camera-row">
@@ -4825,6 +4829,14 @@
       panelToggle.setAttribute("aria-label", hidden ? "显示面板" : "隐藏面板");
     }
 
+    document.querySelectorAll(".fs-close").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        musicSettingsPanel.classList.remove("show");
+        advancedSettingsPanel.classList.remove("show");
+        musicSettingsToggle.classList.remove("active");
+        advancedSettingsToggle.classList.remove("active");
+      });
+    });
     function setFloatingSettingsPanel(panelName) {
       const showMusic = panelName === "music" && !musicSettingsPanel.classList.contains("show");
       const showAdvanced = panelName === "advanced" && !advancedSettingsPanel.classList.contains("show");
