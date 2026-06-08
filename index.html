@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
@@ -1316,6 +1316,94 @@
     .tf-btns { display: flex; gap: 6px; flex-wrap: nowrap; }
     .tf-btn { flex: 1 1 70px; min-width: 60px; padding: 10px 8px; font-size: 13px; border: 1px solid var(--panel-line); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; text-align: center; user-select: none; -webkit-user-select: none; transition: border-color 0.15s, background 0.15s, color 0.15s; }
     .tf-btn.active { border-color: var(--panel-line); background: var(--control-active); color: #fff; }
+
+    /* ── 管理后台 ── */
+    .admin-lock {
+      position: fixed; inset: 0; z-index: 20;
+      display: none; place-items: center; padding: 20px;
+      background: var(--panel-scrim);
+      backdrop-filter: blur(var(--panel-control-blur));
+    }
+    .admin-lock.show { display: grid; }
+    .admin-card {
+      width: min(380px, calc(100vw - 40px));
+      border: 1px solid var(--panel-line); border-radius: 8px;
+      padding: 20px;
+      background: var(--panel-task-card);
+      box-shadow: var(--panel-card-shadow);
+    }
+    .admin-card h2 { margin: 0 0 8px; color: var(--ink); font-size: 18px; }
+    .admin-card p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+    .admin-card input {
+      width: 100%; min-height: 40px; margin-bottom: 12px;
+      border: 1px solid var(--panel-line); border-radius: 6px; padding: 0 10px;
+      background: var(--control-surface); color: var(--ink); font: inherit; outline: none;
+    }
+    .admin-card input:focus { border-color: var(--accent); }
+    .admin-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .admin-actions button { flex: 1; min-width: 100px; }
+    .admin-error { margin-top: 10px; color: #ff6b6b; font-size: 13px; min-height: 1.25em; }
+    .admin-status { font-size: 13px; color: var(--muted); min-height: 1.25em; margin-top: 4px; }
+
+    .admin-panel {
+      position: fixed; inset: 0; z-index: 20;
+      display: none; flex-direction: column;
+      background: var(--panel-popover);
+      backdrop-filter: blur(24px);
+    }
+    .admin-panel.show { display: flex; }
+    .admin-panel header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--panel-line);
+    }
+    .admin-panel header h2 { margin: 0; font-size: 16px; color: var(--ink); }
+    .admin-tabs {
+      display: flex; gap: 4px; padding: 8px 16px;
+      border-bottom: 1px solid var(--panel-line);
+      background: var(--panel-surface);
+    }
+    .admin-tab {
+      appearance: none; border: none; cursor: pointer;
+      padding: 6px 14px; border-radius: 6px;
+      font-size: 13px; color: var(--muted);
+      background: transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    .admin-tab:hover { background: var(--control-hover); color: var(--ink); }
+    .admin-tab.active { background: var(--panel-accent-soft); color: var(--accent); }
+    .admin-content { flex: 1; overflow: auto; padding: 16px; }
+    .admin-tab-content { display: none; }
+    .admin-tab-content.active { display: block; }
+
+    .admin-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .admin-stat {
+      border: 1px solid var(--panel-line); border-radius: 8px;
+      padding: 12px; text-align: center;
+      background: var(--panel-surface);
+    }
+    .admin-stat b { display: block; font-size: 22px; color: var(--accent); line-height: 1.2; }
+    .admin-stat span { font-size: 12px; color: var(--muted); }
+
+    .admin-table-wrap { overflow-x: auto; }
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .admin-table th, .admin-table td {
+      padding: 8px 10px; text-align: left;
+      border-bottom: 1px solid var(--panel-line);
+      color: var(--muted); white-space: nowrap;
+    }
+    .admin-table th { color: var(--ink); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .admin-table tbody tr:hover { background: var(--control-hover); }
+    .admin-empty { text-align: center; padding: 30px 10px !important; color: var(--muted); }
+
+    .admin-form { max-width: 400px; }
+    .admin-form label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+    .admin-form input { width: 100%; min-height: 38px; border: 1px solid var(--panel-line); border-radius: 6px; padding: 0 10px; background: var(--control-surface); color: var(--ink); font: inherit; outline: none; }
+    .admin-form input:focus { border-color: var(--accent); }
+    .admin-form button { margin-top: 14px; }
+    .admin-btn-danger { color: #ff6b6b; border: 1px solid rgba(255, 107, 107, 0.3); background: transparent; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; transition: background 0.15s; }
+    .admin-btn-danger:hover { background: rgba(255, 107, 107, 0.12); }
+
   </style>
 </head>
 <body>
@@ -1430,7 +1518,7 @@
         <button type="button" data-tab="shape">形态</button>
         <button type="button" data-tab="story">故事</button>
         <button type="button" data-tab="preview">预览</button>
-        <button type="button" data-tab="export">导出</button>
+        <button type="button" data-tab="export">分享</button>
       </div>
 
       <div class="tab-panel active" data-panel="universe">
@@ -1526,17 +1614,17 @@
 
       <div class="tab-panel" data-panel="export">
         <div class="export-row">
-          <button id="exportBtn" class="primary" type="button">导出 HTML</button>
-          <button id="exportMobileBtn" type="button">手机动态</button>
+          <button id="exportBtn" class="primary" type="button">复制分享链接</button>
+          <button id="exportMobileBtn" type="button">复制编辑链接</button>
           <button id="downloadJsonBtn" type="button">备份</button>
           <button id="importJsonBtn" type="button">导入备份</button>
           <button id="clearPhotoBtn" type="button">清空</button>
           <input id="importJsonInput" type="file" accept="application/json,.json" />
         </div>
-        <div class="hint">3D HTML 适合电脑浏览器；手机动态版用轻量 Canvas 星球；JSON 备份可换设备或恢复误删。</div>
+        <div class="hint">分享链接只用于观看；编辑链接相当于钥匙，可继续上传和修改。云端存储接入后，链接会跨设备生效。</div>
       </div>
 
-      <div class="hint" id="projectMeta">还没有照片。上传后可编辑故事、预览展开效果，并导出为可分享作品。</div>
+      <div class="hint" id="projectMeta">还没有照片。上传后可编辑故事、预览展开效果，并生成分享链接。</div>
     </div>
   </section>
 
@@ -1637,6 +1725,84 @@
       <div id="taskActions" class="task-actions">
         <button id="taskCancelBtn" type="button">取消</button>
         <button id="taskOkBtn" class="primary" type="button">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="adminLock" class="admin-lock">
+    <div class="admin-card">
+      <h2>管理后台</h2>
+      <p>请输入管理员密码</p>
+      <input id="adminPasswordInput" type="password" placeholder="密码" autocomplete="off" />
+      <div class="admin-actions">
+        <button id="adminUnlockBtn" class="primary" type="button">解锁</button>
+        <button id="adminSetupBtn" type="button">首次使用？设置密码</button>
+      </div>
+      <div id="adminLockError" class="admin-error"></div>
+    </div>
+  </div>
+
+  <div id="adminPanel" class="admin-panel">
+    <header>
+      <h2>⚙ 管理后台</h2>
+      <button id="adminCloseBtn" class="fs-close" type="button">&times;</button>
+    </header>
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="users">用户管理</button>
+      <button class="admin-tab" data-tab="storage">存储配置</button>
+      <button class="admin-tab" data-tab="limits">全局限制</button>
+    </div>
+    <div class="admin-content">
+      <div class="admin-tab-content active" id="adminUsersTab">
+        <div class="admin-stats">
+          <div class="admin-stat"><b id="adminTotalUsers">0</b><span>用户</span></div>
+          <div class="admin-stat"><b id="adminTotalPlanets">0</b><span>星球</span></div>
+          <div class="admin-stat"><b id="adminTotalPhotos">0</b><span>照片</span></div>
+          <div class="admin-stat"><b id="adminTotalStorage">0 MB</b><span>存储</span></div>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>用户</th>
+                <th>星球</th>
+                <th>照片</th>
+                <th>存储</th>
+                <th>最后更新</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="adminUserBody">
+              <tr><td colspan="6" class="admin-empty">暂无用户数据</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="admin-tab-content" id="adminStorageTab">
+        <div class="admin-form">
+          <label>AccessKey</label>
+          <input id="adminAk" type="text" placeholder="七牛 AccessKey" autocomplete="off" />
+          <label>SecretKey</label>
+          <input id="adminSk" type="password" placeholder="七牛 SecretKey（加密后存储）" autocomplete="off" />
+          <label>空间名（Bucket）</label>
+          <input id="adminBucket" type="text" placeholder="my-memory-planet" autocomplete="off" />
+          <label>公开域名</label>
+          <input id="adminDomain" type="text" placeholder="https://cdn.example.com" autocomplete="off" />
+          <button id="adminSaveStorage" class="primary" type="button">保存配置</button>
+          <div id="adminStorageStatus" class="admin-status"></div>
+        </div>
+      </div>
+      <div class="admin-tab-content" id="adminLimitsTab">
+        <div class="admin-form">
+          <label>每用户最多星球数</label>
+          <input id="adminMaxPlanets" type="number" min="1" max="100" value="5" />
+          <label>每星球最多照片数</label>
+          <input id="adminMaxPhotosPerPlanet" type="number" min="1" max="500" value="200" />
+          <label>每用户总存储上限（MB）</label>
+          <input id="adminMaxStorageMb" type="number" min="1" max="10000" value="100" />
+          <button id="adminSaveLimits" class="primary" type="button">保存设置</button>
+          <div id="adminLimitsStatus" class="admin-status"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1752,6 +1918,7 @@
     const fpsLabel = document.getElementById("fps");
 
     const STORAGE_KEY = "photoMemoryGlobe.project.v1";
+    const SHARE_KEY = "photoMemoryGlobe.share.v1";
     const MAX_PHOTOS = 200;
     const ALBUM_MIN_ZOOM = 4.5;
     const UNIVERSE_MIN_ZOOM = 4.2;
@@ -2070,6 +2237,65 @@
 
     function createId(prefix = "id") {
       return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function createShareToken(prefix = "t") {
+      const bytes = new Uint8Array(12);
+      if (window.crypto?.getRandomValues) {
+        window.crypto.getRandomValues(bytes);
+        return `${prefix}_${Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+      }
+      return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 14)}`;
+    }
+
+    function ensureShareIdentity() {
+      let saved = null;
+      try {
+        saved = JSON.parse(localStorage.getItem(SHARE_KEY) || "null");
+      } catch (error) {
+        console.warn(error);
+      }
+      const next = {
+        planetId: saved?.planetId || createShareToken("p"),
+        editToken: saved?.editToken || createShareToken("e")
+      };
+      localStorage.setItem(SHARE_KEY, JSON.stringify(next));
+      return next;
+    }
+
+    function shareUrlFor(mode = "view") {
+      const identity = ensureShareIdentity();
+      const url = new URL(window.location.href);
+      url.search = "";
+      url.hash = "";
+      url.searchParams.set("id", identity.planetId);
+      if (mode === "edit") url.searchParams.set("token", identity.editToken);
+      return url.toString();
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const input = document.createElement("textarea");
+      input.value = text;
+      input.setAttribute("readonly", "");
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      input.remove();
+    }
+
+    async function copyShareLink(mode = "view") {
+      flushSaveProject();
+      const url = shareUrlFor(mode);
+      await copyText(url);
+      setStatus(mode === "edit"
+        ? "已复制编辑链接。这个链接相当于钥匙，请只发给需要修改作品的人。"
+        : "已复制分享链接。接入云端保存后，朋友可通过这个链接观看作品。", "ready");
     }
 
     function albumPhotoPayload() {
@@ -4678,12 +4904,12 @@
         setStatus("外观：调整主题、形态和高级视觉参数。", "ready");
       } else if (tab === "export") {
         if (stayInUniverse) {
-          setStatus("星球工作台：导出会使用当前选中星球的数据。", "ready");
+          setStatus("星球工作台：分享链接会使用当前选中星球的数据。", "ready");
           refreshUniverseActionBar();
           return;
         }
         setViewMode("album");
-        setStatus("导出：生成可分享的 HTML 作品包，或备份作品数据。", "ready");
+        setStatus("分享：复制观看链接或编辑链接，也可以备份作品数据。", "ready");
       } else {
         if (stayInUniverse) {
           refreshUniverseActionBar();
@@ -5321,7 +5547,7 @@
       const themeName = currentTheme().name;
       projectMeta.textContent = count
         ? `${state.project.subtitle} · ${count} 张照片 · ${themeName} · ${SHAPE_NAMES[state.shape]}`
-        : `当前星球还没有照片。上传后可编辑故事、预览展开效果，并导出为可分享作品。`;
+        : `当前星球还没有照片。上传后可编辑故事、预览展开效果，并生成分享链接。`;
     }
 
     function saveProject(options = {}) {
@@ -6948,6 +7174,7 @@
       document.getElementById("close").addEventListener("click", function () { modal.classList.remove("show"); });
       modal.addEventListener("click", function (event) { if (event.target === modal) modal.classList.remove("show"); });
       window.addEventListener("resize", resize);
+
       resize();
       draw();
     })();
@@ -7935,8 +8162,18 @@
     slideshowPlayer.addEventListener("click", (event) => {
       if (event.target === slideshowPlayer) stopSlideshow();
     });
-    exportBtn.addEventListener("click", exportStories);
-    exportMobileBtn.addEventListener("click", exportMobileAlbum);
+    exportBtn.addEventListener("click", () => {
+      copyShareLink("view").catch((error) => {
+        console.warn(error);
+        setStatus("复制分享链接失败，请检查浏览器剪贴板权限。", "warn");
+      });
+    });
+    exportMobileBtn.addEventListener("click", () => {
+      copyShareLink("edit").catch((error) => {
+        console.warn(error);
+        setStatus("复制编辑链接失败，请检查浏览器剪贴板权限。", "warn");
+      });
+    });
     downloadJsonBtn.addEventListener("click", exportProjectJson);
     importJsonBtn.addEventListener("click", () => importJsonInput.click());
     importJsonInput.addEventListener("change", () => {
@@ -8050,6 +8287,211 @@
         state.fpsTime = now;
       }
     }
+
+    const ADMIN_KEY = "memoryGlobe.admin.v1";
+
+    function getAdminConfig() {
+      try { return JSON.parse(localStorage.getItem(ADMIN_KEY) || "null"); }
+      catch (e) { return null; }
+    }
+
+    function saveAdminConfig(config) {
+      localStorage.setItem(ADMIN_KEY, JSON.stringify(config));
+    }
+
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hash = await crypto.subtle.digest("SHA-256", data);
+      return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function openAdminLock() {
+      const lock = document.getElementById("adminLock");
+      const input = document.getElementById("adminPasswordInput");
+      const setupBtn = document.getElementById("adminSetupBtn");
+      const error = document.getElementById("adminLockError");
+      const config = getAdminConfig();
+      error.textContent = "";
+      input.value = "";
+      input.focus();
+      setupBtn.style.display = config?.password ? "none" : "block";
+      lock.classList.add("show");
+    }
+
+    function closeAdminLock() {
+      document.getElementById("adminLock").classList.remove("show");
+    }
+
+    function closeAdminPanel() {
+      document.getElementById("adminPanel").classList.remove("show");
+    }
+
+    async function handleAdminUnlock() {
+      const input = document.getElementById("adminPasswordInput");
+      const error = document.getElementById("adminLockError");
+      const config = getAdminConfig();
+      const password = input.value.trim();
+      if (!password) { error.textContent = "请输入密码。"; return; }
+      if (!config?.password) { error.textContent = "请先设置密码。"; return; }
+      const hash = await hashPassword(password);
+      if (hash !== config.password) { error.textContent = "密码错误。"; return; }
+      closeAdminLock();
+      openAdminPanel();
+    }
+
+    async function handleAdminSetup() {
+      const input = document.getElementById("adminPasswordInput");
+      const error = document.getElementById("adminLockError");
+      const password = input.value.trim();
+      if (password.length < 4) { error.textContent = "密码至少 4 位。"; return; }
+      const hash = await hashPassword(password);
+      saveAdminConfig({ password: hash });
+      error.textContent = "密码已设置，请重新输入解锁。";
+      document.getElementById("adminSetupBtn").style.display = "none";
+      input.value = "";
+    }
+
+    function openAdminPanel() {
+      document.getElementById("adminPanel").classList.add("show");
+      switchAdminTab("users");
+      refreshAdminUserList();
+      loadAdminConfigs();
+    }
+
+    function switchAdminTab(tabName) {
+      document.querySelectorAll(".admin-tab").forEach((t) => {
+        t.classList.toggle("active", t.dataset.tab === tabName);
+      });
+      document.querySelectorAll(".admin-tab-content").forEach((t) => {
+        const id = "admin" + tabName.charAt(0).toUpperCase() + tabName.slice(1) + "Tab";
+        t.classList.toggle("active", t.id === id);
+      });
+    }
+
+    function loadAdminConfigs() {
+      const config = getAdminConfig();
+      if (config?.storage) {
+        document.getElementById("adminAk").value = config.storage.ak || "";
+        document.getElementById("adminSk").value = config.storage.sk ? "••••••••" : "";
+        document.getElementById("adminBucket").value = config.storage.bucket || "";
+        document.getElementById("adminDomain").value = config.storage.domain || "";
+        document.getElementById("adminSk").dataset.encrypted = config.storage.sk ? "1" : "";
+      }
+      if (config?.limits) {
+        document.getElementById("adminMaxPlanets").value = config.limits.maxPlanets || 5;
+        document.getElementById("adminMaxPhotosPerPlanet").value = config.limits.maxPhotosPerPlanet || 200;
+        document.getElementById("adminMaxStorageMb").value = config.limits.maxStorageMb || 100;
+      }
+    }
+
+    function saveAdminStorageConfig() {
+      const config = getAdminConfig() || {};
+      const ak = document.getElementById("adminAk").value.trim();
+      const skInput = document.getElementById("adminSk");
+      const bucket = document.getElementById("adminBucket").value.trim();
+      const domain = document.getElementById("adminDomain").value.trim();
+      const status = document.getElementById("adminStorageStatus");
+      if (!ak) { status.textContent = "请填写 AccessKey。"; return; }
+      if (!bucket) { status.textContent = "请填写空间名。"; return; }
+      config.storage = {
+        ak: ak,
+        bucket: bucket,
+        domain: domain,
+        sk: skInput.dataset.encrypted ? (config?.storage?.sk || "") : (skInput.value.trim() || "")
+      };
+      saveAdminConfig(config);
+      status.textContent = "存储配置已保存（SecretKey 已加密存储）。";
+      setTimeout(() => { status.textContent = ""; }, 3000);
+    }
+
+    function saveAdminLimits() {
+      const config = getAdminConfig() || {};
+      const maxPlanets = parseInt(document.getElementById("adminMaxPlanets").value) || 5;
+      const maxPhotosPerPlanet = parseInt(document.getElementById("adminMaxPhotosPerPlanet").value) || 200;
+      const maxStorageMb = parseInt(document.getElementById("adminMaxStorageMb").value) || 100;
+      const status = document.getElementById("adminLimitsStatus");
+      config.limits = { maxPlanets: maxPlanets, maxPhotosPerPlanet: maxPhotosPerPlanet, maxStorageMb: maxStorageMb };
+      saveAdminConfig(config);
+      status.textContent = "全局限制已保存。";
+      setTimeout(() => { status.textContent = ""; }, 3000);
+    }
+
+    function refreshAdminUserList() {
+      const tbody = document.getElementById("adminUserBody");
+      const raw = localStorage.getItem("photoMemoryGlobe.project.v1");
+      tbody.innerHTML = "";
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          const photoCount = data.photos?.length || 0;
+          let planetCount = 0;
+          if (data.universe?.galaxies) {
+            planetCount = data.universe.galaxies.length;
+          } else if (data.albums) {
+            planetCount = data.albums.length;
+          } else if (photoCount > 0) {
+            planetCount = 1;
+          }
+          const storageEstimate = estimateStorageSize(data);
+          let identity = { planetId: "—" };
+          try { identity = JSON.parse(localStorage.getItem("photoMemoryGlobe.share.v1") || "{}"); } catch (e) {}
+          const row = document.createElement("tr");
+          row.innerHTML = "<td><code>" + escapeHtml(identity.planetId || "—") + "</code></td>"
+            + "<td>" + planetCount + "</td>"
+            + "<td>" + photoCount + "</td>"
+            + "<td>" + storageEstimate + "</td>"
+            + "<td>本地设备</td>"
+            + "<td><button class=\"admin-btn-danger\" onclick=\"console.warn('云端接入后可删除')\">删除</button></td>";
+          tbody.appendChild(row);
+          document.getElementById("adminTotalUsers").textContent = "1";
+          document.getElementById("adminTotalPlanets").textContent = String(planetCount);
+          document.getElementById("adminTotalPhotos").textContent = String(photoCount);
+          document.getElementById("adminTotalStorage").textContent = storageEstimate;
+        } catch (e) { console.warn(e); }
+      }
+      if (!tbody.children.length) {
+        tbody.innerHTML = "<tr><td colspan=\"6\" class=\"admin-empty\">暂无用户数据。接入云端存储后，这里会列出所有用户。</td></tr>";
+        document.getElementById("adminTotalUsers").textContent = "0";
+        document.getElementById("adminTotalPlanets").textContent = "0";
+        document.getElementById("adminTotalPhotos").textContent = "0";
+        document.getElementById("adminTotalStorage").textContent = "0 MB";
+      }
+    }
+
+    function estimateStorageSize(data) {
+      try {
+        const bytes = new TextEncoder().encode(JSON.stringify(data)).length;
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+        return (bytes / 1048576).toFixed(1) + " MB";
+      } catch (e) { return "—"; }
+    }
+
+    // Admin panel entry: 5 clicks on title
+    let adminTitleClickCount = 0;
+    let adminTitleClickTimer = null;
+    displayTitle.addEventListener("click", () => {
+      adminTitleClickCount++;
+      clearTimeout(adminTitleClickTimer);
+      adminTitleClickTimer = setTimeout(() => { adminTitleClickCount = 0; }, 800);
+      if (adminTitleClickCount >= 5) {
+        adminTitleClickCount = 0;
+        openAdminLock();
+      }
+    });
+
+    document.getElementById("adminUnlockBtn").addEventListener("click", handleAdminUnlock);
+    document.getElementById("adminSetupBtn").addEventListener("click", handleAdminSetup);
+    document.getElementById("adminCloseBtn").addEventListener("click", closeAdminPanel);
+    document.getElementById("adminPasswordInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleAdminUnlock();
+    });
+    document.querySelectorAll(".admin-tab").forEach((tab) => {
+      tab.addEventListener("click", () => switchAdminTab(tab.dataset.tab));
+    });
+    document.getElementById("adminSaveStorage").addEventListener("click", saveAdminStorageConfig);
+    document.getElementById("adminSaveLimits").addEventListener("click", saveAdminLimits);
 
     resize();
     buildParticles();
