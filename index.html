@@ -10,7 +10,27 @@
       color-scheme: dark;
       --ink: #eef8ff;
       --muted: #a8bed4;
-      --panel: rgba(5, 13, 24, 0.68);
+      --panel: rgba(5, 13, 24, 0.5);
+      --panel-control: rgba(5, 13, 24, 0.52);
+      --panel-popover: rgba(5, 13, 24, 0.62);
+      --panel-gesture: rgba(5, 13, 24, 0.42);
+      --panel-task-card: rgba(5, 13, 24, 0.82);
+      --panel-surface: rgba(255, 255, 255, 0.035);
+      --panel-selected: rgba(1, 6, 14, 0.36);
+      --panel-media: rgba(0, 3, 10, 0.6);
+      --panel-scrim: rgba(0, 3, 10, 0.42);
+      --panel-line: rgba(120, 216, 255, 0.22);
+      --panel-shadow: 0 24px 90px rgba(0, 0, 0, 0.34);
+      --panel-popover-shadow: 0 24px 90px rgba(0, 0, 0, 0.38);
+      --panel-card-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+      --panel-blur: 18px;
+      --panel-control-blur: 16px;
+      --control-surface: rgba(255, 255, 255, 0.07);
+      --control-hover: rgba(91, 231, 255, 0.13);
+      --control-active: rgba(91, 231, 255, 0.18);
+      --panel-accent-soft: rgba(91, 231, 255, 0.12);
+      --panel-accent-glow: rgba(91, 231, 255, 0.24);
+      --control-glow: 0 0 18px rgba(91, 231, 255, 0.32);
       --line: rgba(120, 216, 255, 0.22);
       --blue: #5be7ff;
       --accent: #5be7ff;
@@ -56,7 +76,7 @@
       bottom: 16px;
       width: min(22vw, 220px);
       aspect-ratio: 16 / 9;
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 6px;
       object-fit: cover;
       transform: scaleX(-1);
@@ -78,11 +98,11 @@
       flex-direction: column;
       width: min(372px, calc(100vw - 32px));
       max-height: calc(100vh - 32px);
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 8px;
       background: var(--panel);
-      backdrop-filter: blur(18px);
-      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(var(--panel-blur));
+      box-shadow: var(--panel-shadow);
       overflow: hidden;
     }
 
@@ -97,9 +117,9 @@
       width: 38px;
       min-height: 38px;
       padding: 0;
-      border-color: color-mix(in srgb, var(--accent) 65%, transparent);
-      background: rgba(5, 13, 24, 0.7);
-      backdrop-filter: blur(16px);
+      border-color: color-mix(in srgb, var(--panel-line) 80%, transparent);
+      background: var(--panel-control);
+      backdrop-filter: blur(var(--panel-control-blur));
       font-size: 24px;
       line-height: 1;
       font-weight: 700;
@@ -122,9 +142,9 @@
       width: 38px;
       min-height: 38px;
       padding: 0;
-      border-color: color-mix(in srgb, var(--accent) 65%, transparent);
-      background: rgba(5, 13, 24, 0.7);
-      backdrop-filter: blur(16px);
+      border-color: color-mix(in srgb, var(--panel-line) 80%, transparent);
+      background: var(--panel-control);
+      backdrop-filter: blur(var(--panel-control-blur));
       font-size: 20px;
       line-height: 1;
       font-weight: 700;
@@ -132,8 +152,8 @@
 
     .quick-actions button.active {
       border-color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 22%, rgba(5, 13, 24, 0.82));
-      box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 32%, transparent);
+      background: var(--control-active);
+      box-shadow: var(--control-glow);
     }
 
     body:not(.panel-hidden) .panel-toggle {
@@ -142,7 +162,7 @@
 
     .hud header {
       padding: 15px 15px 11px;
-      border-bottom: 1px solid var(--line);
+      border-bottom: 1px solid var(--panel-line);
     }
 
     h1 {
@@ -197,9 +217,9 @@
 
     button {
       min-height: 34px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 6px;
-      background: rgba(255, 255, 255, 0.07);
+      background: var(--control-surface);
       color: var(--ink);
       cursor: pointer;
       transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
@@ -207,7 +227,7 @@
 
     button:hover {
       border-color: rgba(91, 231, 255, 0.8);
-      background: rgba(91, 231, 255, 0.13);
+      background: var(--control-hover);
     }
 
     button:active {
@@ -307,7 +327,7 @@
       border: 1px solid rgba(120, 216, 255, 0.16);
       border-radius: 6px;
       text-align: center;
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--panel-surface);
       color: var(--muted);
       font-size: clamp(9px, 2.4vw, 11px);
       white-space: nowrap;
@@ -318,7 +338,7 @@
     .step-flow button.active {
       color: var(--ink);
       border-color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      background: var(--control-active);
     }
 
     body.universe-mode .step-flow {
@@ -389,10 +409,10 @@
     .field select {
       width: 100%;
       min-height: 34px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 6px;
       padding: 6px 8px;
-      background: color-mix(in srgb, var(--panel) 88%, #061326);
+      background: var(--panel);
       color: var(--ink);
       font: inherit;
       font-size: 13px;
@@ -423,8 +443,8 @@
       border: 1px solid rgba(120, 216, 255, 0.16);
       border-radius: 8px;
       background:
-        radial-gradient(circle at 22% 20%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 42px),
-        rgba(255, 255, 255, 0.045);
+        radial-gradient(circle at 22% 20%, var(--panel-accent-glow), transparent 42px),
+        var(--panel-surface);
       color: var(--muted);
       text-align: left;
     }
@@ -432,8 +452,8 @@
     .album-card.active {
       border-color: var(--accent);
       background:
-        radial-gradient(circle at 22% 20%, color-mix(in srgb, var(--accent) 38%, transparent), transparent 50px),
-        color-mix(in srgb, var(--accent) 11%, rgba(255, 255, 255, 0.045));
+        radial-gradient(circle at 22% 20%, var(--panel-accent-glow), transparent 50px),
+        color-mix(in srgb, var(--accent) 11%, var(--panel-surface));
       color: var(--ink);
     }
 
@@ -472,7 +492,7 @@
       padding: 10px;
       border: 1px solid rgba(120, 216, 255, 0.18);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.045);
+      background: var(--panel-surface);
     }
 
     .stat-card b {
@@ -492,12 +512,12 @@
       display: grid;
       gap: 6px;
       min-height: 78px;
-      border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+      border: 1px solid var(--panel-line);
       border-radius: 8px;
       padding: 10px;
       background:
-        linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent),
-        rgba(1, 6, 14, 0.48);
+        linear-gradient(135deg, var(--panel-accent-soft), transparent),
+        var(--panel-selected);
       color: var(--muted);
       font-size: 12px;
       line-height: 1.5;
@@ -519,10 +539,10 @@
     .field input {
       width: 100%;
       min-height: 32px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 6px;
       padding: 6px 8px;
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--control-surface);
       color: var(--ink);
       font: inherit;
       font-size: 13px;
@@ -550,12 +570,12 @@
       z-index: 80;
       width: min(240px, calc(100vw - 28px));
       min-height: 34px;
-      border: 1px solid color-mix(in srgb, var(--accent) 72%, white 18%);
+      border: 1px solid var(--panel-line);
       border-radius: 6px;
       padding: 7px 10px;
       background: rgba(4, 12, 24, 0.92);
       color: var(--ink);
-      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38), 0 0 24px color-mix(in srgb, var(--accent) 20%, transparent);
+      box-shadow: var(--panel-popover-shadow), var(--control-glow);
       outline: none;
       font: 13px/1.2 "Microsoft YaHei", "PingFang SC", sans-serif;
     }
@@ -565,16 +585,16 @@
       gap: 4px;
       place-items: center;
       min-height: 82px;
-      border: 1px dashed color-mix(in srgb, var(--accent) 65%, transparent);
+      border: 1px dashed var(--panel-line);
       border-radius: 8px;
       padding: 12px;
-      background: rgba(255, 255, 255, 0.045);
+      background: var(--panel-surface);
       color: var(--ink);
       text-align: center;
     }
 
     .dropzone.dragover {
-      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      background: var(--control-active);
       border-color: var(--accent);
     }
 
@@ -612,7 +632,7 @@
     .theme-btn.active,
     .shape-btn.active {
       border-color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      background: var(--control-active);
       color: #ffffff;
     }
 
@@ -627,9 +647,9 @@
       border: 1px solid rgba(120, 216, 255, 0.18);
       border-radius: 8px;
       padding: 12px;
-      background: rgba(4, 12, 24, 0.86);
-      backdrop-filter: blur(18px);
-      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.38);
+      background: var(--panel-popover);
+      backdrop-filter: blur(var(--panel-blur));
+      box-shadow: var(--panel-popover-shadow);
       overflow: auto;
     }
 
@@ -644,7 +664,7 @@
       justify-content: space-between;
       gap: 10px;
       padding-bottom: 8px;
-      border-bottom: 1px solid var(--line);
+      border-bottom: 1px solid var(--panel-line);
     }
 
     .fs-close { appearance: none; border: none; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; padding: 2px 6px; line-height: 1; border-radius: 4px; transition: color 0.15s; }
@@ -666,9 +686,9 @@
       display: block;
       width: 100%;
       max-height: min(34vh, 310px);
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.045);
+      background: var(--panel-surface);
       overflow: hidden;
     }
 
@@ -682,7 +702,7 @@
       align-items: center;
       gap: 12px;
       padding: 10px 12px;
-      border-bottom: 1px solid var(--line);
+      border-bottom: 1px solid var(--panel-line);
       color: var(--ink);
       font-size: 13px;
     }
@@ -703,12 +723,12 @@
       border: 1px solid rgba(120, 216, 255, 0.13);
       border-radius: 7px;
       padding: 6px;
-      background: rgba(255, 255, 255, 0.045);
+      background: var(--panel-surface);
     }
 
     .photo-item.active {
       border-color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      background: var(--control-active);
     }
 
     .photo-item img {
@@ -760,8 +780,58 @@
 
     .layout-btn.active {
       border-color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      background: var(--control-active);
       color: #ffffff;
+    }
+
+    .layout-float {
+      position: fixed;
+      left: 50%;
+      bottom: 132px;
+      z-index: 6;
+      display: none;
+      grid-template-columns: minmax(86px, 1fr) 42px minmax(86px, 1fr);
+      gap: 6px;
+      width: min(340px, calc(100vw - 28px));
+      padding: 6px;
+      border: 1px solid var(--panel-line);
+      border-radius: 999px;
+      background: var(--panel-popover);
+      backdrop-filter: blur(var(--panel-blur));
+      box-shadow: var(--panel-popover-shadow);
+      transform: translateX(-50%);
+      transition: transform 0.34s ease, opacity 0.24s ease;
+    }
+
+    .layout-float.show {
+      display: grid;
+    }
+
+    .layout-float.tucked {
+      opacity: 0.72;
+      transform: translateX(-50%) translateY(74px);
+    }
+
+    .layout-float button {
+      min-height: 34px;
+      border-radius: 999px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .layout-float button.active {
+      border-color: var(--accent);
+      background: var(--control-active);
+      color: #ffffff;
+    }
+
+    .layout-float button[data-action="play"] {
+      display: grid;
+      place-items: center;
+      min-width: 42px;
+      padding: 0;
+      font-size: 16px;
+      font-weight: 700;
     }
 
     .metrics {
@@ -773,9 +843,9 @@
     .metric {
       min-height: 54px;
       padding: 8px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 6px;
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--panel-surface);
     }
 
     .metric b {
@@ -802,10 +872,10 @@
       width: min(1020px, calc(100vw - 32px));
       transform: translateX(-50%);
       transition: transform 0.34s ease, opacity 0.24s ease;
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 8px;
-      background: rgba(5, 13, 24, 0.58);
-      backdrop-filter: blur(18px);
+      background: var(--panel-gesture);
+      backdrop-filter: blur(var(--panel-blur));
       overflow: hidden;
     }
 
@@ -824,7 +894,7 @@
       min-height: 96px;
       padding: 16px 12px;
       border: 0;
-      border-right: 1px solid var(--line);
+      border-right: 1px solid var(--panel-line);
       border-radius: 0;
       background: transparent;
       color: var(--muted);
@@ -844,7 +914,7 @@
     }
 
     .gesture:hover {
-      background: rgba(91, 231, 255, 0.09);
+      background: var(--control-hover);
       color: #d9faff;
     }
 
@@ -856,7 +926,7 @@
     }
 
     .gesture.live {
-      background: rgba(91, 231, 255, 0.14);
+      background: var(--control-hover);
       color: #d9faff;
     }
 
@@ -879,11 +949,11 @@
       display: none;
       width: min(520px, calc(100vw - 32px));
       max-height: calc(100vh - 72px);
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 8px;
-      background: rgba(5, 13, 24, 0.82);
-      backdrop-filter: blur(18px);
-      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.36);
+      background: var(--panel-popover);
+      backdrop-filter: blur(var(--panel-blur));
+      box-shadow: var(--panel-popover-shadow);
       overflow: auto;
     }
 
@@ -896,7 +966,7 @@
       width: 100%;
       aspect-ratio: 16 / 10;
       object-fit: contain;
-      background: rgba(0, 3, 10, 0.82);
+      background: var(--panel-media);
     }
 
     .story-tools {
@@ -938,6 +1008,76 @@
       display: grid;
     }
 
+    .slideshow-player {
+      position: fixed;
+      inset: 0;
+      z-index: 11;
+      display: none;
+      grid-template-rows: 1fr auto;
+      gap: 18px;
+      padding: clamp(18px, 4vw, 44px);
+      background: #000;
+      color: var(--ink);
+      opacity: 0;
+      transition: opacity 0.72s ease;
+    }
+
+    .slideshow-player.show {
+      display: grid;
+    }
+
+    .slideshow-player.visible {
+      opacity: 1;
+    }
+
+    .slideshow-stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .slideshow-stage img {
+      max-width: min(100%, 1280px);
+      max-height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      transform: scale(0.985);
+      transition: opacity 1.2s ease, transform 4.8s ease;
+    }
+
+    .slideshow-player.visible .slideshow-stage img.ready {
+      opacity: 1;
+      transform: scale(1.035);
+    }
+
+    .slideshow-meta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+      gap: 10px;
+      align-items: center;
+      width: min(980px, 100%);
+      margin: 0 auto;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.42);
+    }
+
+    .slideshow-meta strong,
+    .slideshow-meta span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .slideshow-meta span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     .task-dialog {
       position: fixed;
       inset: 0;
@@ -945,8 +1085,8 @@
       display: none;
       place-items: center;
       padding: 20px;
-      background: rgba(0, 3, 10, 0.58);
-      backdrop-filter: blur(10px);
+      background: var(--panel-scrim);
+      backdrop-filter: blur(var(--panel-control-blur));
     }
 
     .task-dialog.show {
@@ -955,11 +1095,11 @@
 
     .task-card {
       width: min(420px, calc(100vw - 40px));
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 8px;
       padding: 16px;
-      background: rgba(5, 13, 24, 0.94);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+      background: var(--panel-task-card);
+      box-shadow: var(--panel-card-shadow);
     }
 
     .task-card h2 {
@@ -981,10 +1121,10 @@
       width: 100%;
       min-height: 40px;
       margin-bottom: 12px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 6px;
       padding: 0 10px;
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--control-surface);
       color: var(--ink);
       font: inherit;
       outline: none;
@@ -1022,7 +1162,7 @@
       max-width: min(92vw, 1280px);
       max-height: 82vh;
       object-fit: contain;
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 8px;
       box-shadow: 0 24px 90px rgba(0, 0, 0, 0.42);
       background: #000;
@@ -1040,10 +1180,10 @@
     .story-body input {
       width: 100%;
       min-height: 34px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 6px;
       padding: 7px 8px;
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--control-surface);
       color: var(--ink);
       font: inherit;
     }
@@ -1064,10 +1204,10 @@
       width: 100%;
       min-height: 92px;
       resize: vertical;
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-line);
       border-radius: 6px;
       padding: 8px;
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--control-surface);
       color: var(--ink);
       font: inherit;
       font-size: 12px;
@@ -1135,6 +1275,10 @@
         width: min(100vw - 20px, 1020px);
       }
 
+      .layout-float {
+        bottom: 96px;
+      }
+
       .gesture {
         min-height: 76px;
         padding: 12px 8px;
@@ -1167,11 +1311,11 @@
     .tf-row { margin-bottom: 12px; }
     .tf-row label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
     .tf-row label b { color: var(--ink); font-weight: 600; }
-    .tf-row input[type="text"] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,0.06); color: var(--ink); font-size: 14px; }
+    .tf-row input[type="text"] { width: 100%; padding: 8px 10px; border: 1px solid var(--panel-line); border-radius: 6px; background: var(--control-surface); color: var(--ink); font-size: 14px; }
     .tf-row input[type="range"] { width: 100%; margin-top: 2px; }
     .tf-btns { display: flex; gap: 6px; flex-wrap: nowrap; }
-    .tf-btn { flex: 1 1 70px; min-width: 60px; padding: 10px 8px; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; text-align: center; user-select: none; -webkit-user-select: none; transition: border-color 0.15s, background 0.15s, color 0.15s; }
-    .tf-btn.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); color: #fff; }
+    .tf-btn { flex: 1 1 70px; min-width: 60px; padding: 10px 8px; font-size: 13px; border: 1px solid var(--panel-line); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; text-align: center; user-select: none; -webkit-user-select: none; transition: border-color 0.15s, background 0.15s, color 0.15s; }
+    .tf-btn.active { border-color: var(--panel-line); background: var(--control-active); color: #fff; }
   </style>
 </head>
 <body>
@@ -1260,6 +1404,11 @@
         <input id="renderScale" type="range" min="0.6" max="2" step="0.1" value="1" />
       </div>
 
+      <div class="row">
+        <label for="panelTransparency">面板透明度 <b id="panelTransparencyValue">50%</b></label>
+        <input id="panelTransparency" type="range" min="20" max="100" step="5" value="50" />
+      </div>
+
       <div class="metrics">
         <div class="metric"><b id="gestureName">旋转</b><span>当前输入</span></div>
         <div class="metric"><b id="particleCount">8500</b><span>粒子数</span></div>
@@ -1340,10 +1489,10 @@
           <span>张开排列</span>
           <div class="layout-strip" id="layoutStrip">
             <button class="layout-btn active" type="button" data-layout="orbit">环绕散开</button>
-            <button class="layout-btn" type="button" data-layout="grid">整齐铺开</button><button class="layout-btn" type="button" data-layout="wall">照片墙</button>
+            <button class="layout-btn" type="button" data-layout="grid">整齐铺开</button>
           </div>
         </div>
-        <div class="hint">主题会同步改变背景、粒子光色和按钮状态；整齐铺开和照片墙不会跟着星球一起旋转。</div>
+        <div class="hint">主题会同步改变背景、粒子光色和按钮状态；整齐铺开不会跟着星球一起旋转。</div>
       </div>
 
       <div class="tab-panel" data-panel="shape">
@@ -1399,6 +1548,12 @@
     </div>
   </aside>
 
+  <div id="layoutFloat" class="layout-float" aria-label="张开排列">
+    <button type="button" data-layout="orbit">环绕散开</button>
+    <button id="slideshowPlayBtn" type="button" data-action="play" aria-label="播放照片">▶</button>
+    <button type="button" data-layout="grid">整齐铺开</button>
+  </div>
+
   <div class="credit">3D MEMORY GLOBE</div>
 
   <aside id="storyPanel" class="story-panel" aria-label="照片故事">
@@ -1426,6 +1581,19 @@
   <div id="fullImageViewer" class="full-image-viewer" aria-label="全屏查看照片">
     <button id="fullImageClose" type="button" aria-label="关闭全屏照片">×</button>
     <img id="fullImage" alt="全屏照片" />
+  </div>
+
+  <div id="slideshowPlayer" class="slideshow-player" aria-label="自动播放照片">
+    <div class="slideshow-stage">
+      <img id="slideshowImage" alt="自动播放照片" />
+    </div>
+    <div class="slideshow-meta">
+      <strong id="slideshowTitle">照片播放</strong>
+      <span id="slideshowCounter">0 / 0</span>
+      <button id="slideshowRestart" type="button">重播</button>
+      <button id="slideshowPause" type="button">暂停</button>
+      <button id="slideshowClose" type="button">关闭</button>
+    </div>
   </div>
 
   <div id="taskDialog" class="task-dialog" aria-label="任务窗口">
@@ -1510,6 +1678,8 @@
     const targetFpsValue = document.getElementById("targetFpsValue");
     const renderScale = document.getElementById("renderScale");
     const renderScaleValue = document.getElementById("renderScaleValue");
+    const panelTransparency = document.getElementById("panelTransparency");
+    const panelTransparencyValue = document.getElementById("panelTransparencyValue");
     const tabStrip = document.getElementById("tabStrip");
     const galaxySelect = document.getElementById("galaxySelect");
     const newGalaxyBtn = document.getElementById("newGalaxyBtn");
@@ -1526,6 +1696,8 @@
     const albumGrid = document.getElementById("albumGrid");
     const themeStrip = document.getElementById("themeStrip");
     const layoutStrip = document.getElementById("layoutStrip");
+    const layoutFloat = document.getElementById("layoutFloat");
+    const slideshowPlayBtn = document.getElementById("slideshowPlayBtn");
     const shapeStrip = document.getElementById("shapeStrip");
     const dropzone = document.getElementById("dropzone");
     const openBtn = document.getElementById("openBtn");
@@ -1559,6 +1731,13 @@
     const fullImageViewer = document.getElementById("fullImageViewer");
     const fullImage = document.getElementById("fullImage");
     const fullImageClose = document.getElementById("fullImageClose");
+    const slideshowPlayer = document.getElementById("slideshowPlayer");
+    const slideshowImage = document.getElementById("slideshowImage");
+    const slideshowTitle = document.getElementById("slideshowTitle");
+    const slideshowCounter = document.getElementById("slideshowCounter");
+    const slideshowRestart = document.getElementById("slideshowRestart");
+    const slideshowPause = document.getElementById("slideshowPause");
+    const slideshowClose = document.getElementById("slideshowClose");
     const taskDialog = document.getElementById("taskDialog");
     const taskTitle = document.getElementById("taskTitle");
     const taskMessage = document.getElementById("taskMessage");
@@ -1574,6 +1753,13 @@
 
     const STORAGE_KEY = "photoMemoryGlobe.project.v1";
     const MAX_PHOTOS = 200;
+    const ALBUM_MIN_ZOOM = 4.5;
+    const UNIVERSE_MIN_ZOOM = 4.2;
+    const GRID_PLANE_OFFSET = 0.16;
+    const GRID_VIEWPORT_PADDING = 0.92;
+    const GRID_PHOTO_BASE_SCALE = 0.3;
+    const GRID_PHOTO_SCALE_MULTIPLIER = 1.08;
+    const GRID_MAX_ZOOM_COMP = 1.5;
     const SHAPE_NAMES = {
       sphere: "星球",
       nebula: "银河",
@@ -1588,7 +1774,7 @@
         accent: "#5be7ff",
         accent2: "#2f7cff",
         accent3: "#b8f7ff",
-        panel: "rgba(5, 13, 24, 0.68)",
+        panel: "rgba(5, 13, 24, 0.5)",
         line: "rgba(120, 216, 255, 0.22)"
       },
       gold: {
@@ -1597,7 +1783,7 @@
         accent: "#ffd37a",
         accent2: "#ff9f43",
         accent3: "#fff1bf",
-        panel: "rgba(23, 15, 7, 0.7)",
+        panel: "rgba(23, 15, 7, 0.52)",
         line: "rgba(255, 211, 122, 0.24)"
       },
       violet: {
@@ -1606,7 +1792,7 @@
         accent: "#ff8bd6",
         accent2: "#8f7cff",
         accent3: "#ffd7f2",
-        panel: "rgba(23, 10, 34, 0.7)",
+        panel: "rgba(23, 10, 34, 0.52)",
         line: "rgba(255, 139, 214, 0.24)"
       },
       starlight: {
@@ -1615,7 +1801,7 @@
         accent: "#dff6ff",
         accent2: "#62c6ff",
         accent3: "#ffffff",
-        panel: "rgba(5, 15, 27, 0.7)",
+        panel: "rgba(5, 15, 27, 0.52)",
         line: "rgba(223, 246, 255, 0.24)"
       }
     };
@@ -1645,6 +1831,7 @@
         credit: "Spiritual Ambient by MusicLFiles，Wikimedia Commons，Creative Commons Attribution。"
       }
     };
+    const DEFAULT_MUSIC_TRACK = "longDark";
     const AUTOPLAY_MUSIC_TRACKS = Object.keys(MUSIC_TRACKS).filter((key) => key !== "synth");
     const DEFAULT_ALBUM_TITLE = "我的记忆星球";
     const DEFAULT_ALBUM_SUBTITLE = "把重要瞬间放进一颗会展开的星球";
@@ -1658,7 +1845,8 @@
       photoLayout: "orbit",
       rotationSpeed: 1,
       targetFps: 60,
-      renderScale: 1
+      renderScale: 1,
+      panelTransparency: 50
     };
 
     const state = {
@@ -1682,6 +1870,12 @@
       photos: [],
       photoSprites: [],
       photoTextures: [],
+      slideshow: {
+        active: false,
+        paused: false,
+        index: 0,
+        timer: 0
+      },
       hoveredPhoto: -1,
       hoverCandidates: [],
       hoverDirty: false,
@@ -1753,8 +1947,6 @@
       lastPointer: { x: 0, y: 0 },
       pointerStart: { x: 0, y: 0 },
       lastDragDelta: null,
-      wallPanX: 0,
-      wallPanY: 0,
       lastPointerAt: 0,
       angularVelocity: new THREE.Vector2(0.0015, 0.0025),
       autoSpin: 1,
@@ -1892,7 +2084,7 @@
     }
 
     function normalizeRenderSettings(settings = {}) {
-      const photoLayout = (settings.photoLayout === "grid" || settings.photoLayout === "wall") ? settings.photoLayout : "orbit";
+      const photoLayout = settings.photoLayout === "wall" ? "grid" : settings.photoLayout === "grid" ? "grid" : "orbit";
       return {
         density: Math.round(clamp(Number(settings.density ?? DEFAULT_RENDER_SETTINGS.density), 2500, 14000) / 500) * 500,
         energy: clamp(Number(settings.energy ?? DEFAULT_RENDER_SETTINGS.energy), 0.6, 2.4),
@@ -1902,12 +2094,13 @@
         photoLayout,
         rotationSpeed: clamp(Number(settings.rotationSpeed ?? DEFAULT_RENDER_SETTINGS.rotationSpeed), 0, 3),
         targetFps: Math.round(clamp(Number(settings.targetFps ?? DEFAULT_RENDER_SETTINGS.targetFps), 24, 144) / 6) * 6,
-        renderScale: clamp(Number(settings.renderScale ?? DEFAULT_RENDER_SETTINGS.renderScale), 0.6, 2)
+        renderScale: clamp(Number(settings.renderScale ?? DEFAULT_RENDER_SETTINGS.renderScale), 0.6, 2),
+        panelTransparency: Math.round(clamp(Number(settings.panelTransparency ?? DEFAULT_RENDER_SETTINGS.panelTransparency), 20, 100) / 5) * 5
       };
     }
 
     function currentPhotoLayoutControlValue() {
-      const activeLayout = layoutStrip.querySelector(".layout-btn.active")?.dataset.layout; return (activeLayout === "grid" || activeLayout === "wall") ? activeLayout : "orbit";
+      const activeLayout = layoutStrip.querySelector(".layout-btn.active")?.dataset.layout; return activeLayout === "grid" ? "grid" : "orbit";
     }
 
     function currentRenderSettingsPayload() {
@@ -1920,7 +2113,8 @@
         photoLayout: currentPhotoLayoutControlValue(),
         rotationSpeed: rotationSpeed.value,
         targetFps: state.targetFps,
-        renderScale: state.renderScale
+        renderScale: state.renderScale,
+        panelTransparency: panelTransparency.value
       });
     }
 
@@ -1941,6 +2135,7 @@
       rotationSpeed.value = String(next.rotationSpeed);
       targetFps.value = String(next.targetFps);
       renderScale.value = String(next.renderScale);
+      panelTransparency.value = String(next.panelTransparency);
       state.autoSpin = next.rotationSpeed;
       state.targetFps = next.targetFps;
       state.renderScale = next.renderScale;
@@ -1948,6 +2143,8 @@
       targetFpsValue.textContent = String(next.targetFps);
       renderScaleValue.textContent = `${next.renderScale.toFixed(1)}x`;
       planetScaleValue.textContent = `${next.planetScale.toFixed(1)}x`;
+      panelTransparencyValue.textContent = `${next.panelTransparency}%`;
+      applyPanelTransparency(next.panelTransparency);
     }
 
     function makeAlbum(overrides = {}) {
@@ -2021,7 +2218,7 @@
       return {
         volume: clamp(Number(audio.volume ?? state.audio.volume ?? 0.35), 0, 1),
         sfxEnabled: audio.sfxEnabled !== false,
-        track: MUSIC_TRACKS[audio.track] ? audio.track : "placid"
+        track: MUSIC_TRACKS[audio.track] ? audio.track : DEFAULT_MUSIC_TRACK
       };
     }
 
@@ -3408,9 +3605,11 @@
     function revealGestureCard() {
       if (!gestureCard) return;
       gestureCard.classList.remove("tucked");
+      layoutFloat.classList.remove("tucked");
       if (gestureCardIdleTimer) window.clearTimeout(gestureCardIdleTimer);
       gestureCardIdleTimer = window.setTimeout(() => {
         gestureCard.classList.add("tucked");
+        layoutFloat.classList.add("tucked");
       }, 5000);
     }
 
@@ -3430,7 +3629,8 @@
         points.material.uniforms.photoCount.value = 1;
       }
       item.blackHoleSpinPhase = Number.isFinite(item.blackHoleSpinPhase) ? item.blackHoleSpinPhase : 0;
-      const blackHoleSpeed = (item.album.shape || "sphere") === "wave" ? settings.rotationSpeed : 0;
+      const blackHoleHoverSlowdown = state.hoveredPhoto >= 0 && state.universeDetailOpen && item.album.id === state.universeDetailAlbumId ? 0.18 : 1;
+      const blackHoleSpeed = (item.album.shape || "sphere") === "wave" ? settings.rotationSpeed * blackHoleHoverSlowdown : 0;
       if (blackHoleSpeed > 0) item.blackHoleSpinPhase += dt * blackHoleSpeed * 1.45;
       if ((item.album.shape || "sphere") === "wave") {
         const count = base.length / 3;
@@ -3469,9 +3669,16 @@
         velocities[i] += (tx - positions[i]) * stiffness;
         velocities[i + 1] += (ty - positions[i + 1]) * stiffness;
         velocities[i + 2] += (tz - positions[i + 2]) * stiffness;
-        velocities[i] += -ny * explosion * 0.006 * speed * item.radius;
-        velocities[i + 1] += nx * explosion * 0.006 * speed * item.radius;
-        velocities[i + 2] += Math.sin(state.time + phase) * explosion * 0.004 * item.radius;
+        const orbitForce = explosion * 0.006 * speed * item.radius;
+        if ((item.album.shape || "sphere") === "wave") {
+          velocities[i] += -nz * orbitForce;
+          velocities[i + 2] += nx * orbitForce;
+          velocities[i + 1] += Math.sin(state.time + phase) * explosion * 0.004 * item.radius;
+        } else {
+          velocities[i] += -ny * orbitForce;
+          velocities[i + 1] += nx * orbitForce;
+          velocities[i + 2] += Math.sin(state.time + phase) * explosion * 0.004 * item.radius;
+        }
         const damping = targetExplosion ? 0.93 : 0.72;
         velocities[i] *= damping;
         velocities[i + 1] *= damping;
@@ -3939,7 +4146,7 @@
         if (item.manualSpin) {
           item.mesh.rotation.y += item.manualSpin.x * dt * 60;
           item.mesh.rotation.x += item.manualSpin.y * dt * 60;
-          item.manualSpin.multiplyScalar(0.982);
+          item.manualSpin.multiplyScalar((item.album.shape || "sphere") === "wave" ? 0.974 : 0.986);
         }
         item.halo.rotation.y -= item.spin * 0.7 * meshSpinSpeed * dt * 60;
       });
@@ -3961,11 +4168,11 @@
     }
 
     function currentMusicTrack() {
-      return MUSIC_TRACKS[state.audio.track] || MUSIC_TRACKS.placid;
+      return MUSIC_TRACKS[state.audio.track] || MUSIC_TRACKS[DEFAULT_MUSIC_TRACK];
     }
 
     function randomMusicTrackKey() {
-      return AUTOPLAY_MUSIC_TRACKS[Math.floor(Math.random() * AUTOPLAY_MUSIC_TRACKS.length)] || "placid";
+      return AUTOPLAY_MUSIC_TRACKS[Math.floor(Math.random() * AUTOPLAY_MUSIC_TRACKS.length)] || DEFAULT_MUSIC_TRACK;
     }
 
     function chooseRandomMusicTrack() {
@@ -4002,6 +4209,57 @@
       });
     }
 
+    function panelColorParts(theme) {
+      const match = String(theme.panel || "").match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (!match) return { r: 5, g: 13, b: 24 };
+      return { r: Number(match[1]), g: Number(match[2]), b: Number(match[3]) };
+    }
+
+    function hexColorParts(hex) {
+      const value = String(hex || "").replace("#", "");
+      if (!/^[0-9a-f]{6}$/i.test(value)) return { r: 120, g: 216, b: 255 };
+      return {
+        r: parseInt(value.slice(0, 2), 16),
+        g: parseInt(value.slice(2, 4), 16),
+        b: parseInt(value.slice(4, 6), 16)
+      };
+    }
+
+    function rgba({ r, g, b }, alpha) {
+      return `rgba(${r}, ${g}, ${b}, ${clamp(alpha, 0, 1).toFixed(3)})`;
+    }
+
+    function applyPanelTransparency(transparency = DEFAULT_RENDER_SETTINGS.panelTransparency, themeKey = state.project.theme) {
+      const next = normalizeRenderSettings({ panelTransparency: transparency }).panelTransparency;
+      const panelAlpha = (100 - next) / 100;
+      const theme = THEMES[THEMES[themeKey] ? themeKey : "tech"];
+      const themeColor = panelColorParts(theme);
+      const accentColor = hexColorParts(theme.accent);
+
+      document.documentElement.style.setProperty("--panel", rgba(themeColor, panelAlpha));
+      document.documentElement.style.setProperty("--panel-control", rgba(themeColor, panelAlpha * 1.04));
+      document.documentElement.style.setProperty("--panel-popover", rgba(themeColor, panelAlpha * 1.24));
+      document.documentElement.style.setProperty("--panel-gesture", rgba(themeColor, panelAlpha * 0.84));
+      document.documentElement.style.setProperty("--panel-task-card", rgba(themeColor, panelAlpha * 1.64));
+      document.documentElement.style.setProperty("--panel-surface", `rgba(255, 255, 255, ${clamp(panelAlpha * 0.07, 0, 0.08).toFixed(3)})`);
+      document.documentElement.style.setProperty("--panel-selected", `rgba(1, 6, 14, ${clamp(panelAlpha - 0.14, 0, 0.72).toFixed(3)})`);
+      document.documentElement.style.setProperty("--panel-media", `rgba(0, 3, 10, ${clamp(panelAlpha + 0.1, 0, 0.82).toFixed(3)})`);
+      document.documentElement.style.setProperty("--panel-scrim", `rgba(0, 3, 10, ${clamp(panelAlpha - 0.08, 0, 0.72).toFixed(3)})`);
+      document.documentElement.style.setProperty("--panel-line", rgba(accentColor, panelAlpha * 0.32));
+      document.documentElement.style.setProperty("--panel-shadow", `0 24px 90px rgba(0, 0, 0, ${clamp(panelAlpha * 0.34, 0, 0.34).toFixed(3)})`);
+      document.documentElement.style.setProperty("--panel-popover-shadow", `0 24px 90px rgba(0, 0, 0, ${clamp(panelAlpha * 0.38, 0, 0.38).toFixed(3)})`);
+      document.documentElement.style.setProperty("--panel-card-shadow", `0 24px 80px rgba(0, 0, 0, ${clamp(panelAlpha * 0.42, 0, 0.42).toFixed(3)})`);
+      document.documentElement.style.setProperty("--panel-blur", `${Math.round(panelAlpha * 18)}px`);
+      document.documentElement.style.setProperty("--panel-control-blur", `${Math.round(panelAlpha * 16)}px`);
+      document.documentElement.style.setProperty("--control-surface", `rgba(255, 255, 255, ${clamp(panelAlpha * 0.07, 0, 0.07).toFixed(3)})`);
+      document.documentElement.style.setProperty("--control-hover", `rgba(91, 231, 255, ${clamp(panelAlpha * 0.13, 0, 0.13).toFixed(3)})`);
+      document.documentElement.style.setProperty("--control-active", rgba(accentColor, panelAlpha * 0.18));
+      document.documentElement.style.setProperty("--panel-accent-soft", rgba(accentColor, panelAlpha * 0.1));
+      document.documentElement.style.setProperty("--panel-accent-glow", rgba(accentColor, panelAlpha * 0.24));
+      document.documentElement.style.setProperty("--control-glow", `0 0 18px ${rgba(accentColor, panelAlpha * 0.32)}`);
+      panelTransparencyValue.textContent = `${next}%`;
+    }
+
     function applyThemeVariables(themeKey) {
       const theme = THEMES[THEMES[themeKey] ? themeKey : "tech"];
       document.documentElement.style.setProperty("--deep", theme.deep);
@@ -4009,7 +4267,7 @@
       document.documentElement.style.setProperty("--accent-2", theme.accent2);
       document.documentElement.style.setProperty("--accent-3", theme.accent3);
       document.documentElement.style.setProperty("--blue", theme.accent);
-      document.documentElement.style.setProperty("--panel", theme.panel);
+      applyPanelTransparency(panelTransparency?.value || DEFAULT_RENDER_SETTINGS.panelTransparency, themeKey);
       document.documentElement.style.setProperty("--line", theme.line);
       renderer.setClearColor(0x000105, 1);
       scene.fog.color.setHex(0x000105);
@@ -4019,19 +4277,21 @@
     }
 
     function syncPhotoLayoutButtons(layout) {
-      const next = (layout === "grid" || layout === "wall") ? layout : "orbit";
-      layoutStrip.querySelectorAll(".layout-btn").forEach((button) => {
+      const next = layout === "wall" ? "grid" : layout === "grid" ? "grid" : "orbit";
+      document.querySelectorAll("[data-layout]").forEach((button) => {
         button.classList.toggle("active", button.dataset.layout === next);
       });
     }
 
     function setPhotoLayout(layout, options = {}) {
-      const nextLayout = (layout === "grid" || layout === "wall") ? layout : "orbit";
+      const nextLayout = layout === "wall" ? "grid" : layout === "grid" ? "grid" : "orbit";
       if (state.viewMode === "universe" && !options.silent) {
         const updated = updateSelectedUniverseRenderSettings({ photoLayout: nextLayout });
         if (updated) {
           syncPhotoLayoutButtons(nextLayout);
-          const ln = { orbit: "环绕散开", grid: "整齐铺开", wall: "照片墙" }; setStatus(`张开排列已切到${ln[nextLayout] || "环绕散开"}。`, "ready");
+          const ln = { orbit: "环绕散开", grid: "整齐铺开" };
+          const metrics = nextLayout === "grid" ? minZoomGridRequirement(state.universeDetailOpen ? state.universePlanets.find((item) => item.album?.id === state.universeDetailAlbumId) : null) : null;
+          setStatus(metrics ? `张开排列已切到整齐铺开。最小缩放不越界可容纳约 ${metrics.required} 张（${metrics.columns}×${metrics.rows}）。` : `张开排列已切到${ln[nextLayout] || "环绕散开"}。`, "ready");
         }
         return;
       }
@@ -4046,7 +4306,9 @@
       }
       if (!options.silent) {
         saveProject();
-        const ln = { orbit: "环绕散开", grid: "整齐铺开", wall: "照片墙" }; setStatus(`张开排列已切到${ln[nextLayout] || "环绕散开"}。`, "ready");
+        const ln = { orbit: "环绕散开", grid: "整齐铺开" };
+        const metrics = nextLayout === "grid" ? minZoomGridRequirement() : null;
+        setStatus(metrics ? `张开排列已切到整齐铺开。最小缩放不越界可容纳约 ${metrics.required} 张（${metrics.columns}×${metrics.rows}）。` : `张开排列已切到${ln[nextLayout] || "环绕散开"}。`, "ready");
       }
     }
 
@@ -4240,9 +4502,11 @@
     }
 
     async function tryStartDefaultMusic() {
-      state.audio.track = "synth";
-      musicTrack.value = "synth";
+      state.audio.track = DEFAULT_MUSIC_TRACK;
+      musicTrack.value = DEFAULT_MUSIC_TRACK;
+      state.audio.enabled = false;
       state.audio.sfxEnabled = true;
+      musicBtn.textContent = "开启氛围音乐";
       sfxBtn.textContent = "音效开启";
       setStatus("点击页面任意位置即可开启音乐。", "ready");
 
@@ -4266,10 +4530,10 @@
         const context = ensureAudio();
         if (context?.state === "suspended") context.resume();
 
-        // Play synth (reliable, no file loading needed)
+        // Play the default MP3 track after the browser receives a user gesture.
         playSelectedTrack().then(() => {
           refreshMusicCredit();
-          setStatus(`已随机播放：${currentMusicTrack().name}。`, "ready");
+          setStatus(`已播放：${currentMusicTrack().name}。`, "ready");
         }).catch(retryError => {
           console.warn(retryError);
           state.audio.enabled = false;
@@ -4308,7 +4572,7 @@
     }
 
     async function changeMusicTrack(trackKey) {
-      state.audio.track = MUSIC_TRACKS[trackKey] ? trackKey : "placid";
+      state.audio.track = MUSIC_TRACKS[trackKey] ? trackKey : DEFAULT_MUSIC_TRACK;
       musicTrack.value = state.audio.track;
       refreshMusicCredit();
       saveProject();
@@ -4823,18 +5087,32 @@
       });
     }
 
-    function togglePanel() {
-      const hidden = document.body.classList.toggle("panel-hidden");
+    function syncPanelToggle(hidden = document.body.classList.contains("panel-hidden")) {
       panelToggle.textContent = hidden ? ">" : "<";
       panelToggle.setAttribute("aria-label", hidden ? "显示面板" : "隐藏面板");
     }
 
+    function closeFloatingSettings() {
+      musicSettingsPanel.classList.remove("show");
+      advancedSettingsPanel.classList.remove("show");
+      musicSettingsToggle.classList.remove("active");
+      advancedSettingsToggle.classList.remove("active");
+    }
+
+    function setMainPanelHidden(hidden) {
+      document.body.classList.toggle("panel-hidden", hidden);
+      syncPanelToggle(hidden);
+    }
+
+    function togglePanel() {
+      const hidden = document.body.classList.contains("panel-hidden");
+      if (hidden) closeFloatingSettings();
+      setMainPanelHidden(!hidden);
+    }
+
     document.querySelectorAll(".fs-close").forEach((btn) => {
       btn.addEventListener("click", () => {
-        musicSettingsPanel.classList.remove("show");
-        advancedSettingsPanel.classList.remove("show");
-        musicSettingsToggle.classList.remove("active");
-        advancedSettingsToggle.classList.remove("active");
+        closeFloatingSettings();
       });
     });
     function setFloatingSettingsPanel(panelName) {
@@ -4844,6 +5122,7 @@
       advancedSettingsPanel.classList.toggle("show", showAdvanced);
       musicSettingsToggle.classList.toggle("active", showMusic);
       advancedSettingsToggle.classList.toggle("active", showAdvanced);
+      if (showMusic || showAdvanced) setMainPanelHidden(true);
     }
 
     async function toggleFullscreen() {
@@ -5241,6 +5520,8 @@
         clearPhotos();
         return;
       }
+      state.slideshow.index = Math.min(state.slideshow.index, state.photos.length - 1);
+      if (state.slideshow.active) renderSlideshowPhoto(state.slideshow.index);
       rebuildPhotoSpritesFromState();
       refreshPhotoMaterial();
       refreshPhotoManager();
@@ -5376,30 +5657,66 @@
       return p.lerp(normal.multiplyScalar(spread), state.explosion);
     }
 
-    function photoGridOffset(index, count, visibleW, visibleH) {
+    function photoGridMetrics(zoom = state.zoom, universeItem = null, count = 0) {
       const isMobile = window.innerWidth < 768;
-      const basePhotoW = isMobile ? 0.22 : 0.30;
-      const basePhotoH = isMobile ? 0.26 : 0.35;
-      const baseGap = isMobile ? 0.06 : 0.10;
+      const gap = isMobile ? 0.06 : 0.10;
+      const zoomComp = Math.min(GRID_MAX_ZOOM_COMP, Math.max(1.0, zoom / 4.5));
+      const universeFactor = universeItem ? 0.58 : 1;
+      const basePhotoScale = GRID_PHOTO_BASE_SCALE * GRID_PHOTO_SCALE_MULTIPLIER * zoomComp * universeFactor;
+      const planeOffset = universeItem ? 0.1 : GRID_PLANE_OFFSET;
+      const distance = Math.max(0.1, zoom - planeOffset);
+      const visibleH = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5) * GRID_VIEWPORT_PADDING;
+      const visibleW = visibleH * camera.aspect;
+      const baseColumns = Math.max(1, Math.floor((visibleW + gap) / (basePhotoScale + gap)));
+      const baseRows = Math.max(1, Math.floor((visibleH + gap) / (basePhotoScale + gap)));
+      let columns = baseColumns;
+      let rows = baseRows;
+      let photoScale = basePhotoScale;
 
-      // Constrain: fit photos within visible world-space bounds
-      // Scale down if needed so the grid doesn't exceed visible area
-      const maxCols = Math.max(1, Math.floor((visibleW + baseGap) / (basePhotoW + baseGap)));
-      const columns = Math.min(maxCols, count);
-      const photoW = (visibleW - (columns - 1) * baseGap) / columns;
-      const photoH = photoW * (basePhotoH / basePhotoW);
-      const gap = baseGap;
+      if (count > baseColumns * baseRows) {
+        let best = { columns: baseColumns, rows: Math.ceil(count / baseColumns), photoScale: 0 };
+        for (let candidateColumns = 1; candidateColumns <= count; candidateColumns += 1) {
+          const candidateRows = Math.ceil(count / candidateColumns);
+          const scaleW = (visibleW - (candidateColumns - 1) * gap) / candidateColumns;
+          const scaleH = (visibleH - (candidateRows - 1) * gap) / candidateRows;
+          const candidateScale = Math.min(basePhotoScale, scaleW, scaleH);
+          if (candidateScale > best.photoScale) {
+            best = { columns: candidateColumns, rows: candidateRows, photoScale: Math.max(0.04, candidateScale) };
+          }
+        }
+        columns = best.columns;
+        rows = best.rows;
+        photoScale = best.photoScale;
+      }
 
-      const totalWidth = columns * photoW + (columns - 1) * gap;
+      return {
+        visibleW,
+        visibleH,
+        gap,
+        basePhotoScale,
+        photoScale,
+        columns,
+        rows,
+        required: baseColumns * baseRows
+      };
+    }
+
+    function minZoomGridRequirement(universeItem = null) {
+      return photoGridMetrics(universeItem ? UNIVERSE_MIN_ZOOM : ALBUM_MIN_ZOOM, universeItem);
+    }
+
+    function photoGridOffset(index, count, metrics) {
+      const columns = Math.min(metrics.columns, Math.max(1, count));
       const rows = Math.ceil(count / columns);
-      const totalHeight = rows * photoH + (rows - 1) * gap;
+      const totalWidth = columns * metrics.photoScale + (columns - 1) * metrics.gap;
+      const totalHeight = rows * metrics.photoScale + (rows - 1) * metrics.gap;
 
       const col = index % columns;
       const row = Math.floor(index / columns);
 
       // Left-to-right, top-to-bottom, entire block centered
-      const x = col * (photoW + gap) - totalWidth * 0.5 + photoW * 0.5;
-      const y = totalHeight * 0.5 - row * (photoH + gap) - photoH * 0.5;
+      const x = col * (metrics.photoScale + metrics.gap) - totalWidth * 0.5 + metrics.photoScale * 0.5;
+      const y = totalHeight * 0.5 - row * (metrics.photoScale + metrics.gap) - metrics.photoScale * 0.5;
       return new THREE.Vector3(x, y, 0);
     }
 
@@ -5427,8 +5744,8 @@
         : albumRenderSettings(activeAlbum()).photoLayout;
       const activeShape = universeItem ? (universeItem.album.shape || "sphere") : state.shape;
       const blackHoleSpinPhase = universeItem ? (universeItem.blackHoleSpinPhase || 0) : state.blackHoleSpinPhase;
-      const neatLayout = layout === "grid" || layout === "wall";
-      const isWall = layout === "wall";
+      const neatLayout = layout === "grid";
+      const gridMetrics = neatLayout ? photoGridMetrics(state.zoom, universeItem, count) : null;
 
       if (neatLayout) {
         if (universeItem) {
@@ -5449,36 +5766,28 @@
         const selected = index === state.selectedPhoto;
 
         if (!hovered || !sprite.userData.locked) {
-          if (isWall) {
-            const visibleW = 2 * 4.5 * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight)) * 0.92;
-            const visibleH = 2 * 4.5 * Math.tan(24 * Math.PI / 180) * 0.92;
-            layoutOffset.copy(photoGridOffset(index, count, visibleW, visibleH));
-            worldPosition.copy(layoutCenter)
-              .addScaledVector(cameraRight, layoutOffset.x + state.wallPanX)
-              .addScaledVector(cameraUp, layoutOffset.y + state.wallPanY);
-          } else if (neatLayout) {
-            const visibleW = 2 * 4.5 * Math.tan(24 * Math.PI / 180) * (window.innerWidth / Math.max(1, window.innerHeight)) * 0.92;
-            const visibleH = 2 * 4.5 * Math.tan(24 * Math.PI / 180) * 0.92;
-            layoutOffset.copy(photoGridOffset(index, count, visibleW, visibleH));
-            worldPosition.copy(layoutCenter)
-              .addScaledVector(cameraRight, layoutOffset.x)
-              .addScaledVector(cameraUp, layoutOffset.y);
-          } else {
-            worldPosition.copy(photoLocalPosition(index, count, { shape: activeShape, blackHoleSpinPhase }));
-            if (universeItem) {
-              worldPosition.multiplyScalar(universeScale);
-              universeItem.mesh.localToWorld(worldPosition);
+          if (neatLayout) {
+              layoutOffset.copy(photoGridOffset(index, count, gridMetrics));
+              worldPosition.copy(layoutCenter)
+                .addScaledVector(cameraRight, layoutOffset.x)
+                .addScaledVector(cameraUp, layoutOffset.y);
             } else {
-              worldPosition.applyEuler(globe.rotation);
+              worldPosition.copy(photoLocalPosition(index, count, { shape: activeShape, blackHoleSpinPhase }));
+              if (universeItem) {
+                worldPosition.multiplyScalar(universeScale);
+                universeItem.mesh.localToWorld(worldPosition);
+              } else {
+                worldPosition.applyEuler(globe.rotation);
+              }
             }
-          }
           sprite.position.copy(worldPosition);
           if (!hovered) sprite.userData.locked = false;
         }
 
         const zoomComp = Math.min(1.5, Math.max(1.0, state.zoom / 4.5));
-        const wallFactor = isWall ? 1.15 : 1;
-        const targetScale = (hovered ? 0.56 : selected ? 0.5 : 0.3) * (universeItem ? 0.58 : 1) * (neatLayout ? 1.08 : 1) * zoomComp * wallFactor;
+        const targetScale = neatLayout
+          ? gridMetrics.photoScale * (hovered ? 1.16 : selected ? 1.08 : 1)
+          : (hovered ? 0.56 : selected ? 0.5 : 0.3) * (universeItem ? 0.58 : 1) * zoomComp;
         const targetOpacity = hovered || selected ? 1 : 0.88 * smoothReveal;
         const scaleEase = hovered || selected ? 0.35 : 0.18;
         sprite.scale.setScalar(lerp(sprite.scale.x, targetScale, scaleEase));
@@ -5645,8 +5954,10 @@
     }
 
     function clearPhotos() {
+      stopSlideshow();
       state.photos = [];
       state.selectedPhoto = -1;
+      state.slideshow.index = 0;
       clearPhotoSprites();
       storyPanel.classList.remove("show");
       if (state.atlasTexture) state.atlasTexture.dispose();
@@ -5700,6 +6011,107 @@
     function closeFullImage() {
       fullImageViewer.classList.remove("show");
       fullImage.removeAttribute("src");
+    }
+
+    function renderSlideshowPhoto(index) {
+      if (!state.photos.length) return;
+      const safeIndex = ((index % state.photos.length) + state.photos.length) % state.photos.length;
+      const photo = state.photos[safeIndex];
+      state.slideshow.index = safeIndex;
+      state.selectedPhoto = safeIndex;
+      slideshowImage.classList.remove("ready");
+      window.setTimeout(() => {
+        if (!state.slideshow.active) return;
+        slideshowImage.src = photo.dataUrl;
+        slideshowImage.alt = photo.name || `照片 ${safeIndex + 1}`;
+        slideshowTitle.textContent = photo.name || `照片 ${safeIndex + 1}`;
+        slideshowCounter.textContent = `${safeIndex + 1} / ${state.photos.length}`;
+        window.setTimeout(() => slideshowImage.classList.add("ready"), 40);
+      }, 260);
+    }
+
+    function scheduleSlideshowNext() {
+      window.clearTimeout(state.slideshow.timer);
+      if (!state.slideshow.active || state.slideshow.paused) return;
+      state.slideshow.timer = window.setTimeout(() => {
+        renderSlideshowPhoto(state.slideshow.index + 1);
+        scheduleSlideshowNext();
+      }, 4800);
+    }
+
+    function startSlideshow(options = {}) {
+      if (!state.photos.length) {
+        setStatus("还没有照片可播放。", "warn");
+        return;
+      }
+      if (state.targetMode !== "explode") setMouseMode("open");
+      storyPanel.classList.remove("show");
+      closeFullImage();
+      state.slideshow.active = true;
+      state.slideshow.paused = false;
+      if (options.restart) state.slideshow.index = 0;
+      state.slideshow.index = clamp(state.slideshow.index, 0, state.photos.length - 1);
+      slideshowPause.textContent = "暂停";
+      slideshowPlayer.classList.add("show");
+      slideshowImage.removeAttribute("src");
+      slideshowImage.classList.remove("ready");
+      slideshowTitle.textContent = "照片播放";
+      slideshowCounter.textContent = `${state.slideshow.index + 1} / ${state.photos.length}`;
+      window.setTimeout(() => {
+        slideshowPlayer.classList.add("visible");
+        renderSlideshowPhoto(state.slideshow.index);
+        scheduleSlideshowNext();
+      }, 520);
+      setStatus(options.restart ? "正在从第一张重新播放。" : `正在从第 ${state.slideshow.index + 1} 张继续自动播放。`, "ready");
+    }
+
+    function stopSlideshow() {
+      window.clearTimeout(state.slideshow.timer);
+      state.slideshow.timer = 0;
+      state.slideshow.active = false;
+      state.slideshow.paused = false;
+      slideshowPlayer.classList.remove("visible");
+      window.setTimeout(() => {
+        if (state.slideshow.active) return;
+        slideshowPlayer.classList.remove("show");
+        slideshowImage.removeAttribute("src");
+        slideshowImage.classList.remove("ready");
+        slideshowImage.style.transitionDuration = "";
+      }, 720);
+    }
+
+    function toggleSlideshowPause() {
+      if (!state.slideshow.active) {
+        startSlideshow();
+        return;
+      }
+      state.slideshow.paused = !state.slideshow.paused;
+      slideshowPause.textContent = state.slideshow.paused ? "继续" : "暂停";
+      if (state.slideshow.paused) {
+        window.clearTimeout(state.slideshow.timer);
+        state.slideshow.timer = 0;
+        slideshowImage.style.transitionDuration = "1.2s, 0s";
+        setStatus("照片播放已暂停。", "ready");
+      } else {
+        slideshowImage.style.transitionDuration = "";
+        scheduleSlideshowNext();
+        setStatus("照片播放已继续。", "ready");
+      }
+    }
+
+    function restartSlideshow() {
+      window.clearTimeout(state.slideshow.timer);
+      state.slideshow.timer = 0;
+      state.slideshow.index = 0;
+      state.slideshow.paused = false;
+      slideshowPause.textContent = "暂停";
+      if (slideshowPlayer.classList.contains("show")) {
+        renderSlideshowPhoto(0);
+        scheduleSlideshowNext();
+        setStatus("正在从第一张重新播放。", "ready");
+      } else {
+        startSlideshow({ restart: true });
+      }
     }
 
     async function hydratePhotos(savedPhotos) {
@@ -6114,6 +6526,8 @@
       clone.querySelector("#stage")?.removeAttribute("style");
       clone.querySelector("#fullImageViewer")?.classList.remove("show");
       clone.querySelector("#fullImage")?.removeAttribute("src");
+      clone.querySelector("#slideshowPlayer")?.classList.remove("show", "visible");
+      clone.querySelector("#slideshowImage")?.removeAttribute("src");
       const dataNode = document.createElement("script");
       dataNode.id = "memoryGlobeExportData";
       dataNode.type = "application/json";
@@ -6153,6 +6567,17 @@
       const safeSubtitle = escapeHtml(payload.subtitle || "把重要瞬间放进一颗会展开的星球");
       const safeAuthor = escapeHtml(payload.author || "");
       const exportData = JSON.stringify(payload).replace(/</g, "\\u003c");
+      const mobilePanelTransparency = normalizeRenderSettings(payload.settings).panelTransparency;
+      const mobilePanelAlpha = (100 - mobilePanelTransparency) / 100;
+      const mobilePanel = {
+        panel: `rgba(255, 255, 255, ${clamp(mobilePanelAlpha * 0.07, 0, 0.08).toFixed(3)})`,
+        help: `rgba(0, 0, 0, ${clamp(mobilePanelAlpha - 0.26, 0, 0.64).toFixed(3)})`,
+        modal: `rgba(0, 0, 0, ${clamp(mobilePanelAlpha - 0.14, 0, 0.72).toFixed(3)})`,
+        sheet: `rgba(7, 16, 30, ${clamp(mobilePanelAlpha * 1.52, 0, 0.96).toFixed(3)})`,
+        media: `rgba(0, 0, 0, ${clamp(mobilePanelAlpha - 0.28, 0, 0.62).toFixed(3)})`,
+        close: `rgba(0, 0, 0, ${clamp(mobilePanelAlpha - 0.25, 0, 0.62).toFixed(3)})`,
+        line: `rgba(255, 255, 255, ${clamp(mobilePanelAlpha * 0.14, 0, 0.14).toFixed(3)})`
+      };
       const html = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -6167,8 +6592,8 @@
       --accent2: ${theme.accent2};
       --ink: #eef8ff;
       --muted: rgba(238, 248, 255, 0.68);
-      --panel: rgba(255, 255, 255, 0.08);
-      --line: rgba(255, 255, 255, 0.14);
+      --panel: ${mobilePanel.panel};
+      --line: ${mobilePanel.line};
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; }
@@ -6214,7 +6639,7 @@
       border: 1px solid rgba(91, 231, 255, 0.38);
       border-radius: 999px;
       color: var(--accent);
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--panel);
       font-size: 13px;
     }
     .help {
@@ -6229,7 +6654,7 @@
     .help span {
       padding: 10px 14px;
       border-radius: 999px;
-      background: rgba(0, 0, 0, 0.34);
+      background: ${mobilePanel.help};
       border: 1px solid var(--line);
       color: var(--muted);
       font-size: 13px;
@@ -6241,7 +6666,7 @@
       display: none;
       align-items: end;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.48);
+      background: ${mobilePanel.modal};
       padding: 18px;
       z-index: 4;
     }
@@ -6252,7 +6677,7 @@
       overflow: auto;
       border: 1px solid var(--line);
       border-radius: 18px;
-      background: rgba(7, 16, 30, 0.9);
+      background: ${mobilePanel.sheet};
       box-shadow: 0 20px 70px rgba(0, 0, 0, 0.28);
       backdrop-filter: blur(16px);
     }
@@ -6261,7 +6686,7 @@
       width: 100%;
       max-height: 72vh;
       object-fit: contain;
-      background: rgba(0, 0, 0, 0.32);
+      background: ${mobilePanel.media};
     }
     .sheet-body {
       padding: 18px;
@@ -6297,7 +6722,7 @@
       margin: 10px;
       border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 999px;
-      background: rgba(0, 0, 0, 0.35);
+      background: ${mobilePanel.close};
       color: #fff;
       font-size: 24px;
     }
@@ -6308,11 +6733,11 @@
     .tf-row { margin-bottom: 12px; }
     .tf-row label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
     .tf-row label b { color: var(--ink); font-weight: 600; }
-    .tf-row input[type="text"] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,0.06); color: var(--ink); font-size: 14px; }
+    .tf-row input[type="text"] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); font-size: 14px; }
     .tf-row input[type="range"] { width: 100%; margin-top: 2px; }
     .tf-btns { display: flex; gap: 6px; flex-wrap: nowrap; }
     .tf-btn { flex: 1 1 70px; min-width: 60px; padding: 10px 8px; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; text-align: center; user-select: none; -webkit-user-select: none; transition: border-color 0.15s, background 0.15s, color 0.15s; }
-    .tf-btn.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); color: #fff; }
+    .tf-btn.active { border-color: var(--line); background: var(--panel); color: #fff; }
   </style>
 </head>
 <body>
@@ -6864,7 +7289,8 @@
       const power = Number(energy.value);
 
       if (state.shape === "wave") {
-        if (state.autoSpin > 0) state.blackHoleSpinPhase += dt * state.autoSpin * 1.45;
+        const blackHoleHoverSlowdown = state.hoveredPhoto >= 0 ? 0.18 : 1;
+        if (state.autoSpin > 0) state.blackHoleSpinPhase += dt * state.autoSpin * blackHoleHoverSlowdown * 1.45;
         for (let i = 0; i < count; i += 1) {
           const p = blackHolePoint(i, count, state.blackHoleSpinPhase);
           const index = i * 3;
@@ -7024,7 +7450,6 @@
       if (state.labelEditor) removeLabelEditor({ commit: true });
       state.drag = true;
       state.angularVelocity.set(0, 0);
-      state.wallPanX = 0; state.wallPanY = 0;
       state.pointerMoved = false;
       state.pointerStart.x = event.clientX;
       state.pointerStart.y = event.clientY;
@@ -7083,12 +7508,12 @@
         if (state.universeRotatingAlbumId) {
           const item = state.universePlanets.find((planet) => planet.album?.id === state.universeRotatingAlbumId);
           if (item) {
-            item.mesh.rotation.y += dx * 0.012;
-            item.mesh.rotation.x += dy * 0.012;
-            item.halo.rotation.y -= dx * 0.004;
+            item.mesh.rotation.y += dx * 0.016;
+            item.mesh.rotation.x += dy * 0.016;
+            item.halo.rotation.y -= dx * 0.005;
             if (item.manualSpin) {
-              item.manualSpin.x = lerp(item.manualSpin.x, inertialDx * 0.0017, 0.55);
-              item.manualSpin.y = lerp(item.manualSpin.y, inertialDy * 0.0017, 0.55);
+              item.manualSpin.x = lerp(item.manualSpin.x, inertialDx * 0.0022, 0.55);
+              item.manualSpin.y = lerp(item.manualSpin.y, inertialDy * 0.0022, 0.55);
             }
           }
           state.lastPointer.x = event.clientX;
@@ -7101,18 +7526,9 @@
         state.universeVelocity.y = lerp(state.universeVelocity.y, inertialDx * 0.0022, 0.48);
         state.universeVelocity.x = 0;
       } else {
-        if (state.targetMode === "explode" && albumRenderSettings(activeAlbum()).photoLayout === "wall") {
-          state.wallPanX -= dx * 0.005;
-          state.wallPanY += dy * 0.005;
-          // Clamp pan so grid stays visible
-          const maxPan = 1.2;
-          state.wallPanX = Math.max(-maxPan, Math.min(maxPan, state.wallPanX));
-          state.wallPanY = Math.max(-maxPan, Math.min(maxPan, state.wallPanY));
-        } else {
-          globe.rotation.y += dx * 0.006;
-          globe.rotation.x += dy * 0.006;
-        }
-        state.lastDragDelta = { x: dx, y: dy };
+        globe.rotation.y += dx * 0.0085;
+        globe.rotation.x += dy * 0.0085;
+        state.lastDragDelta = { x: inertialDx, y: inertialDy };
       }
       state.lastPointer.x = event.clientX;
       state.lastPointer.y = event.clientY;
@@ -7127,8 +7543,8 @@
       state.universeRotatingAlbumId = "";
       state.drag = false;
       if (state.lastDragDelta && state.viewMode !== "universe") {
-        state.angularVelocity.y = state.lastDragDelta.x * 0.003;
-        state.angularVelocity.x = state.lastDragDelta.y * 0.003;
+        state.angularVelocity.y = clamp(state.lastDragDelta.x * 0.0042, -0.12, 0.12);
+        state.angularVelocity.x = clamp(state.lastDragDelta.y * 0.0042, -0.12, 0.12);
       }
       if (state.viewMode === "universe") {
         if (rotatedAlbumId && wasMoved) {
@@ -7241,6 +7657,10 @@
     });
 
     window.addEventListener("keydown", (event) => {
+      if (event.code === "Escape" && slideshowPlayer.classList.contains("show")) {
+        stopSlideshow();
+        return;
+      }
       if (event.code === "Escape" && fullImageViewer.classList.contains("show")) {
         closeFullImage();
         return;
@@ -7361,6 +7781,17 @@
       resize();
       const mode = state.renderScale <= 0.9 ? "性能优先" : state.renderScale >= 1.5 ? "高清优先" : "均衡";
       setStatus(`渲染清晰度：${state.renderScale.toFixed(1)}x（${mode}）。想拉高帧率可以先调到 0.7-0.9。`, "ready");
+      scheduleSaveProject();
+    });
+    panelTransparency.addEventListener("input", () => {
+      const value = Number(panelTransparency.value);
+      applyPanelTransparency(value);
+      if (state.viewMode === "universe") {
+        updateSelectedUniverseRenderSettings({ panelTransparency: value });
+        setStatus(`面板透明度：${value}%。`, "ready");
+        return;
+      }
+      setStatus(`面板透明度：${value}%。`, "ready");
       scheduleSaveProject();
     });
     [projectTitle, projectSubtitle, projectAuthor].forEach((input) => {
@@ -7491,6 +7922,19 @@
     fullImageViewer.addEventListener("click", (event) => {
       if (event.target === fullImageViewer) closeFullImage();
     });
+    slideshowPlayBtn.addEventListener("click", () => {
+      if (slideshowPlayer.classList.contains("show")) {
+        toggleSlideshowPause();
+      } else {
+        startSlideshow();
+      }
+    });
+    slideshowPause.addEventListener("click", toggleSlideshowPause);
+    slideshowRestart.addEventListener("click", restartSlideshow);
+    slideshowClose.addEventListener("click", stopSlideshow);
+    slideshowPlayer.addEventListener("click", (event) => {
+      if (event.target === slideshowPlayer) stopSlideshow();
+    });
     exportBtn.addEventListener("click", exportStories);
     exportMobileBtn.addEventListener("click", exportMobileAlbum);
     downloadJsonBtn.addEventListener("click", exportProjectJson);
@@ -7532,6 +7976,8 @@
       gestureCard.addEventListener("mouseenter", revealGestureCard);
       gestureCard.addEventListener("pointerdown", revealGestureCard);
     }
+    layoutFloat.addEventListener("mouseenter", revealGestureCard);
+    layoutFloat.addEventListener("pointerdown", revealGestureCard);
     themeStrip.querySelectorAll(".theme-btn").forEach((button) => {
       button.addEventListener("click", () => {
         applyTheme(button.dataset.theme);
@@ -7539,6 +7985,12 @@
       });
     });
     layoutStrip.querySelectorAll(".layout-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        setPhotoLayout(button.dataset.layout);
+        playSfx("shape");
+      });
+    });
+    layoutFloat.querySelectorAll("[data-layout]").forEach((button) => {
       button.addEventListener("click", () => {
         setPhotoLayout(button.dataset.layout);
         playSfx("shape");
@@ -7563,6 +8015,7 @@
 
       camera.position.z = lerp(camera.position.z, state.zoom, 0.08);
       if (state.viewMode === "universe") {
+        layoutFloat.classList.remove("show");
         updateUniverseView(dt);
       } else {
         updateSharedUniverseBackdrop(dt);
@@ -7571,22 +8024,7 @@
         globe.rotation.z += Math.sin(state.time * 0.45) * 0.0007;
         if (!state.drag) {
           state.angularVelocity.multiplyScalar(state.autoSpin === 0 ? 0.92 : 0.975);
-          // Wall magnetic center - always gently pull nearest photo toward center
-        if (!state.drag && state.targetMode === "explode" && albumRenderSettings(activeAlbum()).photoLayout === "wall" && state.photoSprites.length) {
-          let bestIdx = -1; let bestDist = Infinity;
-          state.photoSprites.forEach((sprite, i) => {
-            if (!sprite.visible) return;
-            const d = Math.hypot(sprite.position.x - state.wallPanX, sprite.position.y + state.wallPanY);
-            if (d < bestDist) { bestDist = d; bestIdx = i; }
-          });
-          if (bestIdx >= 0 && bestDist > 0.01) {
-            const snap = state.photoSprites[bestIdx].position;
-            state.wallPanX = lerp(state.wallPanX, snap.x, 0.06);
-            state.wallPanY = lerp(state.wallPanY, -snap.y, 0.06);
-          }
-        }
-
-        if ((state.mouseMode === "rotate" || state.hand.gesture === "rotate") && state.autoSpin > 0 && state.shape !== "wave") {
+          if ((state.mouseMode === "rotate" || state.hand.gesture === "rotate") && state.autoSpin > 0 && state.shape !== "wave") {
             state.angularVelocity.y += 0.00022 * state.autoSpin;
           }
         }
@@ -7598,6 +8036,7 @@
 
         updateParticles(dt);
         updatePhotoSprites();
+        layoutFloat.classList.toggle("show", state.targetMode === "explode" && state.photos.length > 0);
         if (state.hoverDirty) {
           updateHoverPhoto(state.pointerClient.x, state.pointerClient.y, false, now);
         }
@@ -7625,4 +8064,3 @@
   </script>
 </body>
 </html>
-
