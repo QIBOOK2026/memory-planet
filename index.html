@@ -6566,7 +6566,7 @@
           options.onProgress(completed, usable.length);
         }
       };
-      const loaded = await Promise.all(usable.map((item, index) => new Promise((resolve) => {
+      const loadOne = (item, index) => new Promise((resolve) => {
         const image = new Image();
         let settled = false;
         const finish = (photo) => {
@@ -6578,7 +6578,7 @@
         };
         const timer = window.setTimeout(() => {
           finish(null);
-        }, 8000);
+        }, 20000);
         image.onerror = () => {
           finish(null);
         };
@@ -6597,8 +6597,21 @@
         };
         if (item.url) image.crossOrigin = "anonymous";
         image.src = photoSrc(item);
-      })));
-      return loaded.filter(Boolean);
+      });
+      const results = new Array(usable.length).fill(null);
+      const isTouchDevice = matchMedia("(pointer: coarse)").matches;
+      const concurrency = Math.min(Number(options.concurrency) || (isTouchDevice ? 3 : 5), usable.length || 1);
+      let nextIndex = 0;
+      async function worker() {
+        while (nextIndex < usable.length) {
+          const index = nextIndex;
+          nextIndex += 1;
+          results[index] = await loadOne(usable[index], index);
+          await waitForNextFrame();
+        }
+      }
+      await Promise.all(Array.from({ length: concurrency }, worker));
+      return results.filter(Boolean);
     }
 
     async function loadAlbumIntoViewer(album, message = "已进入星球。", options = {}) {
