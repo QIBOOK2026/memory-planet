@@ -5938,7 +5938,7 @@
       }
       state.slideshow.index = Math.min(state.slideshow.index, state.photos.length - 1);
       if (state.slideshow.active) renderSlideshowPhoto(state.slideshow.index);
-      rebuildPhotoSpritesFromState();
+      void rebuildPhotoSpritesFromState();
       refreshPhotoMaterial();
       refreshPhotoManager();
       saveProject();
@@ -6029,15 +6029,41 @@
       });
     }
 
-    function rebuildPhotoSpritesFromState() {
-      const photos = state.photos.map((photo, index) => {
-        const image = new Image();
-        if (photo.url) image.crossOrigin = "anonymous";
-        image.src = photoSrc(photo);
-        return { ...photo, image, index };
+    async function rebuildPhotoSpritesFromState() {
+      const promises = state.photos.map((photo, index) => {
+        const srcUrl = photoSrc(photo);
+        if (!srcUrl) return Promise.resolve({ ...photo, image: null, index });
+        const needCors = typeof photo.url === "string" && !!photo.url;
+        const attempt = (withCors) => new Promise((resolveAttempt) => {
+          const img = new Image();
+          let done = false;
+          const timeout = window.setTimeout(() => {
+            if (!done) { done = true; resolveAttempt(null); }
+          }, 20000);
+          img.onerror = () => {
+            if (done) return;
+            done = true;
+            window.clearTimeout(timeout);
+            resolveAttempt(null);
+          };
+          img.onload = () => {
+            if (done) return;
+            done = true;
+            window.clearTimeout(timeout);
+            resolveAttempt(img);
+          };
+          if (withCors) img.crossOrigin = "anonymous";
+          img.src = srcUrl;
+        });
+        const promise = needCors
+          ? attempt(true).then((img) => img || attempt(false))
+          : attempt(false);
+        return promise.then((img) => ({ ...photo, image: img, index }));
       });
+      const results = await Promise.all(promises);
       clearPhotoSprites();
-      photos.forEach((photo, index) => {
+      results.forEach((photo, index) => {
+        if (!photo.image) return;
         const texture = createPhotoTexture(photo.image);
         const material = new THREE.SpriteMaterial({
           map: texture,
@@ -6058,7 +6084,6 @@
         photoLayer.add(sprite);
       });
     }
-
     function photoLocalPosition(index, count, options = {}) {
       const shape = options.shape || state.shape;
       const p = shape === "wave"
@@ -6567,23 +6592,41 @@
         }
       };
       const loadOne = (item, index) => new Promise((resolve) => {
-        const image = new Image();
-        let settled = false;
-        const finish = (photo) => {
-          if (settled) return;
-          settled = true;
-          window.clearTimeout(timer);
+        const srcUrl = photoSrc(item);
+        if (!srcUrl) {
           reportProgress();
-          resolve(photo);
-        };
-        const timer = window.setTimeout(() => {
-          finish(null);
-        }, 20000);
-        image.onerror = () => {
-          finish(null);
-        };
-        image.onload = () => {
-          finish({
+          resolve(null);
+          return;
+        }
+        const attempt = (withCors) => new Promise((resolveAttempt) => {
+          const img = new Image();
+          let done = false;
+          const timeout = window.setTimeout(() => {
+            if (!done) {
+              done = true;
+              resolveAttempt(null);
+            }
+          }, 20000);
+          img.onerror = () => {
+            if (done) return;
+            done = true;
+            window.clearTimeout(timeout);
+            resolveAttempt(null);
+          };
+          img.onload = () => {
+            if (done) return;
+            done = true;
+            window.clearTimeout(timeout);
+            resolveAttempt(img);
+          };
+          if (withCors) img.crossOrigin = "anonymous";
+          img.src = srcUrl;
+        });
+        const needsRetry = typeof item.url === "string" && !!item.url;
+        (needsRetry ? attempt(true).then((img) => img || attempt(false)) : attempt(false)).then((img) => {
+          reportProgress();
+          if (!img) { resolve(null); return; }
+          resolve({
             name: item.name || `照片 ${index + 1}`,
             dataUrl: item.dataUrl || "",
             url: item.url || "",
@@ -6591,12 +6634,10 @@
             date: item.date || "",
             location: item.location || "",
             favorite: Boolean(item.favorite),
-            image,
+            image: img,
             index
           });
-        };
-        if (item.url) image.crossOrigin = "anonymous";
-        image.src = photoSrc(item);
+        });
       });
       const results = new Array(usable.length).fill(null);
       const isTouchDevice = matchMedia("(pointer: coarse)").matches;
@@ -7312,9 +7353,19 @@
       var dragging = false, moved = false, lastX = 0, lastY = 0, downX = 0, downY = 0;
       var projected = [];
       var images = photos.map(function (photo) {
-        var img = new Image();
-        if (photo.url) img.crossOrigin = "anonymous";
+        function makeImg(cors) { var i = new Image(); if (cors) i.crossOrigin = "anonymous"; return i; }
+        var img = makeImg(!!photo.url);
         img.src = photo.url || photo.dataUrl;
+        if (photo.url) {
+          img.onerror = function() {
+            if (img.crossOrigin) {
+              var idx = images.indexOf(img);
+              var retry = makeImg(false);
+              retry.onload = function() { if (idx >= 0) images[idx] = retry; };
+              retry.src = img.src;
+            }
+          };
+        }
         return img;
       });
       var particles = [];

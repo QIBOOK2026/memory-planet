@@ -1,4 +1,4 @@
-const crypto = require("node:crypto");
+﻿const crypto = require("node:crypto");
 
 const jsonHeaders = {
   "content-type": "application/json;charset=utf-8",
@@ -98,6 +98,53 @@ async function ossFetch(method, key, body = null, contentType = "application/jso
   return response;
 }
 
+async function setupBucketCors() {
+  const bucket = env("OSS_BUCKET");
+  const endpoint = env("OSS_ENDPOINT").replace(/^https?:\/\//, "");
+  const accessKeyId = env("ALIYUN_ACCESS_KEY_ID");
+  const accessKeySecret = env("ALIYUN_ACCESS_KEY_SECRET");
+  if (!bucket || !endpoint || !accessKeyId || !accessKeySecret) {
+    throw new Error("OSS credentials not configured");
+  }
+
+  const corsXml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    "<CORSConfiguration>",
+    "  <CORSRule>",
+    "    <AllowedOrigin>*</AllowedOrigin>",
+    "    <AllowedMethod>GET</AllowedMethod>",
+    "    <AllowedMethod>HEAD</AllowedMethod>",
+    "    <AllowedHeader>*</AllowedHeader>",
+    "    <ExposeHeader>ETag</ExposeHeader>",
+    "    <ExposeHeader>x-oss-request-id</ExposeHeader>",
+    "    <MaxAgeSeconds>3600</MaxAgeSeconds>",
+    "  </CORSRule>",
+    "</CORSConfiguration>"
+  ].join("\n");
+
+  const md5 = crypto.createHash("md5").update(corsXml, "utf8").digest("base64");
+  const date = new Date().toUTCString();
+  const resource = "/" + bucket + "/?cors";
+  const stringToSign = ["PUT", md5, "application/xml", date, resource].join("\n");
+  const signature = crypto.createHmac("sha1", accessKeySecret).update(stringToSign, "utf8").digest("base64");
+
+  const response = await fetch("https://" + bucket + "." + endpoint + "/?cors", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/xml",
+      "Content-MD5": md5,
+      "Date": date,
+      "Authorization": "OSS " + accessKeyId + ":" + signature
+    },
+    body: corsXml
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error("CORS setup failed: " + response.status + " " + detail);
+  }
+}
+
 async function getProjectRecord(id) {
   const response = await ossFetch("GET", `projects/${id}.json`, null, "");
   return JSON.parse(await response.text());
@@ -170,6 +217,14 @@ exports.handler = async function handler(event) {
   if (method === "OPTIONS") return { statusCode: 204, headers: jsonHeaders, body: "" };
 
   try {
+    if (path === "/setup/cors" && method === "GET") {
+      try {
+        await setupBucketCors();
+        return json({ ok: true, message: "OSS bucket CORS configured successfully" });
+      } catch (error) {
+        return json({ error: error.message || "CORS setup failed" }, 500);
+      }
+    }
     if (path === "/uploads/token" && method === "POST") {
       return uploadToken(getBody(event));
     }
