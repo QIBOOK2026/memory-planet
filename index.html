@@ -1484,6 +1484,8 @@
     .admin-btn-danger:hover { background: rgba(255, 107, 107, 0.12); }
     .admin-btn-ok { color: var(--accent); border: 1px solid rgba(91, 231, 255, 0.24); background: rgba(91, 231, 255, 0.06); border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
     .account-btn { min-width: 42px; max-width: 128px; padding: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .admin-entry-btn { display: none; color: var(--accent); border-color: rgba(91, 231, 255, 0.42); }
+    .admin-entry-btn.show { display: inline-flex; }
     .auth-mode {
       display: flex; gap: 18px; align-items: center;
       margin: 4px 0 16px;
@@ -1518,6 +1520,7 @@
   <button id="panelToggle" class="panel-toggle" type="button" aria-label="隐藏面板">&lt;</button>
   <div class="quick-actions" aria-label="快捷设置">
     <button id="accountBtn" class="account-btn" type="button" aria-label="账号登录">登录</button>
+    <button id="adminEntryBtn" class="account-btn admin-entry-btn" type="button" aria-label="管理后台">后台</button>
     <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-label="全屏显示">⛶</button>
     <button id="musicSettingsToggle" type="button" aria-label="音乐设置">♪</button>
     <button id="advancedSettingsToggle" type="button" aria-label="高级设置">⚙</button>
@@ -1976,6 +1979,7 @@
     const mount = document.getElementById("stage");
     const video = document.getElementById("camera");
     const accountBtn = document.getElementById("accountBtn");
+    const adminEntryBtn = document.getElementById("adminEntryBtn");
     const panelToggle = document.getElementById("panelToggle");
     const fullscreenToggle = document.getElementById("fullscreenToggle");
     const musicSettingsToggle = document.getElementById("musicSettingsToggle");
@@ -2586,15 +2590,16 @@
         : "登录或注册";
     }
 
+    function refreshAdminEntryUi() {
+      adminEntryBtn.classList.toggle("show", Boolean(state.admin.token));
+    }
+
     function clearLocalDataAfterCloudReset() {
       if (localStorage.getItem(CLOUD_RESET_KEY) === "done") return;
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(SHARE_KEY);
-      localStorage.removeItem(AUTH_KEY);
       localStorage.removeItem("photoParticleGlobe.stories");
       localStorage.setItem(CLOUD_RESET_KEY, "done");
-      state.auth.token = "";
-      state.auth.user = null;
       state.cloud.projectId = "";
       state.cloud.editToken = "";
       state.cloud.readOnly = false;
@@ -2756,6 +2761,20 @@
       refreshAuthUi();
     }
 
+    async function restoreAdminSession() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(ADMIN_AUTH_KEY) || "null");
+        if (!saved?.token || !cloudEnabled()) return;
+        state.admin.token = saved.token;
+        await cloudRequest("/admin/users", { method: "GET" }, true);
+      } catch (error) {
+        console.warn(error);
+        state.admin.token = "";
+        localStorage.removeItem(ADMIN_AUTH_KEY);
+      }
+      refreshAdminEntryUi();
+    }
+
     function requireActiveAccount(action) {
       if (!cloudEnabled()) {
         setStatus("还没有配置云端 API。", "warn");
@@ -2859,10 +2878,20 @@
       }
       await saveCloudProject();
       const url = shareUrlFor(mode);
-      await copyText(url);
-      setStatus(mode === "edit"
-        ? "已复制编辑链接。这个链接相当于钥匙，请只发给需要修改作品的人。"
-        : "已复制分享链接。接入云端保存后，朋友可通过这个链接观看作品。", "ready");
+      try {
+        await copyText(url);
+        setStatus(mode === "edit"
+          ? "已复制编辑链接。这个链接相当于钥匙，请只发给需要修改作品的人。"
+          : "已复制分享链接。接入云端保存后，朋友可通过这个链接观看作品。", "ready");
+      } catch (error) {
+        console.warn(error);
+        await requestAppInput({
+          title: mode === "edit" ? "手动复制编辑链接" : "手动复制分享链接",
+          message: "浏览器阻止了自动复制，请手动复制下面的链接。",
+          value: url
+        });
+        setStatus("浏览器阻止了自动复制，已显示链接供手动复制。", "warn");
+      }
     }
 
     function albumPhotoPayload() {
@@ -6219,12 +6248,15 @@
           resolve(result);
         };
         taskOkBtn.onclick = () => finish(taskInput.value.trim());
-        taskCancelBtn.onclick = () => finish("");
-        taskInput.onkeydown = (event) => {
-          if (event.key === "Enter") finish(taskInput.value.trim());
-          if (event.key === "Escape") finish("");
-        };
-        window.setTimeout(() => taskInput.focus(), 40);
+      taskCancelBtn.onclick = () => finish("");
+      taskInput.onkeydown = (event) => {
+        if (event.key === "Enter") finish(taskInput.value.trim());
+        if (event.key === "Escape") finish("");
+      };
+        window.setTimeout(() => {
+          taskInput.focus();
+          if (value) taskInput.select();
+        }, 40);
       });
     }
 
@@ -9201,6 +9233,7 @@
         }, true);
         state.admin.token = data.adminToken || "";
         localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify({ token: state.admin.token }));
+        refreshAdminEntryUi();
         closeAdminLock();
         await openAdminPanel();
       } catch (caught) {
@@ -9400,10 +9433,29 @@
       adminTitleClickTimer = setTimeout(() => { adminTitleClickCount = 0; }, 800);
       if (adminTitleClickCount >= 5) {
         adminTitleClickCount = 0;
-        openAdminLock();
+        if (state.admin.token) {
+          openAdminPanel().catch((error) => {
+            console.warn(error);
+            state.admin.token = "";
+            localStorage.removeItem(ADMIN_AUTH_KEY);
+            refreshAdminEntryUi();
+            openAdminLock();
+          });
+        } else {
+          openAdminLock();
+        }
       }
     });
 
+    adminEntryBtn.addEventListener("click", () => {
+      openAdminPanel().catch((error) => {
+        console.warn(error);
+        state.admin.token = "";
+        localStorage.removeItem(ADMIN_AUTH_KEY);
+        refreshAdminEntryUi();
+        openAdminLock();
+      });
+    });
     document.getElementById("adminUnlockBtn").addEventListener("click", handleAdminUnlock);
     document.getElementById("adminLockCloseBtn").addEventListener("click", closeAdminLock);
     document.getElementById("adminCloseBtn").addEventListener("click", closeAdminPanel);
@@ -9456,6 +9508,7 @@
       refreshProjectInfo();
       refreshPhotoManager();
       await restoreAuthSession();
+      await restoreAdminSession();
       await restoreSavedStories();
       revealGestureCard();
       requestAnimationFrame(frame);
