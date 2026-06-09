@@ -2358,7 +2358,7 @@
           editToken: identity.editToken,
           payload: {
             ...payload,
-            cloud: { provider: "qiniu", planetId: identity.planetId }
+            cloud: { provider: "aliyun-oss", planetId: identity.planetId }
           }
         })
       });
@@ -5671,13 +5671,12 @@
       refreshUniversePanel();
       try {
         const payload = getProjectPayload({ skipSync: true });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         if (cloudEnabled()) {
           saveCloudProject(payload).catch((error) => {
             console.warn(error);
             setStatus("作品已更新，但云端保存失败，请稍后再试。", "warn");
           });
-        } else {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         }
       } catch (error) {
         console.warn(error);
@@ -6272,10 +6271,17 @@
         try {
           setTaskProgress(index / selected.length, `正在读取 ${index + 1} / ${selected.length}：${file.name}`);
           const result = await loadImageFromFile(file);
+          let remoteUrl = "";
+          try {
+            remoteUrl = await uploadPhotoToCloud(file) || "";
+          } catch (error) {
+            console.warn(error);
+            failed += 1;
+          }
           loaded.push({
             name: file.name.replace(/\.[^.]+$/, ""),
             dataUrl: result.dataUrl,
-            url: await uploadPhotoToCloud(file),
+            url: remoteUrl,
             story: `这张照片来自「${file.name}」。你可以在这里补充它背后的时间、地点、人物和故事。`,
             date: "",
             location: "",
