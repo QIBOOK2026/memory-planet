@@ -6235,7 +6235,7 @@
       state.photos = loaded.map((photo) => ({ ...photo }));
       refreshPhotoMaterial();
       refreshPhotoManager();
-      saveProject();
+      if (!options.skipSyncCurrent) saveProject();
       if (state.viewMode === "universe") {
         state.selectedUniverseAlbumId = state.selectedUniverseAlbumId || state.activeAlbumId;
         refreshUniversePanel();
@@ -6558,7 +6558,7 @@
       refreshUniversePanel();
       await loadAlbumIntoViewer(found.album, options.message || `已进入「${found.album.title || "未命名星球"}」。`, options);
       if (!options.keepTab) setActiveTab(found.album.photos?.length ? "preview" : "upload");
-      saveProject();
+      if (!options.skipSyncCurrent) saveProject();
     }
 
     async function createNewGalaxy() {
