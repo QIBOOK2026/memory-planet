@@ -4165,7 +4165,7 @@
       if (!found) return;
       const wasUniverse = state.viewMode === "universe";
       state.selectedUniverseAlbumId = found.album.id;
-      syncActiveAlbum();
+      if (!state.cloud.readOnly) syncActiveAlbum();
       await activateAlbum(albumId, {
         keepTab: true,
         skipSyncCurrent: true,
