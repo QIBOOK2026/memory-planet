@@ -6475,18 +6475,25 @@
         .slice(0, MAX_PHOTOS);
       const loaded = await Promise.all(usable.map((item, index) => new Promise((resolve) => {
         const image = new Image();
-        image.onload = () => resolve({
-          name: item.name || `照片 ${index + 1}`,
-          dataUrl: item.dataUrl || "",
-          url: item.url || "",
-          story: item.story || "",
-          date: item.date || "",
-          location: item.location || "",
-          favorite: Boolean(item.favorite),
-          image,
-          index
-        });
-        image.onerror = () => resolve(null);
+        const timer = window.setTimeout(() => resolve(null), 8000);
+        image.onerror = () => {
+          window.clearTimeout(timer);
+          resolve(null);
+        };
+        image.onload = () => {
+          window.clearTimeout(timer);
+          resolve({
+            name: item.name || `照片 ${index + 1}`,
+            dataUrl: item.dataUrl || "",
+            url: item.url || "",
+            story: item.story || "",
+            date: item.date || "",
+            location: item.location || "",
+            favorite: Boolean(item.favorite),
+            image,
+            index
+          });
+        };
         if (item.url) image.crossOrigin = "anonymous";
         image.src = photoSrc(item);
       })));
@@ -8650,12 +8657,20 @@
     buildParticles();
     refreshMusicTrackOptions();
     setAudioVolume(musicVolume.value);
-    setUniverse({ photos: [], title: DEFAULT_ALBUM_TITLE, subtitle: DEFAULT_ALBUM_SUBTITLE, author: DEFAULT_ALBUM_AUTHOR, theme: "tech", shape: "sphere" });
-    refreshProjectInfo();
-    refreshPhotoManager();
-    restoreSavedStories();
-    revealGestureCard();
-    requestAnimationFrame(frame);
+    async function boot() {
+      setUniverse({ photos: [], title: DEFAULT_ALBUM_TITLE, subtitle: DEFAULT_ALBUM_SUBTITLE, author: DEFAULT_ALBUM_AUTHOR, theme: "tech", shape: "sphere" });
+      refreshProjectInfo();
+      refreshPhotoManager();
+      await restoreSavedStories();
+      revealGestureCard();
+      requestAnimationFrame(frame);
+    }
+
+    boot().catch((error) => {
+      console.warn(error);
+      setStatus("作品加载失败，请刷新页面或稍后再试。", "warn");
+      requestAnimationFrame(frame);
+    });
   </script>
 </body>
 </html>
