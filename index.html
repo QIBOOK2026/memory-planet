@@ -1972,6 +1972,9 @@
         line: "rgba(223, 246, 255, 0.24)"
       }
     };
+    const CLOUD_API_BASE = "https://memory-anet-api-ggwahnbtst.cn-shenzhen.fcapp.run";
+    const CDN_ASSET_BASE = "";
+    const assetUrl = (path) => `${CDN_ASSET_BASE}${path}`;
     const MUSIC_TRACKS = {
       synth: {
         name: "跟随主题 · 合成氛围",
@@ -1979,22 +1982,22 @@
       },
       placid: {
         name: "平静钢琴 · Placid Ambient",
-        url: "assets/music/placid-ambient.mp3",
+        url: assetUrl("assets/music/placid-ambient.mp3"),
         credit: "Placid Ambient by MusicLFiles，Wikimedia Commons，Creative Commons Attribution。"
       },
       sleep: {
         name: "梦境钢琴 · Sleep",
-        url: "assets/music/scott-buckley-sleep.mp3",
+        url: assetUrl("assets/music/scott-buckley-sleep.mp3"),
         credit: "Sleep by Scott Buckley，Wikimedia Commons，Creative Commons Attribution 4.0。"
       },
       longDark: {
         name: "暗夜记忆 · The Long Dark",
-        url: "assets/music/scott-buckley-the-long-dark.mp3",
+        url: assetUrl("assets/music/scott-buckley-the-long-dark.mp3"),
         credit: "The Long Dark by Scott Buckley，Wikimedia Commons，Creative Commons Attribution。"
       },
       spiritual: {
         name: "星光冥想 · Spiritual Ambient",
-        url: "assets/music/spiritual-ambient.mp3",
+        url: assetUrl("assets/music/spiritual-ambient.mp3"),
         credit: "Spiritual Ambient by MusicLFiles，Wikimedia Commons，Creative Commons Attribution。"
       }
     };
@@ -2056,6 +2059,11 @@
         subtitle: DEFAULT_ALBUM_SUBTITLE,
         author: DEFAULT_ALBUM_AUTHOR,
         theme: "tech"
+      },
+      cloud: {
+        projectId: "",
+        editToken: "",
+        readOnly: false
       },
       universe: null,
       activeGalaxyId: "",
@@ -2249,6 +2257,9 @@
     }
 
     function ensureShareIdentity() {
+      if (state.cloud.projectId && state.cloud.editToken && !state.cloud.readOnly) {
+        return { planetId: state.cloud.projectId, editToken: state.cloud.editToken };
+      }
       let saved = null;
       try {
         saved = JSON.parse(localStorage.getItem(SHARE_KEY) || "null");
@@ -2261,6 +2272,20 @@
       };
       localStorage.setItem(SHARE_KEY, JSON.stringify(next));
       return next;
+    }
+
+    function syncCloudIdentityFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const projectId = params.get("id") || "";
+      const editToken = params.get("token") || "";
+      if (!projectId) return null;
+      state.cloud.projectId = projectId;
+      state.cloud.editToken = editToken;
+      state.cloud.readOnly = !editToken;
+      if (editToken) {
+        localStorage.setItem(SHARE_KEY, JSON.stringify({ planetId: projectId, editToken }));
+      }
+      return { projectId, editToken };
     }
 
     function shareUrlFor(mode = "view") {
@@ -2289,8 +2314,91 @@
       input.remove();
     }
 
+    function cloudApiBase() {
+      return CLOUD_API_BASE.trim().replace(/\/+$/, "");
+    }
+
+    function cloudEnabled() {
+      return Boolean(cloudApiBase());
+    }
+
+    function cloudProjectPath(id) {
+      return `${cloudApiBase()}/projects/${encodeURIComponent(id)}`;
+    }
+
+    function photoSrc(photo) {
+      return photo?.url || photo?.dataUrl || "";
+    }
+
+    async function readJsonResponse(response) {
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!response.ok) {
+        throw new Error(data?.error || `请求失败：${response.status}`);
+      }
+      return data;
+    }
+
+    async function loadCloudProject(id) {
+      const response = await fetch(cloudProjectPath(id), { method: "GET" });
+      const data = await readJsonResponse(response);
+      return data?.payload || data;
+    }
+
+    async function saveCloudProject(payload = getProjectPayload({ skipSync: true })) {
+      if (!cloudEnabled() || state.cloud.readOnly) return false;
+      const identity = ensureShareIdentity();
+      state.cloud.projectId = identity.planetId;
+      state.cloud.editToken = identity.editToken;
+      state.cloud.readOnly = false;
+      const response = await fetch(cloudProjectPath(identity.planetId), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          editToken: identity.editToken,
+          payload: {
+            ...payload,
+            cloud: { provider: "qiniu", planetId: identity.planetId }
+          }
+        })
+      });
+      await readJsonResponse(response);
+      return true;
+    }
+
+    async function uploadPhotoToCloud(file) {
+      if (!cloudEnabled() || state.cloud.readOnly) return null;
+      const identity = ensureShareIdentity();
+      const response = await fetch(`${cloudApiBase()}/uploads/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planetId: identity.planetId,
+          editToken: identity.editToken,
+          filename: file.name,
+          type: file.type || "application/octet-stream"
+        })
+      });
+      const ticket = await readJsonResponse(response);
+      const form = new FormData();
+      Object.entries(ticket.fields || {}).forEach(([key, value]) => {
+        form.append(key, value);
+      });
+      form.append("file", file);
+      const upload = await fetch(ticket.uploadUrl, { method: "POST", body: form });
+      if (!upload.ok) {
+        throw new Error(`上传失败：${upload.status}`);
+      }
+      return ticket.publicUrl;
+    }
+
     async function copyShareLink(mode = "view") {
       flushSaveProject();
+      if (!cloudEnabled()) {
+        setStatus("还没有配置云端 API。分享链接需要云端保存后，别人才能看到照片内容。", "warn");
+        return;
+      }
+      await saveCloudProject();
       const url = shareUrlFor(mode);
       await copyText(url);
       setStatus(mode === "edit"
@@ -2299,14 +2407,18 @@
     }
 
     function albumPhotoPayload() {
-      return state.photos.map((photo) => ({
-        name: photo.name,
-        dataUrl: photo.dataUrl,
-        story: photo.story,
-        date: photo.date || "",
-        location: photo.location || "",
-        favorite: Boolean(photo.favorite)
-      }));
+      return state.photos.map((photo) => {
+        const payload = {
+          name: photo.name,
+          story: photo.story,
+          date: photo.date || "",
+          location: photo.location || "",
+          favorite: Boolean(photo.favorite)
+        };
+        if (photo.url) payload.url = photo.url;
+        if (!photo.url && photo.dataUrl) payload.dataUrl = photo.dataUrl;
+        return payload;
+      });
     }
 
     function normalizeRenderSettings(settings = {}) {
@@ -3280,9 +3392,10 @@
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
 
-      const cover = album.photos?.[0]?.dataUrl;
+      const cover = photoSrc(album.photos?.[0]);
       if (cover) {
         const image = new Image();
+        if (album.photos?.[0]?.url) image.crossOrigin = "anonymous";
         image.onload = () => {
           context.save();
           context.globalAlpha = 0.42;
@@ -5557,7 +5670,15 @@
       }
       refreshUniversePanel();
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(getProjectPayload({ skipSync: true })));
+        const payload = getProjectPayload({ skipSync: true });
+        if (cloudEnabled()) {
+          saveCloudProject(payload).catch((error) => {
+            console.warn(error);
+            setStatus("作品已更新，但云端保存失败，请稍后再试。", "warn");
+          });
+        } else {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        }
       } catch (error) {
         console.warn(error);
         setStatus("作品已更新，但浏览器存储空间不足，未能完整本地保存。", "warn");
@@ -5711,7 +5832,7 @@
         const item = document.createElement("div");
         item.className = `photo-item${index === state.selectedPhoto ? " active" : ""}`;
         const image = document.createElement("img");
-        image.src = photo.dataUrl;
+        image.src = photoSrc(photo);
         image.alt = photo.name || `照片 ${index + 1}`;
         const input = document.createElement("input");
         input.value = photo.name || `照片 ${index + 1}`;
@@ -5842,7 +5963,8 @@
     function rebuildPhotoSpritesFromState() {
       const photos = state.photos.map((photo, index) => {
         const image = new Image();
-        image.src = photo.dataUrl;
+        if (photo.url) image.crossOrigin = "anonymous";
+        image.src = photoSrc(photo);
         return { ...photo, image, index };
       });
       clearPhotoSprites();
@@ -6153,6 +6275,7 @@
           loaded.push({
             name: file.name.replace(/\.[^.]+$/, ""),
             dataUrl: result.dataUrl,
+            url: await uploadPhotoToCloud(file),
             story: `这张照片来自「${file.name}」。你可以在这里补充它背后的时间、地点、人物和故事。`,
             date: "",
             location: "",
@@ -6202,7 +6325,7 @@
       state.selectedPhoto = index;
       state.hoveredPhoto = index;
       if (state.targetMode !== "explode") setMouseMode("open");
-      storyImage.src = photo.dataUrl;
+      storyImage.src = photoSrc(photo);
       storyTitle.textContent = photo.name || `照片 ${index + 1}`;
       storyEmotion.textContent = `这颗星球里，藏着 ${state.photos.length} 个瞬间。正在查看第 ${index + 1} 个。`;
       storyNameInput.value = photo.name || `照片 ${index + 1}`;
@@ -6229,7 +6352,7 @@
     function openFullImage() {
       const photo = state.photos[state.selectedPhoto];
       if (!photo) return;
-      fullImage.src = photo.dataUrl;
+      fullImage.src = photoSrc(photo);
       fullImage.alt = photo.name || "全屏照片";
       fullImageViewer.classList.add("show");
     }
@@ -6248,7 +6371,7 @@
       slideshowImage.classList.remove("ready");
       window.setTimeout(() => {
         if (!state.slideshow.active) return;
-        slideshowImage.src = photo.dataUrl;
+        slideshowImage.src = photoSrc(photo);
         slideshowImage.alt = photo.name || `照片 ${safeIndex + 1}`;
         slideshowTitle.textContent = photo.name || `照片 ${safeIndex + 1}`;
         slideshowCounter.textContent = `${safeIndex + 1} / ${state.photos.length}`;
@@ -6342,13 +6465,14 @@
 
     async function hydratePhotos(savedPhotos) {
       const usable = savedPhotos
-        .filter((item) => item && typeof item.dataUrl === "string" && item.dataUrl.startsWith("data:image/"))
+        .filter((item) => item && (typeof item.url === "string" || typeof item.dataUrl === "string"))
         .slice(0, MAX_PHOTOS);
       return Promise.all(usable.map((item, index) => new Promise((resolve, reject) => {
         const image = new Image();
         image.onload = () => resolve({
           name: item.name || `照片 ${index + 1}`,
-          dataUrl: item.dataUrl,
+          dataUrl: item.dataUrl || "",
+          url: item.url || "",
           story: item.story || "",
           date: item.date || "",
           location: item.location || "",
@@ -6357,7 +6481,8 @@
           index
         });
         image.onerror = reject;
-        image.src = item.dataUrl;
+        if (item.url) image.crossOrigin = "anonymous";
+        image.src = photoSrc(item);
       })));
     }
 
@@ -6706,6 +6831,24 @@
           console.warn(error);
         }
       }
+      const cloudIdentity = syncCloudIdentityFromUrl();
+      if (cloudIdentity?.projectId) {
+        if (!cloudEnabled()) {
+          setStatus("这个分享链接需要云端 API，但当前页面还没有配置 CLOUD_API_BASE。", "warn");
+          return;
+        }
+        try {
+          const payload = await loadCloudProject(cloudIdentity.projectId);
+          await restoreProject(payload, cloudIdentity.editToken ? "已打开云端编辑作品。" : "已从分享链接打开云端作品。");
+          setActiveTab("universe");
+          tryStartDefaultMusic();
+          return;
+        } catch (error) {
+          console.warn(error);
+          setStatus("云端作品读取失败，请确认分享链接是否正确，或稍后再试。", "warn");
+          return;
+        }
+      }
       const raw = localStorage.getItem(STORAGE_KEY);
       const legacy = localStorage.getItem("photoParticleGlobe.stories");
       if (!raw && !legacy) {
@@ -7008,7 +7151,8 @@
       var projected = [];
       var images = photos.map(function (photo) {
         var img = new Image();
-        img.src = photo.dataUrl;
+        if (photo.url) img.crossOrigin = "anonymous";
+        img.src = photo.url || photo.dataUrl;
         return img;
       });
       var particles = [];
@@ -7140,7 +7284,7 @@
       function openPhoto(index) {
         var photo = photos[index];
         if (!photo) return;
-        modalImage.src = photo.dataUrl;
+        modalImage.src = photo.url || photo.dataUrl;
         modalKicker.textContent = "瞬间 " + (index + 1) + (photo.favorite ? " · 收藏" : "");
         modalTitle.textContent = photo.name || ("照片 " + (index + 1));
         modalMeta.textContent = [photo.date, photo.location].filter(Boolean).join(" · ");
@@ -7217,7 +7361,7 @@
       if (!payload) return false;
       if (payload.universe?.galaxies) return Array.isArray(payload.universe.galaxies);
       return Array.isArray(payload.photos)
-        && payload.photos.every((photo) => photo && typeof photo.dataUrl === "string");
+        && payload.photos.every((photo) => photo && (typeof photo.url === "string" || typeof photo.dataUrl === "string"));
     }
 
     async function importProjectJson(file) {
@@ -8288,6 +8432,7 @@
       }
     }
 
+    const ADMIN_PANEL_ENABLED = false;
     const ADMIN_KEY = "memoryGlobe.admin.v1";
 
     function getAdminConfig() {
@@ -8468,30 +8613,31 @@
       } catch (e) { return "—"; }
     }
 
-    // Admin panel entry: 5 clicks on title
     let adminTitleClickCount = 0;
     let adminTitleClickTimer = null;
-    displayTitle.addEventListener("click", () => {
-      adminTitleClickCount++;
-      clearTimeout(adminTitleClickTimer);
-      adminTitleClickTimer = setTimeout(() => { adminTitleClickCount = 0; }, 800);
-      if (adminTitleClickCount >= 5) {
-        adminTitleClickCount = 0;
-        openAdminLock();
-      }
-    });
+    if (ADMIN_PANEL_ENABLED) {
+      displayTitle.addEventListener("click", () => {
+        adminTitleClickCount++;
+        clearTimeout(adminTitleClickTimer);
+        adminTitleClickTimer = setTimeout(() => { adminTitleClickCount = 0; }, 800);
+        if (adminTitleClickCount >= 5) {
+          adminTitleClickCount = 0;
+          openAdminLock();
+        }
+      });
 
-    document.getElementById("adminUnlockBtn").addEventListener("click", handleAdminUnlock);
-    document.getElementById("adminSetupBtn").addEventListener("click", handleAdminSetup);
-    document.getElementById("adminCloseBtn").addEventListener("click", closeAdminPanel);
-    document.getElementById("adminPasswordInput").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") handleAdminUnlock();
-    });
-    document.querySelectorAll(".admin-tab").forEach((tab) => {
-      tab.addEventListener("click", () => switchAdminTab(tab.dataset.tab));
-    });
-    document.getElementById("adminSaveStorage").addEventListener("click", saveAdminStorageConfig);
-    document.getElementById("adminSaveLimits").addEventListener("click", saveAdminLimits);
+      document.getElementById("adminUnlockBtn").addEventListener("click", handleAdminUnlock);
+      document.getElementById("adminSetupBtn").addEventListener("click", handleAdminSetup);
+      document.getElementById("adminCloseBtn").addEventListener("click", closeAdminPanel);
+      document.getElementById("adminPasswordInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") handleAdminUnlock();
+      });
+      document.querySelectorAll(".admin-tab").forEach((tab) => {
+        tab.addEventListener("click", () => switchAdminTab(tab.dataset.tab));
+      });
+      document.getElementById("adminSaveStorage").addEventListener("click", saveAdminStorageConfig);
+      document.getElementById("adminSaveLimits").addEventListener("click", saveAdminLimits);
+    }
 
     resize();
     buildParticles();
