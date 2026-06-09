@@ -6833,6 +6833,25 @@
       await activateAlbum(state.universe.activeAlbumId, { message, keepTab: true, skipSyncCurrent: true });
     }
 
+    function sharedViewPayload(payload) {
+      if (!payload?.universe?.galaxies) return payload;
+      const clone = JSON.parse(JSON.stringify(payload));
+      clone.universe.galaxies = clone.universe.galaxies
+        .map((galaxy) => ({
+          ...galaxy,
+          albums: (galaxy.albums || []).filter((album) => (album.photos || []).length > 0)
+        }))
+        .filter((galaxy) => galaxy.albums.length > 0);
+      if (!clone.universe.galaxies.length) return payload;
+      const activeGalaxy = clone.universe.galaxies.find((galaxy) => galaxy.id === clone.universe.activeGalaxyId)
+        || clone.universe.galaxies[0];
+      const activeAlbum = activeGalaxy.albums.find((album) => album.id === clone.universe.activeAlbumId)
+        || activeGalaxy.albums[0];
+      clone.universe.activeGalaxyId = activeGalaxy.id;
+      clone.universe.activeAlbumId = activeAlbum.id;
+      return clone;
+    }
+
     async function restoreSavedStories() {
       const exported = document.getElementById("memoryGlobeExportData");
       if (exported?.textContent?.trim()) {
@@ -6852,7 +6871,8 @@
           return;
         }
         try {
-          const payload = await loadCloudProject(cloudIdentity.projectId);
+          const rawPayload = await loadCloudProject(cloudIdentity.projectId);
+          const payload = cloudIdentity.editToken ? rawPayload : sharedViewPayload(rawPayload);
           await restoreProject(payload, cloudIdentity.editToken ? "已打开云端编辑作品。" : "已从分享链接打开云端作品。");
           setActiveTab("universe");
           tryStartDefaultMusic();
