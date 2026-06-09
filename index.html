@@ -717,7 +717,7 @@
 
     .photo-item {
       display: grid;
-      grid-template-columns: 48px minmax(0, 1fr) 34px;
+      grid-template-columns: 48px minmax(0, 1fr) auto;
       gap: 8px;
       align-items: center;
       border: 1px solid rgba(120, 216, 255, 0.13);
@@ -750,9 +750,17 @@
       outline: none;
     }
 
+    .photo-actions {
+      display: grid;
+      grid-template-columns: 30px 30px;
+      gap: 4px;
+    }
+
     .photo-item button {
       min-height: 30px;
       padding: 0;
+      font-size: 15px;
+      line-height: 1;
     }
 
     .shape-strip {
@@ -1038,6 +1046,30 @@
       overflow: hidden;
     }
 
+    .slideshow-nav {
+      position: absolute;
+      top: 50%;
+      z-index: 2;
+      width: clamp(42px, 7vw, 62px);
+      min-height: clamp(54px, 9vw, 82px);
+      border-color: rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.34);
+      color: rgba(255, 255, 255, 0.86);
+      font-size: clamp(28px, 5vw, 46px);
+      line-height: 1;
+      transform: translateY(-50%);
+      backdrop-filter: blur(10px);
+    }
+
+    .slideshow-nav:hover {
+      background: rgba(91, 231, 255, 0.16);
+      color: #ffffff;
+    }
+
+    .slideshow-nav.prev { left: clamp(10px, 3vw, 32px); }
+    .slideshow-nav.next { right: clamp(10px, 3vw, 32px); }
+
     .slideshow-stage img {
       max-width: min(100%, 1280px);
       max-height: 100%;
@@ -1063,6 +1095,13 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
       background: rgba(0, 0, 0, 0.42);
+    }
+
+    .slideshow-meta button {
+      min-width: 38px;
+      padding: 0 10px;
+      font-size: 18px;
+      line-height: 1;
     }
 
     .slideshow-meta strong,
@@ -1673,14 +1712,16 @@
 
   <div id="slideshowPlayer" class="slideshow-player" aria-label="自动播放照片">
     <div class="slideshow-stage">
+      <button id="slideshowPrev" class="slideshow-nav prev" type="button" aria-label="上一张">‹</button>
       <img id="slideshowImage" alt="自动播放照片" />
+      <button id="slideshowNext" class="slideshow-nav next" type="button" aria-label="下一张">›</button>
     </div>
     <div class="slideshow-meta">
       <strong id="slideshowTitle">照片播放</strong>
       <span id="slideshowCounter">0 / 0</span>
-      <button id="slideshowRestart" type="button">重播</button>
-      <button id="slideshowPause" type="button">暂停</button>
-      <button id="slideshowClose" type="button">关闭</button>
+      <button id="slideshowRestart" type="button" title="重播" aria-label="重播">↺</button>
+      <button id="slideshowPause" type="button" title="暂停" aria-label="暂停">⏸</button>
+      <button id="slideshowClose" type="button" title="关闭" aria-label="关闭">×</button>
     </div>
   </div>
 
@@ -1901,6 +1942,8 @@
     const slideshowImage = document.getElementById("slideshowImage");
     const slideshowTitle = document.getElementById("slideshowTitle");
     const slideshowCounter = document.getElementById("slideshowCounter");
+    const slideshowPrev = document.getElementById("slideshowPrev");
+    const slideshowNext = document.getElementById("slideshowNext");
     const slideshowRestart = document.getElementById("slideshowRestart");
     const slideshowPause = document.getElementById("slideshowPause");
     const slideshowClose = document.getElementById("slideshowClose");
@@ -5845,15 +5888,31 @@
           }
           scheduleSaveProject();
         });
+        const actions = document.createElement("div");
+        actions.className = "photo-actions";
+        const play = document.createElement("button");
+        play.type = "button";
+        play.textContent = "▶";
+        play.title = "从这张开始播放";
+        play.setAttribute("aria-label", "从这张开始播放");
+        play.addEventListener("click", (event) => {
+          event.stopPropagation();
+          startSlideshow({ startIndex: index });
+        });
         const remove = document.createElement("button");
         remove.type = "button";
-        remove.textContent = "删";
+        remove.textContent = "×";
         remove.title = "删除这张照片";
-        remove.addEventListener("click", () => removePhoto(index));
-        item.addEventListener("click", (event) => {
-          if (event.target !== remove && event.target !== input) showPhotoStory(index);
+        remove.setAttribute("aria-label", "删除这张照片");
+        remove.addEventListener("click", (event) => {
+          event.stopPropagation();
+          removePhoto(index);
         });
-        item.append(image, input, remove);
+        actions.append(play, remove);
+        item.addEventListener("click", (event) => {
+          if (!event.target.closest("button") && event.target !== input) showPhotoStory(index);
+        });
+        item.append(image, input, actions);
         photoList.appendChild(item);
       });
       refreshProjectInfo();
@@ -6394,6 +6453,14 @@
       }, 4800);
     }
 
+    function stepSlideshow(delta) {
+      if (!state.photos.length) return;
+      window.clearTimeout(state.slideshow.timer);
+      state.slideshow.timer = 0;
+      renderSlideshowPhoto(state.slideshow.index + delta);
+      scheduleSlideshowNext();
+    }
+
     function startSlideshow(options = {}) {
       if (!state.photos.length) {
         setStatus("还没有照片可播放。", "warn");
@@ -6405,8 +6472,12 @@
       state.slideshow.active = true;
       state.slideshow.paused = false;
       if (options.restart) state.slideshow.index = 0;
+      if (Number.isFinite(options.startIndex)) state.slideshow.index = options.startIndex;
+      else if (state.selectedPhoto >= 0) state.slideshow.index = state.selectedPhoto;
       state.slideshow.index = clamp(state.slideshow.index, 0, state.photos.length - 1);
-      slideshowPause.textContent = "暂停";
+      slideshowPause.textContent = "⏸";
+      slideshowPause.title = "暂停";
+      slideshowPause.setAttribute("aria-label", "暂停");
       slideshowPlayer.classList.add("show");
       slideshowImage.removeAttribute("src");
       slideshowImage.classList.remove("ready");
@@ -6441,7 +6512,9 @@
         return;
       }
       state.slideshow.paused = !state.slideshow.paused;
-      slideshowPause.textContent = state.slideshow.paused ? "继续" : "暂停";
+      slideshowPause.textContent = state.slideshow.paused ? "▶" : "⏸";
+      slideshowPause.title = state.slideshow.paused ? "继续" : "暂停";
+      slideshowPause.setAttribute("aria-label", state.slideshow.paused ? "继续" : "暂停");
       if (state.slideshow.paused) {
         window.clearTimeout(state.slideshow.timer);
         state.slideshow.timer = 0;
@@ -6459,7 +6532,9 @@
       state.slideshow.timer = 0;
       state.slideshow.index = 0;
       state.slideshow.paused = false;
-      slideshowPause.textContent = "暂停";
+      slideshowPause.textContent = "⏸";
+      slideshowPause.title = "暂停";
+      slideshowPause.setAttribute("aria-label", "暂停");
       if (slideshowPlayer.classList.contains("show")) {
         renderSlideshowPhoto(0);
         scheduleSlideshowNext();
@@ -8365,6 +8440,14 @@
     });
     slideshowPause.addEventListener("click", toggleSlideshowPause);
     slideshowRestart.addEventListener("click", restartSlideshow);
+    slideshowPrev.addEventListener("click", (event) => {
+      event.stopPropagation();
+      stepSlideshow(-1);
+    });
+    slideshowNext.addEventListener("click", (event) => {
+      event.stopPropagation();
+      stepSlideshow(1);
+    });
     slideshowClose.addEventListener("click", stopSlideshow);
     slideshowPlayer.addEventListener("click", (event) => {
       if (event.target === slideshowPlayer) stopSlideshow();
