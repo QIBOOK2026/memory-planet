@@ -6467,7 +6467,7 @@
       const usable = savedPhotos
         .filter((item) => item && (typeof item.url === "string" || typeof item.dataUrl === "string"))
         .slice(0, MAX_PHOTOS);
-      return Promise.all(usable.map((item, index) => new Promise((resolve, reject) => {
+      const loaded = await Promise.all(usable.map((item, index) => new Promise((resolve) => {
         const image = new Image();
         image.onload = () => resolve({
           name: item.name || `照片 ${index + 1}`,
@@ -6480,10 +6480,11 @@
           image,
           index
         });
-        image.onerror = reject;
+        image.onerror = () => resolve(null);
         if (item.url) image.crossOrigin = "anonymous";
         image.src = photoSrc(item);
       })));
+      return loaded.filter(Boolean);
     }
 
     async function loadAlbumIntoViewer(album, message = "已进入星球。", options = {}) {
