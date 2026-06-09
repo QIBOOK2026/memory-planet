@@ -5518,8 +5518,19 @@
             return;
           }
           await requestFS.call(target);
+          try {
+            if (screen.orientation?.lock) await screen.orientation.lock("landscape");
+          } catch (error) {
+            console.warn(error);
+            setStatus("已进入全屏。若手机未自动横屏，请开启系统自动旋转后横持手机。", "warn");
+          }
         } else {
           const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+          try {
+            if (screen.orientation?.unlock) screen.orientation.unlock();
+          } catch (error) {
+            console.warn(error);
+          }
           if (exitFS) await exitFS.call(document);
         }
       } catch (error) {
@@ -8187,6 +8198,13 @@
     advancedSettingsToggle.addEventListener("click", () => setFloatingSettingsPanel("advanced"));
     const onFsChange = () => {
       const active = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+      if (!active) {
+        try {
+          if (screen.orientation?.unlock) screen.orientation.unlock();
+        } catch (error) {
+          console.warn(error);
+        }
+      }
       fullscreenToggle.textContent = active ? "×" : "⛶";
       fullscreenToggle.setAttribute("aria-label", active ? "退出全屏" : "全屏显示");
       setStatus(active ? "已进入全屏模式，按 Esc 或点击 × 可退出。" : "已退出全屏模式。", "ready");
