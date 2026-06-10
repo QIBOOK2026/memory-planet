@@ -505,6 +505,7 @@ exports.handler = async function handler(event) {
     if (path.startsWith("/admin/")) {
       const auth = await requireAdmin(event);
       if (auth.error) return auth.error;
+      if (path === "/admin/me" && method === "GET") return json({ admin: auth.admin });
       if (path === "/admin/stats" && method === "GET") {
         const index = await getUsersIndex();
         return json({ stats: aggregateStats(index.users || []) });

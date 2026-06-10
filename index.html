@@ -2262,6 +2262,7 @@
       },
       admin: {
         token: "",
+        username: "",
         users: [],
         tiers: {},
         config: null,
@@ -2589,10 +2590,19 @@
       accountBtn.title = state.auth.user
         ? `${state.auth.user.username} · ${state.auth.user.tier || "free"}`
         : "登录或注册";
+      refreshAdminEntryUi();
+    }
+
+    function adminEntryAllowed() {
+      return Boolean(
+        state.admin.token
+        && state.admin.username
+        && state.auth.user?.username === state.admin.username
+      );
     }
 
     function refreshAdminEntryUi() {
-      adminEntryBtn.classList.toggle("show", Boolean(state.admin.token));
+      adminEntryBtn.classList.toggle("show", adminEntryAllowed());
     }
 
     function clearLocalDataAfterCloudReset() {
@@ -2678,6 +2688,7 @@
       localStorage.removeItem(AUTH_KEY);
       refreshAuthUi();
       closeAccountActions();
+      closeAdminPanel();
       await clearLocalViewAfterLogout();
       setStatus("已退出登录，已清空本地视图并回到初始页面。", "ready");
     }
@@ -2774,10 +2785,14 @@
         const saved = JSON.parse(localStorage.getItem(ADMIN_AUTH_KEY) || "null");
         if (!saved?.token || !cloudEnabled()) return;
         state.admin.token = saved.token;
-        await cloudRequest("/admin/users", { method: "GET" }, true);
+        state.admin.username = saved.username || "";
+        const data = await cloudRequest("/admin/me", { method: "GET" }, true);
+        state.admin.username = data.admin?.username || state.admin.username;
+        localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify({ token: state.admin.token, username: state.admin.username }));
       } catch (error) {
         console.warn(error);
         state.admin.token = "";
+        state.admin.username = "";
         localStorage.removeItem(ADMIN_AUTH_KEY);
       }
       refreshAdminEntryUi();
@@ -9271,8 +9286,13 @@
           body: JSON.stringify({ username, password })
         }, true);
         state.admin.token = data.adminToken || "";
-        localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify({ token: state.admin.token }));
+        state.admin.username = data.admin?.username || username;
+        localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify({ token: state.admin.token, username: state.admin.username }));
         refreshAdminEntryUi();
+        if (!adminEntryAllowed()) {
+          error.textContent = "请先在主页面登录管理员账号，再进入后台。";
+          return;
+        }
         closeAdminLock();
         await openAdminPanel();
       } catch (caught) {
@@ -9472,14 +9492,18 @@
       adminTitleClickTimer = setTimeout(() => { adminTitleClickCount = 0; }, 800);
       if (adminTitleClickCount >= 5) {
         adminTitleClickCount = 0;
-        if (state.admin.token) {
+        if (adminEntryAllowed()) {
           openAdminPanel().catch((error) => {
             console.warn(error);
             state.admin.token = "";
+            state.admin.username = "";
             localStorage.removeItem(ADMIN_AUTH_KEY);
             refreshAdminEntryUi();
             openAdminLock();
           });
+        } else if (state.admin.token) {
+          refreshAdminEntryUi();
+          setStatus("请先用管理员账号登录主页面，再进入后台。", "warn");
         } else {
           openAdminLock();
         }
@@ -9487,9 +9511,15 @@
     });
 
     adminEntryBtn.addEventListener("click", () => {
+      if (!adminEntryAllowed()) {
+        refreshAdminEntryUi();
+        setStatus("请先用管理员账号登录主页面，再进入后台。", "warn");
+        return;
+      }
       openAdminPanel().catch((error) => {
         console.warn(error);
         state.admin.token = "";
+        state.admin.username = "";
         localStorage.removeItem(ADMIN_AUTH_KEY);
         refreshAdminEntryUi();
         openAdminLock();
