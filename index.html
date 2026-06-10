@@ -7314,15 +7314,29 @@
       storyPanel.classList.remove("show");
 
       if (album.photos?.length) {
-        state.photos = album.photos.map((p) => ({ ...p }));
-        clearPhotoSprites();
-        rebuildPhotoParticles();
-        refreshPhotoManager();
-        refreshProjectInfo();
-        dropzone.querySelector("strong").textContent = `${state.photos.length} 张照片`;
-        setStatus(message, "ready");
-        void rebuildPhotoSpritesFromState();
-        return;
+        const shouldShowProgress = options.showProgress || album.photos.length >= 12 || album.photos.some((photo) => photo.url);
+        if (shouldShowProgress) {
+          showTaskProgress("正在读取云端照片", `准备加载 ${album.photos.length} 张照片...`);
+        }
+        const loaded = await hydratePhotos(album.photos, {
+          onProgress: shouldShowProgress
+            ? (done, total) => setTaskProgress(Math.min(0.86, total ? done / total * 0.86 : 0), `正在加载照片 ${done} / ${total}...`)
+            : null
+        });
+        if (loaded.length) {
+          if (shouldShowProgress) setTaskProgress(0.92, "正在生成照片图集...");
+          await applyLoadedPhotos(loaded, message, options);
+          if (shouldShowProgress) {
+            setTaskProgress(1, "加载完成");
+            window.setTimeout(hideTaskDialog, 260);
+          }
+          return;
+        }
+        if (shouldShowProgress) hideTaskDialog();
+        if (album.photos.some((photo) => photo.url)) {
+          setStatus("云端照片已读取，但 OSS 跨域未允许 WebGL 贴图，3D 缩略图无法显示。需要配置 OSS CORS。", "warn");
+          return;
+        }
       }
       state.photos = [];
       clearPhotoSprites();
