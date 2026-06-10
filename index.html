@@ -9450,7 +9450,12 @@
           await updateAdminUser(user.userId, { resetPassword: true });
           setStatus(`已将 ${user.username || user.userId} 的密码重置为 123456。`, "ready");
         });
-        cell.append(tierActions, approve, block, resetPassword);
+        const clearData = document.createElement("button");
+        clearData.className = "admin-btn-danger";
+        clearData.type = "button";
+        clearData.textContent = "清空数据";
+        clearData.addEventListener("click", () => clearUserData(user.userId, user.username));
+        cell.append(tierActions, approve, block, resetPassword, clearData);
         tbody.appendChild(row);
       });
       if (!tbody.children.length) {
@@ -9533,6 +9538,21 @@
         body: JSON.stringify(patch)
       }, true);
       await refreshAdminData();
+    }
+
+    async function clearUserData(userId, username) {
+      const ok = await requestAppConfirm({
+        title: "清空数据",
+        message: "确定清空「" + (username || userId) + "」的所有星球和照片吗？此操作不可撤销！",
+        okText: "确认清空",
+        cancelText: "取消"
+      });
+      if (!ok) return;
+      await cloudRequest("/admin/users/" + encodeURIComponent(userId) + "/clear", {
+        method: "POST"
+      }, true);
+      await refreshAdminData();
+      setStatus("已清空 " + (username || userId) + " 的数据。", "ready");
     }
 
     async function saveAdminTier() {

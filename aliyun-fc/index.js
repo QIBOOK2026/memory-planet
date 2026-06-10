@@ -1,4 +1,4 @@
-const crypto = require("node:crypto");
+﻿const crypto = require("node:crypto");
 
 const jsonHeaders = {
   "content-type": "application/json;charset=utf-8",
@@ -217,6 +217,35 @@ async function putUsersIndex(index) {
   return putJson("admin/users-index.json", index);
 }
 
+async function calcOssPhotoBytes(userId, projectId) {
+  try {
+    const prefix = `planets/${userId}/${projectId}/`;
+    const keys = await listOssKeys(prefix);
+    if (!keys.length) return 0;
+    const bucket = process.env.OSS_BUCKET || "";
+    const endpoint = (process.env.OSS_ENDPOINT || "").replace(/^https?:\/\//, "");
+    const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID || "";
+    const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET || "";
+    if (!bucket || !endpoint || !accessKeyId || !accessKeySecret) return 0;
+    let totalBytes = 0;
+    for (const key of keys) {
+      const date = new Date().toUTCString();
+      const resource = "/" + bucket + "/" + key;
+      const stringToSign = ["HEAD", "", "", date, resource].join("\n");
+      const signature = crypto.createHmac("sha1", accessKeySecret).update(stringToSign, "utf8").digest("base64");
+      const resp = await fetch("https://" + bucket + "." + endpoint + "/" + key, {
+        method: "HEAD",
+        headers: { Date: date, Authorization: "OSS " + accessKeyId + ":" + signature }
+      });
+      if (resp.ok) {
+        const size = parseInt(resp.headers.get("content-length") || "0", 10);
+        if (!isNaN(size)) totalBytes += size;
+      }
+    }
+    return totalBytes;
+  } catch { return 0; }
+}
+
 async function getUser(userId) {
   return readJson(`users/${userId}.json`, null);
 }
@@ -247,7 +276,7 @@ async function upsertUserIndex(user) {
   await putUsersIndex(index);
 }
 
-function projectStats(payload = {}) {
+function projectStats(payload = {}, ossPhotoBytes = 0) {
   const albums = [];
   if (payload.universe?.galaxies) {
     payload.universe.galaxies.forEach((galaxy) => (galaxy.albums || []).forEach((album) => albums.push(album)));
@@ -257,12 +286,12 @@ function projectStats(payload = {}) {
     albums.push({ photos: payload.photos || [] });
   }
   const perPlanet = albums.map((album) => (album.photos || []).length);
-  const storageBytes = Buffer.byteLength(JSON.stringify(payload), "utf8");
+  const metaBytes = Buffer.byteLength(JSON.stringify(payload), "utf8");
   return {
     planetCount: Math.max(1, albums.length),
     photoCount: perPlanet.reduce((sum, count) => sum + count, 0),
     maxPhotosInPlanet: perPlanet.reduce((max, count) => Math.max(max, count), 0),
-    storageBytes
+    storageBytes: metaBytes + ossPhotoBytes
   };
 }
 
@@ -354,30 +383,38 @@ function preferAlbumWithPhotos(payload = {}) {
 }
 
 async function hydratePayloadPhotosFromOss(user, projectId, payload = {}) {
-  const existingCount = payloadAlbums(payload).reduce((sum, album) => sum + ((album.photos || []).length), 0);
-  if (existingCount > 0 || !user?.userId || !projectId) return { payload, hydrated: false };
+  if (!user?.userId || !projectId) return { payload, hydrated: false };
   const prefix = `planets/${user.userId}/${projectId}/`;
-  const keys = (await listOssKeys(prefix))
+  const allKeys = (await listOssKeys(prefix))
     .filter((key) => /\.(png|jpe?g|webp|gif|avif)$/i.test(key))
     .sort();
-  if (!keys.length) return { payload, hydrated: false };
-  const photos = keys.map((key, index) => ({
+  if (!allKeys.length) return { payload, hydrated: false };
+  const ossCount = allKeys.length;
+  const payloadCount = payloadAlbums(payload).reduce((sum, album) => sum + ((album.photos || []).length), 0);
+  if (ossCount === payloadCount) return { payload, hydrated: false };
+  const clone = JSON.parse(JSON.stringify(payload || {}));
+  const albums = payloadAlbums(clone);
+  const target = (() => {
+    if (!albums.length) return null;
+    const activeId = clone.universe?.activeAlbumId || clone.activeAlbumId;
+    return albums.find((album) => album.id === activeId) || albums[0];
+  })();
+  const existingUrls = new Set((target?.photos || clone.photos || []).map((p) => p?.url));
+  const missing = allKeys.filter((key) => !existingUrls.has(publicOssUrl(key)));
+  if (!missing.length) return { payload, hydrated: false };
+  const newPhotos = missing.map((key, index) => ({
     name: photoNameFromKey(key),
     url: publicOssUrl(key),
     story: "",
     date: "",
     location: "",
     favorite: false,
-    index
+    index: payloadCount + index
   }));
-  const clone = JSON.parse(JSON.stringify(payload || {}));
-  const albums = payloadAlbums(clone);
-  if (!albums.length) {
-    clone.photos = photos;
+  if (!target) {
+    clone.photos = [...(clone.photos || []), ...newPhotos];
   } else {
-    const activeId = clone.universe?.activeAlbumId || clone.activeAlbumId;
-    const target = albums.find((album) => album.id === activeId) || albums[0];
-    target.photos = photos;
+    target.photos = [...(target.photos || []), ...newPhotos];
   }
   return { payload: clone, hydrated: true };
 }
@@ -532,14 +569,20 @@ async function getProjectRecord(id) {
 
 async function writeProjectForUser(user, id, payload, stored = null, tiers = null) {
   const normalizedPayload = preferAlbumWithPhotos(payload);
-  const currentStats = projectStats(normalizedPayload);
-  const projectStatsMap = { [id]: currentStats };
-  const totals = {
-    projectCount: 1,
-    planetCount: currentStats.planetCount || 0,
-    photoCount: currentStats.photoCount || 0,
-    storageBytes: currentStats.storageBytes || 0
-  };
+  const ossBytes = await calcOssPhotoBytes(user.userId, id);
+  const currentStats = projectStats(normalizedPayload, ossBytes);
+  const freshUser = await getUser(user.userId) || user;
+  const existingIds = Array.isArray(freshUser.projectIds) ? freshUser.projectIds : [];
+  const mergedIds = existingIds.includes(id) ? existingIds : [...existingIds, id];
+  const existingStats = freshUser.projectStats || {};
+  existingStats[id] = currentStats;
+  const allTotals = Object.values(existingStats).reduce((acc, s) => {
+    acc.planetCount = Math.max(acc.planetCount, s.planetCount || 0);
+    acc.photoCount += s.photoCount || 0;
+    acc.storageBytes += s.storageBytes || 0;
+    return acc;
+  }, { planetCount: 0, photoCount: 0, storageBytes: 0 });
+  allTotals.projectCount = mergedIds.length;
   await putJson(`projects/${id}.json`, {
     editToken: stored?.editToken || "",
     userId: user.userId,
@@ -547,11 +590,11 @@ async function writeProjectForUser(user, id, payload, stored = null, tiers = nul
     stats: currentStats,
     updatedAt: new Date().toISOString()
   });
-  user.projectIds = [id];
-  user.projectStats = projectStatsMap;
-  user.stats = totals;
-  await putUser(user);
-  return { user: publicUser(user, tiers || await getTiers()), usage: totals, stats: currentStats, payload: normalizedPayload };
+  freshUser.projectIds = mergedIds;
+  freshUser.projectStats = existingStats;
+  freshUser.stats = allTotals;
+  await putUser(freshUser);
+  return { user: publicUser(freshUser, tiers || await getTiers()), usage: allTotals, stats: currentStats, payload: normalizedPayload };
 }
 
 async function putProject(event, id, body) {
@@ -567,7 +610,8 @@ async function putProject(event, id, body) {
   const tier = tiers[user.tier] || tiers.free || DEFAULT_TIERS.free;
   const hydrated = await hydratePayloadPhotosFromOss(user, id, body.payload);
   const payload = hydrated.payload;
-  const currentStats = projectStats(payload);
+  const ossBytes = await calcOssPhotoBytes(user.userId, id);
+  const currentStats = projectStats(payload, ossBytes);
   const totals = {
     projectCount: 1,
     planetCount: currentStats.planetCount || 0,
@@ -653,7 +697,8 @@ async function uploadToken(event, body) {
     favorite: false
   };
   const payload = appendPhotoToPayload(hydrated.payload, photo);
-  const currentStats = projectStats(payload);
+  const ossBytes = await calcOssPhotoBytes(user.userId, planetId);
+  const currentStats = projectStats(payload, ossBytes);
   const totals = {
     projectCount: 1,
     planetCount: currentStats.planetCount || 0,
@@ -736,6 +781,29 @@ exports.handler = async function handler(event) {
         await putJson("admin/tiers.json", tiers);
         return json({ ok: true, tiers });
       }
+      const clearMatch = path.match(/^\/admin\/users\/([^/]+)\/clear$/);
+      if (clearMatch && method === "POST") {
+        const userId = decodeURIComponent(clearMatch[1]);
+        const user = await getUser(userId);
+        if (!user) return json({ error: "user not found" }, 404);
+        const userPrefix = "planets/" + userId + "/";
+        const allKeys = await listOssKeys(userPrefix);
+        let deletedPhotos = 0;
+        for (const key of allKeys) {
+          try { await deleteOssKey(key); deletedPhotos++; } catch {}
+        }
+        const projectIds = Array.isArray(user.projectIds) ? user.projectIds : [];
+        let deletedProjects = 0;
+        for (const pid of projectIds) {
+          try { await deleteOssKey("projects/" + pid + ".json"); deletedProjects++; } catch {}
+        }
+        user.projectIds = [];
+        user.projectStats = {};
+        user.stats = { projectCount: 0, planetCount: 0, photoCount: 0, storageBytes: 0 };
+        await putUser(user);
+        return json({ ok: true, message: "已清除用户 " + user.username + " 的数据", deleted: { photos: deletedPhotos, projects: deletedProjects } });
+      }
+
       const userMatch = path.match(/^\/admin\/users\/([^/]+)$/);
       if (userMatch && method === "PUT") {
         const user = await getUser(decodeURIComponent(userMatch[1]));
@@ -747,6 +815,49 @@ exports.handler = async function handler(event) {
         await putUser(user);
         return json({ ok: true, user: publicUser(user, await getTiers()), temporaryPassword: body.resetPassword ? "123456" : "" });
       }
+    }
+
+    if (path === "/admin/reconcile" && method === "GET") {
+      const adminCheck = await requireAdmin(event);
+      if (adminCheck.error) return adminCheck.error;
+      const projectKeys = (await listOssKeys("projects/")).filter((k) => k.endsWith(".json"));
+      const userIdMap = {};
+      for (const key of projectKeys) {
+        const projectId = key.replace("projects/", "").replace(".json", "");
+        const stored = await readJson(key, null);
+        if (!stored || !stored.userId) continue;
+        if (!userIdMap[stored.userId]) userIdMap[stored.userId] = [];
+        userIdMap[stored.userId].push({ projectId, stored });
+      }
+      const results = { reconciledUsers: 0, fixedProjects: 0, errors: [] };
+      for (const [userId, projects] of Object.entries(userIdMap)) {
+        try {
+          const user = await getUser(userId);
+          if (!user) continue;
+          const projectIds = [];
+          const projectStatsAll = {};
+          const tot = { planetCount: 0, photoCount: 0, storageBytes: 0 };
+          for (const { projectId, stored } of projects) {
+            const ossBytes = await calcOssPhotoBytes(userId, projectId);
+            const stats = projectStats(stored.payload || {}, ossBytes);
+            projectIds.push(projectId);
+            projectStatsAll[projectId] = stats;
+            tot.planetCount = Math.max(tot.planetCount, stats.planetCount);
+            tot.photoCount += stats.photoCount;
+            tot.storageBytes += stats.storageBytes;
+          }
+          tot.projectCount = projectIds.length;
+          user.projectIds = projectIds;
+          user.projectStats = projectStatsAll;
+          user.stats = tot;
+          await putUser(user);
+          results.reconciledUsers++;
+          results.fixedProjects += projectIds.length;
+        } catch (e) {
+          results.errors.push(userId + ": " + e.message);
+        }
+      }
+      return json({ ok: true, ...results });
     }
 
     if (path === "/uploads/token" && method === "POST") return uploadToken(event, getBody(event));
