@@ -151,6 +151,55 @@ async function putJson(key, data) {
   return data;
 }
 
+function xmlDecode(value = "") {
+  return String(value)
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
+function publicOssUrl(key) {
+  const bucket = env("OSS_BUCKET");
+  const endpoint = env("OSS_ENDPOINT").replace(/^https?:\/\//, "");
+  const publicDomain = env("OSS_PUBLIC_DOMAIN") || `https://${bucket}.${endpoint}`;
+  return `${publicDomain.replace(/\/+$/, "")}/${key}`;
+}
+
+async function listOssKeys(prefix) {
+  const bucket = env("OSS_BUCKET");
+  const endpoint = env("OSS_ENDPOINT").replace(/^https?:\/\//, "");
+  const accessKeyId = env("ALIYUN_ACCESS_KEY_ID");
+  const accessKeySecret = env("ALIYUN_ACCESS_KEY_SECRET");
+  if (!bucket || !endpoint || !accessKeyId || !accessKeySecret) throw new Error("OSS credentials not configured");
+  const keys = [];
+  let marker = "";
+  for (let page = 0; page < 20; page += 1) {
+    const params = new URLSearchParams({ prefix, "max-keys": "1000" });
+    if (marker) params.set("marker", marker);
+    const date = new Date().toUTCString();
+    const resource = `/${bucket}/`;
+    const stringToSign = ["GET", "", "", date, resource].join("\n");
+    const signature = crypto.createHmac("sha1", accessKeySecret).update(stringToSign).digest("base64");
+    const response = await fetch(`https://${bucket}.${endpoint}/?${params.toString()}`, {
+      method: "GET",
+      headers: { Date: date, Authorization: `OSS ${accessKeyId}:${signature}` }
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`OSS LIST failed: ${response.status} ${detail}`);
+    }
+    const xml = await response.text();
+    keys.push(...Array.from(xml.matchAll(/<Key>([\s\S]*?)<\/Key>/g)).map((match) => xmlDecode(match[1])));
+    const truncated = /<IsTruncated>true<\/IsTruncated>/i.test(xml);
+    const nextMarker = xml.match(/<NextMarker>([\s\S]*?)<\/NextMarker>/i)?.[1];
+    if (!truncated || !nextMarker) break;
+    marker = xmlDecode(nextMarker);
+  }
+  return keys;
+}
+
 async function getAdminConfig() {
   return { ...DEFAULT_ADMIN_CONFIG, ...(await readJson("admin/config.json", {})) };
 }
@@ -215,6 +264,52 @@ function projectStats(payload = {}) {
     maxPhotosInPlanet: perPlanet.reduce((max, count) => Math.max(max, count), 0),
     storageBytes
   };
+}
+
+function payloadAlbums(payload = {}) {
+  const albums = [];
+  if (payload.universe?.galaxies) {
+    payload.universe.galaxies.forEach((galaxy) => (galaxy.albums || []).forEach((album) => albums.push(album)));
+  } else if (payload.albums) {
+    payload.albums.forEach((album) => albums.push(album));
+  } else {
+    albums.push(payload);
+  }
+  return albums;
+}
+
+function photoNameFromKey(key) {
+  const file = String(key).split("/").pop() || "photo";
+  return file.replace(/^[a-z0-9]+-[a-f0-9]+-/i, "").replace(/\.[^.]+$/, "") || "photo";
+}
+
+async function hydratePayloadPhotosFromOss(user, projectId, payload = {}) {
+  const existingCount = payloadAlbums(payload).reduce((sum, album) => sum + ((album.photos || []).length), 0);
+  if (existingCount > 0 || !user?.userId || !projectId) return { payload, hydrated: false };
+  const prefix = `planets/${user.userId}/${projectId}/`;
+  const keys = (await listOssKeys(prefix))
+    .filter((key) => /\.(png|jpe?g|webp|gif|avif)$/i.test(key))
+    .sort();
+  if (!keys.length) return { payload, hydrated: false };
+  const photos = keys.map((key, index) => ({
+    name: photoNameFromKey(key),
+    url: publicOssUrl(key),
+    story: "",
+    date: "",
+    location: "",
+    favorite: false,
+    index
+  }));
+  const clone = JSON.parse(JSON.stringify(payload || {}));
+  const albums = payloadAlbums(clone);
+  if (!albums.length) {
+    clone.photos = photos;
+  } else {
+    const activeId = clone.universe?.activeAlbumId || clone.activeAlbumId;
+    const target = albums.find((album) => album.id === activeId) || albums[0];
+    target.photos = photos;
+  }
+  return { payload: clone, hydrated: true };
 }
 
 function quotaError(stats, tier, currentProjectStats = emptyStats()) {
@@ -365,6 +460,29 @@ async function getProjectRecord(id) {
   return readJson(`projects/${id}.json`, null);
 }
 
+async function writeProjectForUser(user, id, payload, stored = null, tiers = null) {
+  const currentStats = projectStats(payload);
+  const projectStatsMap = { [id]: currentStats };
+  const totals = {
+    projectCount: 1,
+    planetCount: currentStats.planetCount || 0,
+    photoCount: currentStats.photoCount || 0,
+    storageBytes: currentStats.storageBytes || 0
+  };
+  await putJson(`projects/${id}.json`, {
+    editToken: stored?.editToken || "",
+    userId: user.userId,
+    payload: { ...payload, cloud: { provider: "aliyun-oss", planetId: id, userId: user.userId } },
+    stats: currentStats,
+    updatedAt: new Date().toISOString()
+  });
+  user.projectIds = [id];
+  user.projectStats = projectStatsMap;
+  user.stats = totals;
+  await putUser(user);
+  return { user: publicUser(user, tiers || await getTiers()), usage: totals, stats: currentStats };
+}
+
 async function putProject(event, id, body) {
   const auth = await requireActiveUser(event);
   if (auth.error) return auth.error;
@@ -376,8 +494,9 @@ async function putProject(event, id, body) {
 
   const tiers = await getTiers();
   const tier = tiers[user.tier] || tiers.free || DEFAULT_TIERS.free;
-  const currentStats = projectStats(body.payload);
-  const projectStatsMap = { [id]: currentStats };
+  const hydrated = await hydratePayloadPhotosFromOss(user, id, body.payload);
+  const payload = hydrated.payload;
+  const currentStats = projectStats(payload);
   const totals = {
     projectCount: 1,
     planetCount: currentStats.planetCount || 0,
@@ -387,18 +506,8 @@ async function putProject(event, id, body) {
   const error = quotaError(totals, tier, currentStats);
   if (error) return json({ error, quota: tier, usage: totals }, 403);
 
-  await putJson(`projects/${id}.json`, {
-    editToken: body.editToken || stored?.editToken || "",
-    userId: user.userId,
-    payload: { ...body.payload, cloud: { provider: "aliyun-oss", planetId: id, userId: user.userId } },
-    stats: currentStats,
-    updatedAt: new Date().toISOString()
-  });
-  user.projectIds = [id];
-  user.projectStats = projectStatsMap;
-  user.stats = totals;
-  await putUser(user);
-  return json({ ok: true, user: publicUser(user, tiers), usage: totals, quota: tier });
+  const result = await writeProjectForUser(user, id, payload, { ...stored, editToken: body.editToken || stored?.editToken || "" }, tiers);
+  return json({ ok: true, user: result.user, usage: result.usage, quota: tier, hydrated: hydrated.hydrated });
 }
 
 async function getProject(event, id) {
@@ -406,11 +515,23 @@ async function getProject(event, id) {
   if (!stored) return json({ error: "project not found" }, 404);
   const user = await sessionUser(event).catch(() => null);
   const owner = user?.userId && stored.userId === user.userId;
+  let payload = stored.payload;
+  let hydrated = false;
+  const projectUser = owner ? user : (stored.userId ? await getUser(stored.userId) : null);
+  if (projectUser) {
+    const result = await hydratePayloadPhotosFromOss(projectUser, id, stored.payload);
+    payload = result.payload;
+    hydrated = result.hydrated;
+    if (hydrated) {
+      await writeProjectForUser(projectUser, id, payload, stored);
+    }
+  }
   return json({
-    payload: stored.payload,
+    payload,
     updatedAt: stored.updatedAt,
     userId: stored.userId || "",
-    editToken: owner ? (stored.editToken || "") : ""
+    editToken: owner ? (stored.editToken || "") : "",
+    hydrated
   });
 }
 
