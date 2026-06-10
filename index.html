@@ -6969,7 +6969,7 @@
       const loaded = [];
       let failed = ignored;
       let cloudFailed = 0;
-      const BATCH_SIZE = 8;
+      const BATCH_SIZE = 16;
       for (let batchStart = 0; batchStart < selected.length; batchStart += BATCH_SIZE) {
         const batch = selected.slice(batchStart, Math.min(batchStart + BATCH_SIZE, selected.length));
         let batchTickets = null;
