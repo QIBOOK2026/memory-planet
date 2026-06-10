@@ -6635,7 +6635,8 @@
           let done = false;
           const timeout = window.setTimeout(() => {
             if (!done) { done = true; resolveAttempt(null); }
-          }, 20000);
+          }, 5000);
+          // 5s timeout per image
           img.onerror = () => {
             if (done) return;
             done = true;
@@ -7248,7 +7249,8 @@
               done = true;
               resolveAttempt(null);
             }
-          }, 20000);
+          }, 5000);
+          // 5s timeout per image
           img.onerror = () => {
             if (done) return;
             done = true;
