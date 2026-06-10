@@ -6908,24 +6908,18 @@
       showTaskProgress("正在上传照片", `准备读取 ${selected.length} 张照片...`);
       const loaded = [];
       let failed = ignored;
+      let cloudFailed = 0;
       for (let index = 0; index < selected.length; index += 1) {
         const file = selected[index];
         try {
           setTaskProgress(index / selected.length, `正在读取 ${index + 1} / ${selected.length}：${file.name}`);
           const result = await loadImageFromFile(file);
           let remoteUrl = "";
-          let cloudUploadError = null;
           try {
             remoteUrl = await uploadPhotoToCloud(file) || "";
           } catch (error) {
             console.warn(error);
-            cloudUploadError = error;
-          }
-          if (activeUserReady() && !remoteUrl) {
-            throw cloudUploadError || new Error("照片云端上传失败");
-          }
-          if (!remoteUrl && cloudUploadError) {
-            failed += 1;
+            cloudFailed += 1;
           }
           loaded.push({
             name: file.name.replace(/\.[^.]+$/, ""),
@@ -6952,8 +6946,19 @@
       const total = state.photos.concat(loaded);
       setTaskProgress(0.92, "正在生成照片图集...");
       await waitForNextFrame();
-      const loginHint = activeUserReady() ? "" : " 未登录仅作本地体验，登录后可保存到云端并分享。";
-      await applyLoadedPhotos(total, `已追加 ${loaded.length} 张照片，现在共有 ${total.length} 张${failed ? `，忽略/失败 ${failed} 个文件` : ""}。${loginHint}`, { awaitSave: activeUserReady() });
+      let message = `已追加 ${loaded.length} 张照片，现在共有 ${total.length} 张${failed ? `，忽略/失败 ${failed} 个文件` : ""}。`;
+      if (!activeUserReady()) message += " 未登录仅作本地体验，登录后可保存到云端并分享。";
+      if (cloudFailed) message += ` 其中 ${cloudFailed} 张云端上传失败，已先保留在当前页面。`;
+      await applyLoadedPhotos(total, message);
+      if (activeUserReady()) {
+        try {
+          await persistProjectNow();
+          if (!cloudFailed) setStatus("照片已上传并保存到云端，后台统计已更新。", "ready");
+        } catch (error) {
+          console.warn(error);
+          setStatus(error.message || "照片已放入当前页面，但云端保存失败，请稍后点分享或编辑后重试保存。", "warn");
+        }
+      }
       setTaskProgress(1, "上传完成");
       window.setTimeout(hideTaskDialog, 260);
     }
@@ -9035,7 +9040,8 @@
       dropzone.classList.remove("dragover");
       loadPhotos(event.dataTransfer.files).catch((error) => {
         console.warn(error);
-        setStatus("照片读取失败，请换一批图片重试。", "warn");
+        hideTaskDialog();
+        setStatus(error.message || "照片上传或保存失败，请换一批图片重试。", "warn");
       });
     });
     clearPhotoBtn.addEventListener("click", async () => {
