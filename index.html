@@ -2605,6 +2605,11 @@
       adminEntryBtn.classList.toggle("show", adminEntryAllowed());
     }
 
+    function clearLargeLocalProjectCache() {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("photoParticleGlobe.stories");
+    }
+
     function clearLocalDataAfterCloudReset() {
       if (localStorage.getItem(CLOUD_RESET_KEY) === "done") return;
       localStorage.removeItem(STORAGE_KEY);
@@ -6238,17 +6243,19 @@
       }
       refreshUniversePanel();
       const payload = getProjectPayload({ skipSync: true });
+      const localPayload = activeUserReady() ? cloudProjectPayload(payload) : payload;
       let localSaveFailed = false;
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localPayload));
       } catch (error) {
         console.warn(error);
         localSaveFailed = true;
+        clearLargeLocalProjectCache();
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudProjectPayload(payload)));
         } catch (fallbackError) {
           console.warn(fallbackError);
-          localStorage.removeItem(STORAGE_KEY);
+          clearLargeLocalProjectCache();
         }
       }
       if (cloudEnabled() && activeUserReady()) await saveCloudProject(payload);
@@ -6939,7 +6946,7 @@
       }
 
       setStatus(`正在追加 ${selected.length} 张照片，当前 ${state.photos.length} / ${MAX_PHOTOS}。`);
-      if (activeUserReady()) localStorage.removeItem(STORAGE_KEY);
+      if (activeUserReady()) clearLargeLocalProjectCache();
       showTaskProgress("正在上传照片", `准备读取 ${selected.length} 张照片...`);
       const loaded = [];
       let failed = ignored;
