@@ -6117,8 +6117,13 @@
     function openPhotosAfterLoad() {
       if (!state.photos.length) return;
       state.targetMode = "explode";
-      state.explosion = Math.max(state.explosion, 0.42);
+      state.explosion = 1;
       state.mouseMode = "open";
+      state.photoSprites.forEach((sprite) => {
+        sprite.visible = true;
+        sprite.material.opacity = Math.max(sprite.material.opacity, 0.9);
+        sprite.renderOrder = 20;
+      });
       updateGestureDisplay("open");
       updateBlackHoleVisualDissolve();
     }
@@ -6603,7 +6608,7 @@
           color: 0xffffff,
           transparent: true,
           opacity: 0,
-          depthTest: true,
+          depthTest: false,
           depthWrite: false
         });
         const sprite = new THREE.Sprite(material);
@@ -6644,9 +6649,7 @@
           if (withCors) img.crossOrigin = "anonymous";
           img.src = srcUrl;
         });
-        const promise = needCors
-          ? attempt(true).then((img) => img || attempt(false))
-          : attempt(false);
+        const promise = needCors ? attempt(true) : attempt(false);
         return promise.then((img) => ({ ...photo, image: img, index }));
       });
       const results = await Promise.all(promises);
@@ -6659,7 +6662,7 @@
           color: 0xffffff,
           transparent: true,
           opacity: 0,
-          depthTest: true,
+          depthTest: false,
           depthWrite: false
         });
         const sprite = new THREE.Sprite(material);
@@ -6818,7 +6821,7 @@
         const zoomComp = Math.min(1.5, Math.max(1.0, state.zoom / 4.5));
         const targetScale = neatLayout
           ? gridMetrics.photoScale * (hovered ? 1.16 : selected ? 1.08 : 1)
-          : (hovered ? 0.56 : selected ? 0.5 : 0.3) * (universeItem ? 0.58 : 1) * zoomComp;
+          : (hovered ? 0.72 : selected ? 0.62 : 0.42) * (universeItem ? 0.66 : 1) * zoomComp;
         const targetOpacity = hovered || selected ? 1 : 0.88 * smoothReveal;
         const scaleEase = hovered || selected ? 0.35 : 0.18;
         sprite.scale.setScalar(lerp(sprite.scale.x, targetScale, scaleEase));
@@ -7234,8 +7237,8 @@
           if (withCors) img.crossOrigin = "anonymous";
           img.src = srcUrl;
         });
-        const needsRetry = typeof item.url === "string" && !!item.url;
-        (needsRetry ? attempt(true).then((img) => img || attempt(false)) : attempt(false)).then((img) => {
+        const needsCors = typeof item.url === "string" && !!item.url;
+        (needsCors ? attempt(true) : attempt(false)).then((img) => {
           reportProgress();
           if (!img) { resolve(null); return; }
           resolve({
@@ -7303,6 +7306,10 @@
           return;
         }
         if (shouldShowProgress) hideTaskDialog();
+        if (album.photos.some((photo) => photo.url)) {
+          setStatus("云端照片已读取，但 OSS 跨域未允许 WebGL 贴图，3D 缩略图无法显示。需要配置 OSS CORS。", "warn");
+          return;
+        }
       }
       state.photos = [];
       clearPhotoSprites();
