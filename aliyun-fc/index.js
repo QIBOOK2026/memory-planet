@@ -283,6 +283,76 @@ function photoNameFromKey(key) {
   return file.replace(/^[a-z0-9]+-[a-f0-9]+-/i, "").replace(/\.[^.]+$/, "") || "photo";
 }
 
+function defaultProjectPayload(projectId, userId) {
+  const album = {
+    id: "album-default",
+    title: "我的记忆星球",
+    subtitle: "科技蓝 · 星球",
+    author: "",
+    theme: "tech",
+    shape: "sphere",
+    settings: {},
+    photos: [],
+    updatedAt: new Date().toISOString()
+  };
+  return {
+    version: 2,
+    title: album.title,
+    subtitle: album.subtitle,
+    author: album.author,
+    theme: album.theme,
+    shape: album.shape,
+    audio: { volume: 0.4, sfxEnabled: true, track: "none" },
+    settings: {},
+    universe: {
+      title: "我的星球",
+      audio: { volume: 0.4, sfxEnabled: true, track: "none" },
+      activeGalaxyId: "galaxy-default",
+      activeAlbumId: album.id,
+      galaxies: [{ id: "galaxy-default", name: "宇宙", albums: [album] }]
+    },
+    exportedAt: new Date().toISOString(),
+    photos: [],
+    cloud: { provider: "aliyun-oss", planetId: projectId, userId }
+  };
+}
+
+function appendPhotoToPayload(payload = {}, photo) {
+  const clone = JSON.parse(JSON.stringify(payload || {}));
+  const albums = payloadAlbums(clone);
+  if (!albums.length) {
+    clone.photos = [...(clone.photos || []), photo];
+  } else {
+    const activeId = clone.universe?.activeAlbumId || clone.activeAlbumId;
+    const target = albums.find((album) => album.id === activeId) || albums[0];
+    const exists = (target.photos || []).some((item) => item.url === photo.url);
+    if (!exists) target.photos = [...(target.photos || []), photo];
+  }
+  return clone;
+}
+
+function preferAlbumWithPhotos(payload = {}) {
+  if (!payload.universe?.galaxies) return payload;
+  const clone = JSON.parse(JSON.stringify(payload));
+  const active = clone.universe.galaxies
+    .flatMap((galaxy) => (galaxy.albums || []).map((album) => ({ galaxy, album })))
+    .find((item) => item.album.id === clone.universe.activeAlbumId);
+  if (active?.album?.photos?.length) return clone;
+  const firstWithPhotos = clone.universe.galaxies
+    .flatMap((galaxy) => (galaxy.albums || []).map((album) => ({ galaxy, album })))
+    .find((item) => (item.album.photos || []).length > 0);
+  if (!firstWithPhotos) return clone;
+  clone.universe.activeGalaxyId = firstWithPhotos.galaxy.id;
+  clone.universe.activeAlbumId = firstWithPhotos.album.id;
+  clone.title = firstWithPhotos.album.title || clone.title;
+  clone.subtitle = firstWithPhotos.album.subtitle || clone.subtitle;
+  clone.author = firstWithPhotos.album.author || clone.author;
+  clone.theme = firstWithPhotos.album.theme || clone.theme;
+  clone.shape = firstWithPhotos.album.shape || clone.shape;
+  clone.photos = firstWithPhotos.album.photos || [];
+  return clone;
+}
+
 async function hydratePayloadPhotosFromOss(user, projectId, payload = {}) {
   const existingCount = payloadAlbums(payload).reduce((sum, album) => sum + ((album.photos || []).length), 0);
   if (existingCount > 0 || !user?.userId || !projectId) return { payload, hydrated: false };
@@ -461,7 +531,8 @@ async function getProjectRecord(id) {
 }
 
 async function writeProjectForUser(user, id, payload, stored = null, tiers = null) {
-  const currentStats = projectStats(payload);
+  const normalizedPayload = preferAlbumWithPhotos(payload);
+  const currentStats = projectStats(normalizedPayload);
   const projectStatsMap = { [id]: currentStats };
   const totals = {
     projectCount: 1,
@@ -472,7 +543,7 @@ async function writeProjectForUser(user, id, payload, stored = null, tiers = nul
   await putJson(`projects/${id}.json`, {
     editToken: stored?.editToken || "",
     userId: user.userId,
-    payload: { ...payload, cloud: { provider: "aliyun-oss", planetId: id, userId: user.userId } },
+    payload: { ...normalizedPayload, cloud: { provider: "aliyun-oss", planetId: id, userId: user.userId } },
     stats: currentStats,
     updatedAt: new Date().toISOString()
   });
@@ -480,7 +551,7 @@ async function writeProjectForUser(user, id, payload, stored = null, tiers = nul
   user.projectStats = projectStatsMap;
   user.stats = totals;
   await putUser(user);
-  return { user: publicUser(user, tiers || await getTiers()), usage: totals, stats: currentStats };
+  return { user: publicUser(user, tiers || await getTiers()), usage: totals, stats: currentStats, payload: normalizedPayload };
 }
 
 async function putProject(event, id, body) {
@@ -515,12 +586,12 @@ async function getProject(event, id) {
   if (!stored) return json({ error: "project not found" }, 404);
   const user = await sessionUser(event).catch(() => null);
   const owner = user?.userId && stored.userId === user.userId;
-  let payload = stored.payload;
+  let payload = preferAlbumWithPhotos(stored.payload);
   let hydrated = false;
   const projectUser = owner ? user : (stored.userId ? await getUser(stored.userId) : null);
   if (projectUser) {
     const result = await hydratePayloadPhotosFromOss(projectUser, id, stored.payload);
-    payload = result.payload;
+    payload = preferAlbumWithPhotos(result.payload);
     hydrated = result.hydrated;
     if (hydrated) {
       await writeProjectForUser(projectUser, id, payload, stored);
@@ -562,20 +633,37 @@ async function uploadToken(event, body) {
   const auth = await requireActiveUser(event);
   if (auth.error) return auth.error;
   const { user } = auth;
-  const tiers = await getTiers();
-  const tier = tiers[user.tier] || tiers.free || DEFAULT_TIERS.free;
-  const nextStats = {
-    ...(user.stats || emptyStats()),
-    photoCount: (user.stats?.photoCount || 0) + 1,
-    storageBytes: (user.stats?.storageBytes || 0) + Number(body.size || 0)
-  };
-  const error = quotaError(nextStats, tier, { maxPhotosInPlanet: Number(body.albumPhotoCount || 0) + 1 });
-  if (error) return json({ error, quota: tier, usage: nextStats }, 403);
   const planetId = String(body.planetId || "").trim();
   if (!planetId) return json({ error: "missing planetId" }, 400);
+  const stored = await getProjectRecord(planetId);
+  if (stored?.userId && stored.userId !== user.userId) return json({ error: "project belongs to another user" }, 403);
+  const tiers = await getTiers();
+  const tier = tiers[user.tier] || tiers.free || DEFAULT_TIERS.free;
   const suffix = `${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
   const key = `planets/${user.userId}/${planetId}/${suffix}-${safeName(body.filename)}`;
-  return json(ossPostPolicy(key));
+  const ticket = ossPostPolicy(key);
+  const basePayload = stored?.payload || defaultProjectPayload(planetId, user.userId);
+  const hydrated = await hydratePayloadPhotosFromOss(user, planetId, basePayload);
+  const photo = {
+    name: photoNameFromKey(key),
+    url: ticket.publicUrl,
+    story: "",
+    date: "",
+    location: "",
+    favorite: false
+  };
+  const payload = appendPhotoToPayload(hydrated.payload, photo);
+  const currentStats = projectStats(payload);
+  const totals = {
+    projectCount: 1,
+    planetCount: currentStats.planetCount || 0,
+    photoCount: currentStats.photoCount || 0,
+    storageBytes: currentStats.storageBytes || 0
+  };
+  const error = quotaError(totals, tier, currentStats);
+  if (error) return json({ error, quota: tier, usage: totals }, 403);
+  await writeProjectForUser(user, planetId, payload, { ...stored, editToken: body.editToken || stored?.editToken || "" }, tiers);
+  return json(ticket);
 }
 
 async function setupBucketCors() {
