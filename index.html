@@ -6940,6 +6940,7 @@
     }
 
     async function loadPhotos(files) {
+      if (cloudEnabled() && !requireActiveAccount("上传照片")) return;
       const all = Array.from(files || []);
       const remainingSlots = MAX_PHOTOS - state.photos.length;
       if (remainingSlots <= 0) {
