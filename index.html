@@ -6178,6 +6178,7 @@
     }
 
     function drawCover(context, image, x, y, size, enhance = false) {
+      if (!image) return;
       const ratio = Math.max(size / image.width, size / image.height);
       const width = image.width * ratio;
       const height = image.height * ratio;
@@ -7327,7 +7328,11 @@
         });
         if (loaded.length) {
           if (shouldShowProgress) setTaskProgress(0.92, "正在生成照片图集...");
-          await applyLoadedPhotos(loaded, message, options);
+          try {
+            await applyLoadedPhotos(loaded, message, options);
+          } catch (error) {
+            console.warn("applyLoadedPhotos error:", error);
+          }
           if (shouldShowProgress) {
             setTaskProgress(1, "加载完成");
             window.setTimeout(hideTaskDialog, 260);
