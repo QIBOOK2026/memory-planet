@@ -7237,7 +7237,7 @@
         const srcUrl = photoSrc(item);
         if (!srcUrl) {
           reportProgress();
-          resolve(null);
+          resolve({ ...item, image: null, index });
           return;
         }
         const attempt = (withCors) => new Promise((resolveAttempt) => {
