@@ -2913,38 +2913,37 @@
       return clone;
     }
 
-async function uploadPhotoToCloud(file, ticket) {
+    async function uploadPhotoToCloud(file, ticket) {
       if (!cloudEnabled() || state.cloud.readOnly || !activeUserReady()) return null;
       const quotaMessage = quotaMessageForUpload(state.photos.length + 1);
       if (quotaMessage) throw new Error(quotaMessage);
       const identity = ensureShareIdentity();
-      if (!ticket) {
+      let uploadTicket = ticket;
+      if (!uploadTicket) {
         const response = await fetch(`${cloudApiBase()}/uploads/token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({
-          planetId: identity.planetId,
-          editToken: identity.editToken,
-          filename: file.name,
-          type: file.type || "application/octet-stream",
-          size: file.size || 0,
-          albumPhotoCount: state.photos.length
-        })
-      });
-      const ticket = await readJsonResponse(response);
-      }
-      } else {
-      const form = new FormData();
-        Object.entries(ticket.fields || {}).forEach(([key, value]) => {
-        form.append(key, value);
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({
+            planetId: identity.planetId,
+            editToken: identity.editToken,
+            filename: file.name,
+            type: file.type || "application/octet-stream",
+            size: file.size || 0,
+            albumPhotoCount: state.photos.length
+          })
         });
-        form.append("file", file);
-        const upload = await fetch(ticket.uploadUrl, { method: "POST", body: form });
-        if (!upload.ok) {
-        throw new Error(`上传失败：${upload.status}`);
-        }
-        return ticket.publicUrl;
+        uploadTicket = await readJsonResponse(response);
       }
+      const form = new FormData();
+      Object.entries(uploadTicket.fields || {}).forEach(([key, value]) => {
+        form.append(key, value);
+      });
+      form.append("file", file);
+      const upload = await fetch(uploadTicket.uploadUrl, { method: "POST", body: form });
+      if (!upload.ok) {
+        throw new Error(`上传失败：${upload.status}`);
+      }
+      return uploadTicket.publicUrl;
     }
 
     async function copyShareLink(mode = "view") {
@@ -6968,7 +6967,7 @@ async function uploadPhotoToCloud(file, ticket) {
       const loaded = [];
       let failed = ignored;
       let cloudFailed = 0;
-      const BATCH_SIZE = 4;
+      const BATCH_SIZE = 8;
       for (let batchStart = 0; batchStart < selected.length; batchStart += BATCH_SIZE) {
         const batch = selected.slice(batchStart, Math.min(batchStart + BATCH_SIZE, selected.length));
         let batchTickets = null;
@@ -6990,16 +6989,16 @@ async function uploadPhotoToCloud(file, ticket) {
         const batchResults = await Promise.all(batch.map(async (file, batchIdx) => {
           const index = batchStart + batchIdx;
           try {
-            setTaskProgress(index / selected.length, `正在处理 ${index + 1} / ${selected.length}：${file.name}`);
-            const result = await loadImageFromFile(file);
-            let remoteUrl = "";
-            try {
-              const ticket = batchTickets ? batchTickets[index] : null;
-              remoteUrl = await uploadPhotoToCloud(file, ticket) || "";
-            } catch (error) {
-              console.warn(error);
-              cloudFailed += 1;
-            }
+            const ticket = batchTickets ? batchTickets[index] : null;
+            setTaskProgress(index / selected.length, `正在上传 ${index + 1} / ${selected.length}：${file.name}`);
+            const [loadResult, uploadResult] = await Promise.allSettled([
+              loadImageFromFile(file),
+              (async () => { try { return await uploadPhotoToCloud(file, ticket) || ""; } catch (e) { throw e; } })()
+            ]);
+            if (loadResult.status !== "fulfilled") { failed++; return null; }
+            const result = loadResult.value;
+            let remoteUrl = uploadResult.status === "fulfilled" ? (uploadResult.value || "") : "";
+            if (uploadResult.status !== "fulfilled") cloudFailed++;
             return {
               name: file.name.replace(/\.[^.]+$/, ""),
               dataUrl: result.dataUrl,
