@@ -2864,6 +2864,7 @@
 
     async function saveCloudProject(payload = getProjectPayload({ skipSync: true })) {
       if (!cloudEnabled() || state.cloud.readOnly || !activeUserReady()) return false;
+      const cloudPayload = cloudProjectPayload(payload);
       const identity = ensureShareIdentity();
       state.cloud.projectId = identity.planetId;
       state.cloud.editToken = identity.editToken;
@@ -2874,7 +2875,7 @@
         body: JSON.stringify({
           editToken: identity.editToken,
           payload: {
-            ...payload,
+            ...cloudPayload,
             cloud: { provider: "aliyun-oss", planetId: identity.planetId, userId: state.auth.user?.userId || "" }
           }
         })
@@ -2885,6 +2886,26 @@
         refreshAuthUi();
       }
       return true;
+    }
+
+    function cloudProjectPayload(payload) {
+      const clone = JSON.parse(JSON.stringify(payload));
+      const filterPhotos = (photos = []) => photos
+        .filter((photo) => photo?.url)
+        .map((photo) => {
+          const { dataUrl, image, ...rest } = photo;
+          return rest;
+        });
+      if (clone.universe?.galaxies) {
+        clone.universe.galaxies.forEach((galaxy) => {
+          galaxy.albums = (galaxy.albums || []).map((album) => ({
+            ...album,
+            photos: filterPhotos(album.photos || [])
+          }));
+        });
+      }
+      clone.photos = filterPhotos(clone.photos || []);
+      return clone;
     }
 
     async function uploadPhotoToCloud(file) {
@@ -6218,9 +6239,7 @@
       refreshUniversePanel();
       const payload = getProjectPayload({ skipSync: true });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      if (cloudEnabled()) {
-        await saveCloudProject(payload);
-      }
+      if (cloudEnabled() && activeUserReady()) await saveCloudProject(payload);
       return payload;
     }
 
@@ -6228,7 +6247,7 @@
       try {
         persistProjectNow(options).catch((error) => {
           console.warn(error);
-          setStatus("作品已更新，但云端保存失败，请稍后再试。", "warn");
+          setStatus(`作品已更新，但云端保存失败：${error.message || "请稍后再试"}`, "warn");
         });
       } catch (error) {
         console.warn(error);
