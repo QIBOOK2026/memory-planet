@@ -99,6 +99,7 @@ function publicUser(user, tiers = DEFAULT_TIERS) {
     status: user.status,
     tier: user.tier,
     tierConfig: tier,
+    projectIds: Array.isArray(user.projectIds) ? user.projectIds : [],
     stats: user.stats || emptyStats(),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -395,10 +396,17 @@ async function putProject(event, id, body) {
   return json({ ok: true, user: publicUser(user, tiers), usage: totals, quota: tier });
 }
 
-async function getProject(id) {
+async function getProject(event, id) {
   const stored = await getProjectRecord(id);
   if (!stored) return json({ error: "project not found" }, 404);
-  return json({ payload: stored.payload, updatedAt: stored.updatedAt, userId: stored.userId || "" });
+  const user = await sessionUser(event).catch(() => null);
+  const owner = user?.userId && stored.userId === user.userId;
+  return json({
+    payload: stored.payload,
+    updatedAt: stored.updatedAt,
+    userId: stored.userId || "",
+    editToken: owner ? (stored.editToken || "") : ""
+  });
 }
 
 function ossPostPolicy(key) {
@@ -531,7 +539,7 @@ exports.handler = async function handler(event) {
     const match = path.match(/^\/projects\/([^/]+)$/);
     if (match) {
       const id = decodeURIComponent(match[1]);
-      if (method === "GET") return getProject(id);
+      if (method === "GET") return getProject(event, id);
       if (method === "PUT") return putProject(event, id, getBody(event));
     }
 

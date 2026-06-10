@@ -2267,6 +2267,7 @@
         config: null,
         editingTier: "free"
       },
+      restoredFromAccountCloud: false,
       universe: null,
       activeGalaxyId: "",
       activeAlbumId: "",
@@ -2459,8 +2460,8 @@
     }
 
     function ensureShareIdentity() {
-      if (state.cloud.projectId && state.cloud.editToken && !state.cloud.readOnly) {
-        return { planetId: state.cloud.projectId, editToken: state.cloud.editToken };
+      if (state.cloud.projectId && !state.cloud.readOnly && (state.cloud.editToken || activeUserReady())) {
+        return { planetId: state.cloud.projectId, editToken: state.cloud.editToken || "" };
       }
       let saved = null;
       try {
@@ -2734,8 +2735,11 @@
         if (state.auth.user?.status === "pending") setStatus("账号待审核，通过后可创建星球和分享。", "warn");
         else if (state.auth.user?.status === "blocked") setStatus("账号已被禁用，无法使用云端功能。", "warn");
         else {
-          setStatus("登录成功，已开启云端保存和分享。", "ready");
-          saveProject();
+          const restored = await restoreUserCloudProject("登录成功，已加载账号里的云端作品。");
+          if (!restored) {
+            setStatus("登录成功，已开启云端保存和分享。", "ready");
+            saveProject();
+          }
         }
       } catch (error) {
         authError.textContent = error.message || "操作失败，请稍后再试。";
@@ -2759,6 +2763,7 @@
         localStorage.removeItem(AUTH_KEY);
       }
       refreshAuthUi();
+      await restoreUserCloudProject();
     }
 
     async function restoreAdminSession() {
@@ -2773,6 +2778,25 @@
         localStorage.removeItem(ADMIN_AUTH_KEY);
       }
       refreshAdminEntryUi();
+    }
+
+    async function restoreUserCloudProject(message = "已加载账号里的云端作品。") {
+      if (!activeUserReady()) return false;
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("id")) return false;
+      const projectIds = Array.isArray(state.auth.user?.projectIds) ? state.auth.user.projectIds : [];
+      const projectId = projectIds[projectIds.length - 1] || "";
+      if (!projectId) return false;
+      try {
+        const payload = await loadCloudProject(projectId);
+        await restoreProject(payload, message);
+        state.restoredFromAccountCloud = true;
+        return true;
+      } catch (error) {
+        console.warn(error);
+        setStatus("登录成功，但读取云端作品失败，请稍后刷新重试。", "warn");
+        return false;
+      }
     }
 
     function requireActiveAccount(action) {
@@ -2809,8 +2833,14 @@
     }
 
     async function loadCloudProject(id) {
-      const response = await fetch(cloudProjectPath(id), { method: "GET" });
+      const response = await fetch(cloudProjectPath(id), { method: "GET", headers: authHeaders() });
       const data = await readJsonResponse(response);
+      if (data?.editToken || data?.userId === state.auth.user?.userId) {
+        state.cloud.projectId = id;
+        state.cloud.editToken = data.editToken || state.cloud.editToken || "";
+        state.cloud.readOnly = false;
+        localStorage.setItem(SHARE_KEY, JSON.stringify({ planetId: id, editToken: state.cloud.editToken }));
+      }
       return data?.payload || data;
     }
 
@@ -7552,6 +7582,12 @@
       }
       const raw = localStorage.getItem(STORAGE_KEY);
       const legacy = localStorage.getItem("photoParticleGlobe.stories");
+      if (state.restoredFromAccountCloud && !raw && !legacy) return;
+      if (state.restoredFromAccountCloud) {
+        setActiveTab("universe");
+        tryStartDefaultMusic();
+        return;
+      }
       if (!raw && !legacy) {
         await restoreProject({
           title: DEFAULT_ALBUM_TITLE,
