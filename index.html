@@ -7267,7 +7267,7 @@
         const needsCors = typeof item.url === "string" && !!item.url;
         (needsCors ? attempt(true) : attempt(false)).then((img) => {
           reportProgress();
-          if (!img) { resolve(null); return; }
+          if (!img) { resolve({ ...item, image: null, index }); return; }
           resolve({
             name: item.name || `照片 ${index + 1}`,
             dataUrl: item.dataUrl || "",
