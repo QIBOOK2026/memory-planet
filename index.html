@@ -2913,12 +2913,13 @@
       return clone;
     }
 
-    async function uploadPhotoToCloud(file) {
+async function uploadPhotoToCloud(file, ticket) {
       if (!cloudEnabled() || state.cloud.readOnly || !activeUserReady()) return null;
       const quotaMessage = quotaMessageForUpload(state.photos.length + 1);
       if (quotaMessage) throw new Error(quotaMessage);
       const identity = ensureShareIdentity();
-      const response = await fetch(`${cloudApiBase()}/uploads/token`, {
+      if (!ticket) {
+        const response = await fetch(`${cloudApiBase()}/uploads/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({
@@ -2931,16 +2932,19 @@
         })
       });
       const ticket = await readJsonResponse(response);
-      const form = new FormData();
-      Object.entries(ticket.fields || {}).forEach(([key, value]) => {
-        form.append(key, value);
-      });
-      form.append("file", file);
-      const upload = await fetch(ticket.uploadUrl, { method: "POST", body: form });
-      if (!upload.ok) {
-        throw new Error(`上传失败：${upload.status}`);
       }
-      return ticket.publicUrl;
+      } else {
+      const form = new FormData();
+        Object.entries(ticket.fields || {}).forEach(([key, value]) => {
+        form.append(key, value);
+        });
+        form.append("file", file);
+        const upload = await fetch(ticket.uploadUrl, { method: "POST", body: form });
+        if (!upload.ok) {
+        throw new Error(`上传失败：${upload.status}`);
+        }
+        return ticket.publicUrl;
+      }
     }
 
     async function copyShareLink(mode = "view") {
@@ -6964,34 +6968,58 @@
       const loaded = [];
       let failed = ignored;
       let cloudFailed = 0;
-      for (let index = 0; index < selected.length; index += 1) {
-        const file = selected[index];
-        try {
-          setTaskProgress(index / selected.length, `正在读取 ${index + 1} / ${selected.length}：${file.name}`);
-          const result = await loadImageFromFile(file);
-          let remoteUrl = "";
+      const BATCH_SIZE = 4;
+      for (let batchStart = 0; batchStart < selected.length; batchStart += BATCH_SIZE) {
+        const batch = selected.slice(batchStart, Math.min(batchStart + BATCH_SIZE, selected.length));
+        let batchTickets = null;
+        if (batchStart === 0 && cloudEnabled() && activeUserReady()) {
           try {
-            remoteUrl = await uploadPhotoToCloud(file) || "";
+            const ticketResponse = await fetch(`${cloudApiBase()}/uploads/batch-tokens`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...authHeaders() },
+              body: JSON.stringify({
+                planetId: ensureShareIdentity().planetId,
+                editToken: ensureShareIdentity().editToken,
+                files: selected.map(function(f) { return { filename: f.name, type: f.type, size: f.size }; })
+              })
+            });
+            const ticketData = await readJsonResponse(ticketResponse);
+            batchTickets = ticketData.tickets;
+          } catch (e) { console.warn(e); }
+        }
+        const batchResults = await Promise.all(batch.map(async (file, batchIdx) => {
+          const index = batchStart + batchIdx;
+          try {
+            setTaskProgress(index / selected.length, `正在处理 ${index + 1} / ${selected.length}：${file.name}`);
+            const result = await loadImageFromFile(file);
+            let remoteUrl = "";
+            try {
+              const ticket = batchTickets ? batchTickets[index] : null;
+              remoteUrl = await uploadPhotoToCloud(file, ticket) || "";
+            } catch (error) {
+              console.warn(error);
+              cloudFailed += 1;
+            }
+            return {
+              name: file.name.replace(/\.[^.]+$/, ""),
+              dataUrl: result.dataUrl,
+              url: remoteUrl,
+              story: `这张照片来自「${file.name}」。你可以在这里补充它背后的时间、地点、人物和故事。`,
+              date: "",
+              location: "",
+              favorite: false,
+              image: result.image,
+              index
+            };
           } catch (error) {
             console.warn(error);
-            cloudFailed += 1;
+            failed += 1;
+            return null;
           }
-          loaded.push({
-            name: file.name.replace(/\.[^.]+$/, ""),
-            dataUrl: result.dataUrl,
-            url: remoteUrl,
-            story: `这张照片来自「${file.name}」。你可以在这里补充它背后的时间、地点、人物和故事。`,
-            date: "",
-            location: "",
-            favorite: false,
-            image: result.image,
-            index
-          });
-        } catch (error) {
-          console.warn(error);
-          failed += 1;
+        }));
+        for (const item of batchResults) {
+          if (item) loaded.push(item);
         }
-        await waitForNextFrame();
       }
       if (!loaded.length) {
         hideTaskDialog();
