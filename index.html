@@ -6238,8 +6238,23 @@
       }
       refreshUniversePanel();
       const payload = getProjectPayload({ skipSync: true });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      let localSaveFailed = false;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (error) {
+        console.warn(error);
+        localSaveFailed = true;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudProjectPayload(payload)));
+        } catch (fallbackError) {
+          console.warn(fallbackError);
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
       if (cloudEnabled() && activeUserReady()) await saveCloudProject(payload);
+      if (localSaveFailed) {
+        setStatus("本地缓存空间不足，已继续尝试保存到云端。刷新后会优先读取云端作品。", "warn");
+      }
       return payload;
     }
 
@@ -6924,6 +6939,7 @@
       }
 
       setStatus(`正在追加 ${selected.length} 张照片，当前 ${state.photos.length} / ${MAX_PHOTOS}。`);
+      if (activeUserReady()) localStorage.removeItem(STORAGE_KEY);
       showTaskProgress("正在上传照片", `准备读取 ${selected.length} 张照片...`);
       const loaded = [];
       let failed = ignored;
