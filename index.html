@@ -6114,6 +6114,15 @@
       updateGestureDisplay(mode);
     }
 
+    function openPhotosAfterLoad() {
+      if (!state.photos.length) return;
+      state.targetMode = "explode";
+      state.explosion = Math.max(state.explosion, 0.42);
+      state.mouseMode = "open";
+      updateGestureDisplay("open");
+      updateBlackHoleVisualDissolve();
+    }
+
     function setShape(shape, options = {}) {
       if (state.viewMode === "universe" && !options.silent) {
         const found = findAlbum(state.selectedUniverseAlbumId || state.activeAlbumId);
@@ -6910,6 +6919,7 @@
       state.photos = loaded.map((photo) => ({ ...photo }));
       refreshPhotoMaterial();
       refreshPhotoManager();
+      if (options.autoOpen !== false) openPhotosAfterLoad();
       if (!options.skipSyncCurrent) {
         if (options.awaitSave) await persistProjectNow();
         else saveProject();
