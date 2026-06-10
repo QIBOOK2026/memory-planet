@@ -2714,17 +2714,20 @@
           body: JSON.stringify({ username, password })
         });
         if (state.auth.mode === "register") {
+          state.auth.token = data.sessionToken || "";
+          state.auth.user = data.user || null;
+          if (state.auth.token) localStorage.setItem(AUTH_KEY, JSON.stringify({ token: state.auth.token }));
+          refreshAuthUi();
+          closeAuthPrompt();
           if (data.user?.status === "pending") {
-            authError.textContent = "注册成功，账号等待管理员审核。";
-            state.auth.user = data.user;
-            refreshAuthUi();
+            setStatus("注册成功，账号等待管理员审核。刷新页面也会保留登录状态。", "warn");
             return;
           }
-          state.auth.mode = "login";
-          authPasswordInput.value = "";
-          authError.textContent = "注册成功，请登录。";
-          openAuthPrompt("注册成功，请输入密码登录。", "login");
-          authUsernameInput.value = username;
+          const restored = await restoreUserCloudProject("注册成功，已加载账号里的云端作品。");
+          if (!restored) {
+            setStatus("注册成功，已开启云端保存和分享。", "ready");
+            saveProject();
+          }
           return;
         }
         state.auth.token = data.sessionToken || "";

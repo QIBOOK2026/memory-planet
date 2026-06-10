@@ -243,6 +243,16 @@ async function requireActiveUser(event) {
   return { user };
 }
 
+async function createSession(user) {
+  const token = randomToken("s");
+  await putJson(`sessions/${hashText(token)}.json`, {
+    userId: user.userId,
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString()
+  });
+  return token;
+}
+
 async function register(body) {
   const username = normalizeUsername(body.username);
   const password = String(body.password || "");
@@ -267,8 +277,9 @@ async function register(body) {
   };
   await putJson(`usernames/${username}.json`, { userId: user.userId, username, createdAt: now });
   await putUser(user);
+  const token = await createSession(user);
   const tiers = await getTiers();
-  return json({ ok: true, user: publicUser(user, tiers), reviewRequired: config.reviewRequired });
+  return json({ ok: true, sessionToken: token, user: publicUser(user, tiers), reviewRequired: config.reviewRequired });
 }
 
 async function login(body) {
@@ -279,12 +290,7 @@ async function login(body) {
   if (!user || !verifyPassword(password, user.passwordHash)) return json({ error: "用户名或密码错误" }, 401);
   user.lastLoginAt = new Date().toISOString();
   await putUser(user);
-  const token = randomToken("s");
-  await putJson(`sessions/${hashText(token)}.json`, {
-    userId: user.userId,
-    createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString()
-  });
+  const token = await createSession(user);
   const tiers = await getTiers();
   return json({ ok: true, sessionToken: token, user: publicUser(user, tiers) });
 }
@@ -371,14 +377,13 @@ async function putProject(event, id, body) {
   const tiers = await getTiers();
   const tier = tiers[user.tier] || tiers.free || DEFAULT_TIERS.free;
   const currentStats = projectStats(body.payload);
-  const projectStatsMap = { ...(user.projectStats || {}) };
-  projectStatsMap[id] = currentStats;
-  const totals = Object.values(projectStatsMap).reduce((sum, item) => ({
-    projectCount: sum.projectCount + 1,
-    planetCount: sum.planetCount + (item.planetCount || 0),
-    photoCount: sum.photoCount + (item.photoCount || 0),
-    storageBytes: sum.storageBytes + (item.storageBytes || 0)
-  }), emptyStats());
+  const projectStatsMap = { [id]: currentStats };
+  const totals = {
+    projectCount: 1,
+    planetCount: currentStats.planetCount || 0,
+    photoCount: currentStats.photoCount || 0,
+    storageBytes: currentStats.storageBytes || 0
+  };
   const error = quotaError(totals, tier, currentStats);
   if (error) return json({ error, quota: tier, usage: totals }, 403);
 
@@ -389,7 +394,7 @@ async function putProject(event, id, body) {
     stats: currentStats,
     updatedAt: new Date().toISOString()
   });
-  user.projectIds = Array.from(new Set([...(user.projectIds || []), id]));
+  user.projectIds = [id];
   user.projectStats = projectStatsMap;
   user.stats = totals;
   await putUser(user);
