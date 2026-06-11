@@ -2686,7 +2686,7 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
 
 function refreshAuthUi() {
   const user = state.auth.user;
-  if (user \&\& user.status === "active") {
+  if (user && user.status === "active") {
     accountBtn.style.display = "none";
     userMenu.classList.add("show");
     const initial = (user.username || "?")[0].toUpperCase();
@@ -2708,7 +2708,7 @@ function refreshAuthUi() {
 
 
 
-    }
+
 
     function adminEntryAllowed() {
       return Boolean(
@@ -9252,7 +9252,7 @@ accountBtn.addEventListener("click", () => {
   openAuthPrompt("登录后可创建星球、云端保存和分享作品。");
 });
 userMenu.addEventListener("mouseenter", () => {
-  if (state.auth.user \&\& state.auth.user.status === "active") userDropdown.classList.add("show");
+  if (state.auth.user && state.auth.user.status === "active") userDropdown.classList.add("show");
 });
 userMenu.addEventListener("mouseleave", () => {
   userDropdown.classList.remove("show");
