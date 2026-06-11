@@ -2815,10 +2815,7 @@
       if (params.get("id")) return false;
       const projectIds = Array.isArray(state.auth.user?.projectIds) ? state.auth.user.projectIds : [];
       if (!projectIds.length) return false;
-      let projectId = "";
-      for (const pid of projectIds) {
-        if (pid) { projectId = pid; break; }
-      }
+      const projectId = projectIds[projectIds.length - 1] || "";
       if (!projectId) return false;
       try {
         const payload = await loadCloudProject(projectId);
