@@ -7314,7 +7314,7 @@
         }
       }
       await Promise.all(Array.from({ length: concurrency }, worker));
-      return results.filter(Boolean);
+      return results.filter((r) => r && r.image);
     }
 
     async function loadAlbumIntoViewer(album, message = "已进入星球。", options = {}) {
