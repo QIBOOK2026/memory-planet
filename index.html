@@ -1483,7 +1483,72 @@
     .admin-btn-danger { color: #ff8a8a; border: 1px solid rgba(255, 107, 107, 0.28); background: rgba(255, 107, 107, 0.06); border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 12px; transition: background 0.15s; }
     .admin-btn-danger:hover { background: rgba(255, 107, 107, 0.12); }
     .admin-btn-ok { color: var(--accent); border: 1px solid rgba(91, 231, 255, 0.24); background: rgba(91, 231, 255, 0.06); border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
-    .account-btn { min-width: 42px; max-width: 128px; padding: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* ── 用户头像下拉菜单 ── */
+    .user-menu { position: relative; display: none; }
+    .user-menu.show { display: block; }
+    .user-avatar-btn {
+      width: 38px; min-height: 38px; padding: 0; cursor: pointer;
+      border: 1.5px solid rgba(120, 216, 255, 0.32); border-radius: 50%;
+      background: linear-gradient(135deg, rgba(91, 231, 255, 0.18), rgba(140, 120, 255, 0.14));
+      color: var(--accent); font-weight: 600; font-size: 15px; font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+    }
+    .user-avatar-btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(91, 231, 255, 0.28);
+      transform: scale(1.06);
+    }
+    .user-dropdown {
+      position: absolute; top: calc(100% + 8px); right: 0; z-index: 30;
+      min-width: 220px;
+      border: 1px solid rgba(120, 216, 255, 0.16); border-radius: 10px;
+      background: rgba(5, 14, 26, 0.96);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(120, 216, 255, 0.06) inset;
+      padding: 6px;
+      opacity: 0; visibility: hidden;
+      transform: translateY(-6px);
+      transition: opacity 0.18s, visibility 0.18s, transform 0.18s;
+      pointer-events: none;
+    }
+    .user-menu:hover .user-dropdown,
+    .user-dropdown.show {
+      opacity: 1; visibility: visible;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .user-dropdown-header {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px 8px;
+    }
+    .user-dropdown-avatar {
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #5be7ff, #8c78ff);
+      color: #050e1a; font-weight: 700; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .user-dropdown-info { display: flex; flex-direction: column; min-width: 0; }
+    .user-dropdown-name {
+      font-size: 14px; font-weight: 600; color: var(--ink);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .user-dropdown-tier { font-size: 12px; color: var(--muted); }
+    .user-dropdown-divider {
+      height: 1px; margin: 4px 8px;
+      background: rgba(120, 216, 255, 0.12);
+    }
+    .user-dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; min-height: 37px; padding: 0 12px; border: none; border-radius: 6px;
+      background: transparent; color: var(--ink); font: inherit; font-size: 13px;
+      cursor: pointer; transition: background 0.14s;
+    }
+    .user-dropdown-item:hover { background: rgba(120, 216, 255, 0.08); }
+    .user-dropdown-item-danger { color: #ff7b7b; }
+    .user-dropdown-item-danger:hover { background: rgba(255, 107, 107, 0.1); }
+    .user-dropdown-item-icon { width: 18px; text-align: center; font-size: 14px; opacity: 0.8; }
+
     .admin-entry-btn { display: none; color: var(--accent); border-color: rgba(91, 231, 255, 0.42); }
     .admin-entry-btn.show { display: inline-flex; }
     .auth-mode {
@@ -1519,6 +1584,23 @@
   <video id="camera" class="video-probe" playsinline muted></video>
   <button id="panelToggle" class="panel-toggle" type="button" aria-label="隐藏面板">&lt;</button>
   <div class="quick-actions" aria-label="快捷设置">
+<div class="user-menu" id="userMenu">
+      <button id="userAvatarBtn" class="user-avatar-btn" type="button" aria-label="用户菜单">
+        <span id="userAvatarIcon">?</span>
+      </button>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="user-dropdown-header">
+          <span class="user-dropdown-avatar" id="userDropdownAvatar">?</span>
+          <div class="user-dropdown-info">
+            <span class="user-dropdown-name" id="userDropdownName">--</span>
+            <span class="user-dropdown-tier" id="userDropdownTier">--</span>
+          </div>
+        </div>
+        <div class="user-dropdown-divider"></div>
+        <button class="user-dropdown-item" id="userChangePasswordBtn" type="button">修改密码</button>
+        <button class="user-dropdown-item user-dropdown-item-danger" id="userLogoutBtn" type="button">退出登录</button>
+      </div>
+    </div>
     <button id="accountBtn" class="account-btn" type="button" aria-label="账号登录">登录</button>
     <button id="adminEntryBtn" class="account-btn admin-entry-btn" type="button" aria-label="管理后台">后台</button>
     <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-label="全屏显示">⛶</button>
@@ -1980,6 +2062,15 @@
     const mount = document.getElementById("stage");
     const video = document.getElementById("camera");
     const accountBtn = document.getElementById("accountBtn");
+const userMenu = document.getElementById("userMenu");
+const userAvatarBtn = document.getElementById("userAvatarBtn");
+const userAvatarIcon = document.getElementById("userAvatarIcon");
+const userDropdown = document.getElementById("userDropdown");
+const userDropdownAvatar = document.getElementById("userDropdownAvatar");
+const userDropdownName = document.getElementById("userDropdownName");
+const userDropdownTier = document.getElementById("userDropdownTier");
+const userChangePasswordBtn = document.getElementById("userChangePasswordBtn");
+const userLogoutBtn = document.getElementById("userLogoutBtn");
     const adminEntryBtn = document.getElementById("adminEntryBtn");
     const panelToggle = document.getElementById("panelToggle");
     const fullscreenToggle = document.getElementById("fullscreenToggle");
@@ -2593,12 +2684,30 @@
       return user.username || "账号";
     }
 
-    function refreshAuthUi() {
-      accountBtn.textContent = authStatusText();
-      accountBtn.title = state.auth.user
-        ? `${state.auth.user.username} · ${state.auth.user.tier || "free"}`
-        : "登录或注册";
-      refreshAdminEntryUi();
+function refreshAuthUi() {
+  const user = state.auth.user;
+  if (user \&\& user.status === "active") {
+    accountBtn.style.display = "none";
+    userMenu.classList.add("show");
+    const initial = (user.username || "?")[0].toUpperCase();
+    userAvatarIcon.textContent = initial;
+    userDropdownAvatar.textContent = initial;
+    userDropdownName.textContent = user.username || "账号";
+    const tier = user.tierConfig;
+    userDropdownTier.textContent = tier ? tier.name : (user.tier || "free");
+  } else {
+    accountBtn.style.display = "inline-flex";
+    accountBtn.textContent = !user ? "登录" : (user.status === "pending" ? "待审核" : "已禁用");
+    accountBtn.title = user ? user.username + " · " + (user.tier || "free") : "登录或注册";
+    userMenu.classList.remove("show");
+  }
+  refreshAdminEntryUi();
+}
+
+
+
+
+
     }
 
     function adminEntryAllowed() {
@@ -2678,13 +2787,26 @@
       passwordLock.classList.remove("show");
     }
 
-    function openAccountActions() {
-      const user = state.auth.user;
-      accountSummary.textContent = user
-        ? `${user.username} · ${user.status} · ${user.tier || "free"}`
-        : "未登录";
-      accountLock.classList.add("show");
-    }
+function closeUserDropdown() { userDropdown.classList.remove("show"); }
+function openAccountActions() {
+  const user = state.auth.user;
+  if (!user || user.status !== "active") return;
+  closeUserDropdown();
+  accountSummary.textContent = user
+    ? user.username + " · " + user.status + " · " + (user.tier || "free")
+    : "未登录";
+  accountLock.classList.add("show");
+}
+
+function closeAccountActions() {
+  accountLock.classList.remove("show");
+}
+
+
+
+
+
+
 
     function closeAccountActions() {
       accountLock.classList.remove("show");
@@ -2700,6 +2822,7 @@
       state.auth.user = null;
       localStorage.removeItem(AUTH_KEY);
       refreshAuthUi();
+      closeUserDropdown();
       closeAccountActions();
       closeAdminPanel();
       await clearLocalViewAfterLogout();
@@ -9124,13 +9247,29 @@
       setStatus(`面板透明度：${value}%。`, "ready");
       scheduleSaveProject();
     });
-    accountBtn.addEventListener("click", async () => {
-      if (!state.auth.user) {
-        openAuthPrompt("登录后可创建星球、云端保存和分享作品。");
-        return;
-      }
-      openAccountActions();
-    });
+accountBtn.addEventListener("click", () => {
+  openAuthPrompt("登录后可创建星球、云端保存和分享作品。");
+});
+userMenu.addEventListener("mouseenter", () => {
+  if (state.auth.user \&\& state.auth.user.status === "active") userDropdown.classList.add("show");
+});
+userMenu.addEventListener("mouseleave", () => {
+  userDropdown.classList.remove("show");
+});
+userChangePasswordBtn.addEventListener("click", () => {
+  closeUserDropdown();
+  openPasswordPrompt();
+});
+userLogoutBtn.addEventListener("click", () => {
+  closeUserDropdown();
+  logoutCurrentUser();
+});
+
+
+
+
+
+
     authLoginMode.addEventListener("click", () => openAuthPrompt("登录后可创建星球、云端保存和分享作品。", "login"));
     authRegisterMode.addEventListener("click", () => openAuthPrompt("注册后即可保存你的星球；若后台开启审核，需要通过后才能分享。", "register"));
     authSubmitBtn.addEventListener("click", submitAuth);
