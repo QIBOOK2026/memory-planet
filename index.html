@@ -159,6 +159,42 @@
     body:not(.panel-hidden) .panel-toggle {
       left: 404px;
     }
+    .account-btn {
+      width: auto;
+      min-width: 56px;
+      min-height: 34px;
+      padding: 0 14px;
+      border: 1px solid rgba(120, 216, 255, 0.28);
+      border-radius: 7px;
+      background: linear-gradient(135deg, rgba(91, 231, 255, 0.12), rgba(47, 124, 255, 0.08));
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 34px;
+      letter-spacing: 0;
+      transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+      white-space: nowrap;
+    }
+    .account-btn:hover {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, rgba(91, 231, 255, 0.2), rgba(47, 124, 255, 0.14));
+      box-shadow: 0 0 14px rgba(91, 231, 255, 0.2);
+    }
+    .admin-entry-btn {
+      display: none;
+      font-size: 12px;
+      padding: 0 10px;
+      min-width: 44px;
+      border-color: rgba(255, 209, 102, 0.25);
+      background: linear-gradient(135deg, rgba(255, 209, 102, 0.08), rgba(255, 166, 0, 0.05));
+      color: var(--warn);
+    }
+    .admin-entry-btn.show { display: inline-flex; align-items: center; justify-content: center; }
+    .admin-entry-btn:hover {
+      border-color: var(--warn);
+      background: linear-gradient(135deg, rgba(255, 209, 102, 0.15), rgba(255, 166, 0, 0.1));
+      box-shadow: 0 0 14px rgba(255, 209, 102, 0.2);
+    }
 
     .hud header {
       padding: 15px 15px 11px;
@@ -1500,16 +1536,17 @@
       transform: scale(1.06);
     }
     .user-dropdown {
-      position: absolute; top: calc(100% + 8px); right: 0; z-index: 30;
-      min-width: 220px;
-      border: 1px solid rgba(120, 216, 255, 0.16); border-radius: 10px;
-      background: rgba(5, 14, 26, 0.96);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(120, 216, 255, 0.06) inset;
+      position: absolute; top: calc(100% + 6px); right: 0; z-index: 30;
+      min-width: 208px;
+      border: 1px solid rgba(120, 216, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(6, 16, 28, 0.97);
+      backdrop-filter: blur(22px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(120, 216, 255, 0.04) inset;
       padding: 6px;
       opacity: 0; visibility: hidden;
-      transform: translateY(-6px);
-      transition: opacity 0.18s, visibility 0.18s, transform 0.18s;
+      transform: translateY(-4px);
+      transition: opacity 0.16s, visibility 0.16s, transform 0.16s;
       pointer-events: none;
     }
     .user-menu:hover .user-dropdown,
@@ -1519,34 +1556,39 @@
       pointer-events: auto;
     }
     .user-dropdown-header {
-      display: flex; align-items: center; gap: 12px; padding: 10px 12px 8px;
+      display: flex; align-items: center; gap: 10px; padding: 8px 10px 6px;
     }
     .user-dropdown-avatar {
-      width: 40px; height: 40px; flex-shrink: 0;
+      width: 36px; height: 36px; flex-shrink: 0;
       border-radius: 50%;
       background: linear-gradient(135deg, #5be7ff, #8c78ff);
-      color: #050e1a; font-weight: 700; font-size: 18px;
+      color: #050e1a; font-weight: 700; font-size: 16px;
       display: flex; align-items: center; justify-content: center;
     }
     .user-dropdown-info { display: flex; flex-direction: column; min-width: 0; }
     .user-dropdown-name {
-      font-size: 14px; font-weight: 600; color: var(--ink);
+      font-size: 13px; font-weight: 600; color: var(--ink);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .user-dropdown-tier { font-size: 12px; color: var(--muted); }
+    .user-dropdown-tier { font-size: 11px; color: var(--muted); }
     .user-dropdown-divider {
+      height: 1px; margin: 4px 8px;
+      background: rgba(120, 216, 255, 0.1);
+    }.user-dropdown-divider {
       height: 1px; margin: 4px 8px;
       background: rgba(120, 216, 255, 0.12);
     }
     .user-dropdown-item {
-      display: flex; align-items: center; gap: 10px;
-      width: 100%; min-height: 37px; padding: 0 12px; border: none; border-radius: 6px;
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; min-height: 36px; padding: 0 10px; border: none; border-radius: 6px;
       background: transparent; color: var(--ink); font: inherit; font-size: 13px;
-      cursor: pointer; transition: background 0.14s;
+      cursor: pointer; transition: background 0.14s, color 0.14s;
+      text-align: left;
     }
-    .user-dropdown-item:hover { background: rgba(120, 216, 255, 0.08); }
+    .user-dropdown-item:hover { background: rgba(120, 216, 255, 0.08); color: #fff; }
     .user-dropdown-item-danger { color: #ff7b7b; }
-    .user-dropdown-item-danger:hover { background: rgba(255, 107, 107, 0.1); }
+    .user-dropdown-item-danger:hover { background: rgba(255, 107, 107, 0.1); color: #ff9999; }
+    .user-dropdown-item-icon { width: 18px; text-align: center; font-size: 13px; flex-shrink: 0; }
     .user-dropdown-item-icon { width: 18px; text-align: center; font-size: 14px; opacity: 0.8; }
 
     .admin-entry-btn { display: none; color: var(--accent); border-color: rgba(91, 231, 255, 0.42); }
@@ -1597,8 +1639,8 @@
           </div>
         </div>
         <div class="user-dropdown-divider"></div>
-        <button class="user-dropdown-item" id="userChangePasswordBtn" type="button">修改密码</button>
-        <button class="user-dropdown-item user-dropdown-item-danger" id="userLogoutBtn" type="button">退出登录</button>
+        <button class="user-dropdown-item" id="userChangePasswordBtn" type="button"><span class="user-dropdown-item-icon">🔑</span>修改密码</button>
+        <button class="user-dropdown-item user-dropdown-item-danger" id="userLogoutBtn" type="button"><span class="user-dropdown-item-icon">🚪</span>退出登录</button>
       </div>
     </div>
     <button id="accountBtn" class="account-btn" type="button" aria-label="账号登录">登录</button>
