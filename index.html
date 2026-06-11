@@ -2753,6 +2753,7 @@
         localStorage.setItem(AUTH_KEY, JSON.stringify({ token: state.auth.token }));
         refreshAuthUi();
         closeAuthPrompt();
+        await clearLocalViewAfterLogout();
         if (state.auth.user?.status === "pending") setStatus("账号待审核，通过后可创建星球和分享。", "warn");
         else if (state.auth.user?.status === "blocked") setStatus("账号已被禁用，无法使用云端功能。", "warn");
         else {
@@ -2816,6 +2817,8 @@
         const payload = await loadCloudProject(projectId);
         await restoreProject(payload, message);
         state.restoredFromAccountCloud = true;
+        state.cloud.projectId = projectId;
+        state.cloud.editToken = "";
         return true;
       } catch (error) {
         console.warn(error);
