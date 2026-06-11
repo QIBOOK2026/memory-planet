@@ -6459,6 +6459,9 @@
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(SHARE_KEY);
       localStorage.removeItem("photoParticleGlobe.stories");
+      localStorage.removeItem(ADMIN_AUTH_KEY);
+      state.admin.token = "";
+      state.admin.username = "";
       state.cloud.projectId = "";
       state.cloud.editToken = "";
       state.cloud.readOnly = false;
