@@ -2748,18 +2748,21 @@
           }
           return;
         }
+        const prevUserId = state.auth.user?.userId || "";
         state.auth.token = data.sessionToken || "";
         state.auth.user = data.user || null;
         localStorage.setItem(AUTH_KEY, JSON.stringify({ token: state.auth.token }));
         refreshAuthUi();
         closeAuthPrompt();
-        await clearLocalViewAfterLogout();
+        if (prevUserId && state.auth.user?.userId && prevUserId !== state.auth.user.userId) {
+          await clearLocalViewAfterLogout();
+        }
         if (state.auth.user?.status === "pending") setStatus("账号待审核，通过后可创建星球和分享。", "warn");
         else if (state.auth.user?.status === "blocked") setStatus("账号已被禁用，无法使用云端功能。", "warn");
         else {
           const restored = await restoreUserCloudProject("登录成功，已加载账号里的云端作品。");
           if (!restored) {
-            setStatus("登录成功，已开启云端保存和分享。", "ready");
+            if (prevUserId) { setStatus("登录成功。此账号还没有云端作品。", "ready"); } else { setStatus("登录成功，已开启云端保存和分享。", "ready"); }
             saveProject();
           }
         }
@@ -2811,7 +2814,11 @@
       const params = new URLSearchParams(window.location.search);
       if (params.get("id")) return false;
       const projectIds = Array.isArray(state.auth.user?.projectIds) ? state.auth.user.projectIds : [];
-      const projectId = projectIds[projectIds.length - 1] || "";
+      if (!projectIds.length) return false;
+      let projectId = "";
+      for (const pid of projectIds) {
+        if (pid) { projectId = pid; break; }
+      }
       if (!projectId) return false;
       try {
         const payload = await loadCloudProject(projectId);
