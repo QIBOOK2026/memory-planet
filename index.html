@@ -1645,6 +1645,7 @@
           <button id="newAlbumBtn" type="button">生成星球</button>
           <button id="deleteAlbumBtn" class="danger" type="button">删除星球</button>
           <button id="resetUniverseBtn" class="danger" type="button">重置宇宙</button>
+          <button id="clearPlanetPhotosBtn" class="danger" type="button">清空照片</button>
         </div>
         <div id="universeSelected" class="universe-selected">
           <strong>我的星球</strong>
@@ -2021,6 +2022,7 @@
     const newAlbumBtn = document.getElementById("newAlbumBtn");
     const deleteAlbumBtn = document.getElementById("deleteAlbumBtn");
     const resetUniverseBtn = document.getElementById("resetUniverseBtn");
+    const clearPlanetPhotosBtn = document.getElementById("clearPlanetPhotosBtn");
     const enterAlbumBtn = document.getElementById("enterAlbumBtn");
     const returnUniverseBtn = document.getElementById("returnUniverseBtn");
     const universeSelected = document.getElementById("universeSelected");
@@ -2891,6 +2893,20 @@
         refreshAuthUi();
       }
       return true;
+    }
+
+    async function deleteCloudPhotos(urls) {
+      if (!urls.length) return;
+      const hasOssUrls = urls.some((url) => url && (url.startsWith('http://') || url.startsWith('https://')));
+      if (!hasOssUrls) return;
+      try {
+        await cloudRequest('/photos/delete', {
+          method: 'POST',
+          body: JSON.stringify({ urls })
+        });
+      } catch (error) {
+        console.warn('Failed to delete OSS photos:', error);
+      }
     }
 
     function cloudProjectPayload(payload) {
@@ -6403,6 +6419,7 @@
         cancelText: "取消"
       });
       if (!ok) return;
+      if (photoUrls.length > 0) await deleteCloudPhotos(photoUrls);
       window.clearTimeout(saveTimer);
       saveTimer = 0;
       localStorage.removeItem(STORAGE_KEY);
@@ -7423,6 +7440,7 @@
         cancelText: "取消"
       });
       if (!ok) return;
+      if (photoUrls.length > 0) await deleteCloudPhotos(photoUrls);
       state.universe.galaxies.splice(index, 1);
       const nextGalaxy = state.universe.galaxies[Math.min(index, state.universe.galaxies.length - 1)];
       if (!nextGalaxy.albums.length) nextGalaxy.albums.push(makeAlbum({ title: `${nextGalaxy.name}相册` }));
@@ -7608,6 +7626,7 @@
       if (index < 0) return;
       const album = galaxy.albums[index];
       const photoCount = album.photos?.length || 0;
+      const photoUrls = (album.photos || []).map((p) => p.url).filter(Boolean);
       const storyCount = album.photos?.filter((photo) => (photo.story || "").trim()).length || 0;
       const favoriteCount = album.photos?.filter((photo) => photo.favorite).length || 0;
       const themeName = THEMES[album.theme]?.name || "主题";
@@ -7619,6 +7638,7 @@
         cancelText: "取消"
       });
       if (!ok) return;
+      if (photoUrls.length > 0) await deleteCloudPhotos(photoUrls);
       const item = state.universePlanets.find((planet) => planet.album?.id === album.id);
       if (item) {
         item.exiting = true;
@@ -9110,6 +9130,25 @@
       });
     });
     enterAlbumBtn?.addEventListener("click", enterSelectedUniverseAlbum);
+    clearPlanetPhotosBtn.addEventListener("click", async () => {
+      if (!state.photos.length) {
+        setStatus("当前星球没有照片。", "warn");
+        return;
+      }
+      const ok = await requestAppConfirm({
+        title: "清空照片",
+        message: `确定清空当前星球所有 ${state.photos.length} 张照片和故事吗？\n此操作会同时删除云端的照片文件。`,
+        okText: "清空照片",
+        cancelText: "取消"
+      });
+      if (!ok) return;
+      const photoUrls = state.photos.map((p) => p.url).filter(Boolean);
+      if (photoUrls.length > 0) {
+        try { await deleteCloudPhotos(photoUrls); } catch {}
+      }
+      clearPhotos();
+      setStatus("已清空当前星球的所有照片。", "ready");
+    });
     returnUniverseBtn?.addEventListener("click", () => {
       if (state.viewMode === "universe" && state.universeDetailOpen) {
         collapseUniverseDetail();
@@ -9582,6 +9621,7 @@
         cancelText: "取消"
       });
       if (!ok) return;
+      if (photoUrls.length > 0) await deleteCloudPhotos(photoUrls);
       await cloudRequest("/admin/users/" + encodeURIComponent(userId) + "/clear", {
         method: "POST"
       }, true);

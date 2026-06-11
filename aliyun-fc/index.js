@@ -151,6 +151,8 @@ async function putJson(key, data) {
   return data;
 }
 
+async function deleteOssKey(key) { await ossFetch("DELETE", key, null, ""); }
+
 function xmlDecode(value = "") {
   return String(value)
     .replace(/&lt;/g, "<")
@@ -608,6 +610,22 @@ async function putProject(event, id, body) {
 
   const tiers = await getTiers();
   const tier = tiers[user.tier] || tiers.free || DEFAULT_TIERS.free;
+  // Clean up OSS photos not referenced in the new payload.
+  // Prevents hydratePayloadPhotosFromOss from recovering intentionally deleted photos.
+  const _upid = user.userId;
+  const _pid = id;
+  const cleanupPrefix = "planets/" + _upid + "/" + _pid + "/";
+  const cleanupKeys = await listOssKeys(cleanupPrefix);
+  const cleanupReferenced = new Set();
+  payloadAlbums(body.payload).forEach((album) => {
+    (album.photos || []).forEach((p) => { if (p.url) cleanupReferenced.add(p.url); });
+  });
+  for (const key of cleanupKeys) {
+    if (key.endsWith(".json")) continue;
+    if (!cleanupReferenced.has(publicOssUrl(key))) {
+      try { await deleteOssKey(key); } catch {}
+    }
+  }
   const hydrated = await hydratePayloadPhotosFromOss(user, id, body.payload);
   const payload = hydrated.payload;
   const ossBytes = await calcOssPhotoBytes(user.userId, id);
@@ -860,7 +878,45 @@ exports.handler = async function handler(event) {
       return json({ ok: true, ...results });
     }
 
+    if (path === "/uploads/batch-tokens" && method === "POST") {
+      const body = getBody(event);
+      const auth = await requireActiveUser(event);
+      if (auth.error) return auth.error;
+      const { user } = auth;
+      const planetId = String(body.planetId || "").trim();
+      if (!planetId) return json({ error: "missing planetId" }, 400);
+      const files = Array.isArray(body.files) ? body.files : [];
+      if (!files.length) return json({ error: "missing files" }, 400);
+      const stored = await getProjectRecord(planetId);
+      if (stored?.userId && stored.userId !== user.userId) return json({ error: "project belongs to another user" }, 403);
+      const tickets = files.map((fileInfo) => {
+        const filename = String(fileInfo.filename || "photo");
+        const suffix = Date.now().toString(36) + "-" + (crypto.randomUUID().slice(0, 8));
+        const key = "planets/" + user.userId + "/" + planetId + "/" + suffix + "-" + safeName(filename);
+        return ossPostPolicy(key);
+      });
+      return json({ tickets });
+    }
+
     if (path === "/uploads/token" && method === "POST") return uploadToken(event, getBody(event));
+
+    if (path === "/photos/delete" && method === "POST") {
+      const auth = await requireActiveUser(event);
+      if (auth.error) return auth.error;
+      const { user } = auth;
+      const body = getBody(event);
+      const urls = Array.isArray(body.urls) ? body.urls : [];
+      const publicDomain = env("OSS_PUBLIC_DOMAIN") || `https://${env("OSS_BUCKET")}.${env("OSS_ENDPOINT").replace(/^https?:\/\//, "")}`;
+      const baseDomain = publicDomain.replace(/\/+$/, "") + "/";
+      let deleted = 0;
+      for (const url of urls) {
+        try {
+          const key = String(url).startsWith(baseDomain) ? String(url).slice(baseDomain.length) : null;
+          if (key) { await deleteOssKey(key); deleted++; }
+        } catch (e) { /* individual delete failure is non-fatal */ }
+      }
+      return json({ ok: true, deleted });
+    }
 
     const match = path.match(/^\/projects\/([^/]+)$/);
     if (match) {
