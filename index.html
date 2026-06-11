@@ -6426,7 +6426,7 @@
         cancelText: "取消"
       });
       if (!ok) return;
-      if (photoUrls.length > 0) await deleteCloudPhotos(photoUrls);
+      // Server-side /admin/users/{userId}/clear already handles OSS deletion
       window.clearTimeout(saveTimer);
       saveTimer = 0;
       localStorage.removeItem(STORAGE_KEY);
@@ -7450,7 +7450,7 @@
         cancelText: "取消"
       });
       if (!ok) return;
-      if (photoUrls.length > 0) await deleteCloudPhotos(photoUrls);
+      // Server-side /admin/users/{userId}/clear already handles OSS deletion
       state.universe.galaxies.splice(index, 1);
       const nextGalaxy = state.universe.galaxies[Math.min(index, state.universe.galaxies.length - 1)];
       if (!nextGalaxy.albums.length) nextGalaxy.albums.push(makeAlbum({ title: `${nextGalaxy.name}相册` }));
@@ -7648,7 +7648,7 @@
         cancelText: "取消"
       });
       if (!ok) return;
-      if (photoUrls.length > 0) await deleteCloudPhotos(photoUrls);
+      // Server-side /admin/users/{userId}/clear already handles OSS deletion
       const item = state.universePlanets.find((planet) => planet.album?.id === album.id);
       if (item) {
         item.exiting = true;
@@ -9631,7 +9631,7 @@
         cancelText: "取消"
       });
       if (!ok) return;
-      if (photoUrls.length > 0) await deleteCloudPhotos(photoUrls);
+      // Server-side /admin/users/{userId}/clear already handles OSS deletion
       await cloudRequest("/admin/users/" + encodeURIComponent(userId) + "/clear", {
         method: "POST"
       }, true);
