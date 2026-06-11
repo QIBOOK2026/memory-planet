@@ -4,7 +4,10 @@ const jsonHeaders = {
   "content-type": "application/json;charset=utf-8",
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,PUT,POST,OPTIONS",
-  "access-control-allow-headers": "content-type,authorization"
+  "access-control-allow-headers": "content-type,authorization,cache-control",
+  "cache-control": "no-store, no-cache, must-revalidate, max-age=0",
+  "pragma": "no-cache",
+  "expires": "0"
 };
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;

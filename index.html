@@ -2540,10 +2540,16 @@
     async function cloudRequest(path, options = {}, admin = false) {
       const headers = {
         ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...(String(options.method || "GET").toUpperCase() === "GET" ? { "Cache-Control": "no-cache" } : {}),
         ...authHeaders(admin),
         ...(options.headers || {})
       };
-      const response = await fetch(`${cloudApiBase()}${path}`, { ...options, headers });
+      const method = String(options.method || "GET").toUpperCase();
+      const response = await fetch(`${cloudApiBase()}${path}`, {
+        ...options,
+        headers,
+        cache: method === "GET" ? "no-store" : (options.cache || "default")
+      });
       return readJsonResponse(response);
     }
 
@@ -6498,6 +6504,44 @@
       refreshProjectInfo();
     }
 
+    async function resetLocalProjectViewAfterAdminClear(message = "数据已清空，页面已回到初始星球。") {
+      window.clearTimeout(saveTimer);
+      saveTimer = 0;
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(SHARE_KEY);
+      localStorage.removeItem("photoParticleGlobe.stories");
+      state.cloud.projectId = "";
+      state.cloud.editToken = "";
+      state.cloud.readOnly = false;
+      state.photos = [];
+      state.selectedPhoto = -1;
+      state.hoveredPhoto = -1;
+      clearPhotoSprites();
+      storyPanel.classList.remove("show");
+      fullImageViewer.classList.remove("show");
+      stopSlideshow();
+      if (state.atlasTexture) state.atlasTexture.dispose();
+      state.atlasTexture = createBlankAtlasTexture();
+      refreshPhotoMaterial();
+      setUniverse({
+        photos: [],
+        title: DEFAULT_ALBUM_TITLE,
+        subtitle: DEFAULT_ALBUM_SUBTITLE,
+        author: DEFAULT_ALBUM_AUTHOR,
+        theme: "tech",
+        shape: "sphere"
+      });
+      await activateAlbum(state.universe.activeAlbumId, {
+        message,
+        keepTab: true,
+        skipSyncCurrent: true
+      });
+      setActiveTab("universe");
+      refreshUniversePanel();
+      refreshPhotoManager();
+      refreshProjectInfo();
+    }
+
     function isTextEditingTarget(target) {
       return target instanceof Element && Boolean(target.closest("input, textarea, select, [contenteditable]"));
     }
@@ -9624,9 +9668,12 @@
     }
 
     async function clearUserData(userId, username) {
+      const isCurrentUser = state.auth.user?.userId === userId;
       const ok = await requestAppConfirm({
         title: "清空数据",
-        message: "确定清空「" + (username || userId) + "」的所有星球和照片吗？此操作不可撤销，浏览器缓存也会一并清除！",
+        message: "确定清空「" + (username || userId) + "」的所有星球和照片吗？此操作不可撤销"
+          + (isCurrentUser ? "，当前浏览器缓存也会一并清除" : "")
+          + "！",
         okText: "确认清空",
         cancelText: "取消"
       });
@@ -9635,18 +9682,16 @@
       await cloudRequest("/admin/users/" + encodeURIComponent(userId) + "/clear", {
         method: "POST"
       }, true);
-      // 同时清除当前浏览器缓存的前端数据
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(SHARE_KEY);
-      localStorage.removeItem("photoParticleGlobe.stories");
-      clearLargeLocalProjectCache();
-      state.cloud.projectId = "";
-      state.cloud.editToken = "";
-      state.cloud.readOnly = false;
-      state.photos = [];
+      if (isCurrentUser) {
+        state.auth.user = {
+          ...state.auth.user,
+          projectIds: [],
+          stats: { projectCount: 0, planetCount: 0, photoCount: 0, storageBytes: 0 }
+        };
+        await resetLocalProjectViewAfterAdminClear("已清空当前账号的数据，页面已回到初始星球。");
+      }
       await refreshAdminData();
-      setStatus("已清空 " + (username || userId) + " 的数据。请刷新页面重新开始。", "ready");
-      setActiveTab("upload");
+      setStatus("已清空 " + (username || userId) + " 的数据。", "ready");
     }
 
     async function saveAdminTier() {
