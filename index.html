@@ -3045,6 +3045,63 @@ function openAccountActions() {
       return photo?.url || photo?.dataUrl || "";
     }
 
+    function loadImageElement(srcUrl, options = {}) {
+      return new Promise((resolve) => {
+        if (!srcUrl) { resolve(null); return; }
+        const timeoutMs = Number(options.timeoutMs) || 15000;
+        const img = new Image();
+        let done = false;
+        const timeout = window.setTimeout(() => {
+          if (!done) { done = true; resolve(null); }
+        }, timeoutMs);
+        img.onerror = () => {
+          if (done) return;
+          done = true;
+          window.clearTimeout(timeout);
+          resolve(null);
+        };
+        img.onload = () => {
+          if (done) return;
+          done = true;
+          window.clearTimeout(timeout);
+          resolve(img);
+        };
+        if (options.crossOrigin) img.crossOrigin = options.crossOrigin;
+        img.src = srcUrl;
+      });
+    }
+
+    async function loadCanvasSafeImage(srcUrl, options = {}) {
+      if (!srcUrl) return null;
+      if (!/^https?:\/\//i.test(srcUrl)) {
+        return loadImageElement(srcUrl, { timeoutMs: options.timeoutMs || 15000 });
+      }
+      const timeoutMs = Number(options.timeoutMs) || 20000;
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(srcUrl, {
+          mode: "cors",
+          cache: "reload",
+          credentials: "omit",
+          signal: controller.signal
+        });
+        if (!response.ok) throw new Error(`image ${response.status}`);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        try {
+          return await loadImageElement(objectUrl, { timeoutMs });
+        } finally {
+          URL.revokeObjectURL(objectUrl);
+        }
+      } catch (error) {
+        console.warn("canvas-safe image load failed:", srcUrl, error);
+        return null;
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+
     async function readJsonResponse(response) {
       const text = await response.text();
       const data = text ? JSON.parse(text) : null;
@@ -6885,31 +6942,7 @@ function openAccountActions() {
       const promises = state.photos.map((photo, index) => {
         const srcUrl = photoSrc(photo);
         if (!srcUrl) return Promise.resolve({ ...photo, image: null, index });
-        const needCors = typeof photo.url === "string" && !!photo.url;
-        const attempt = (withCors) => new Promise((resolveAttempt) => {
-          const img = new Image();
-          let done = false;
-          const timeout = window.setTimeout(() => {
-            if (!done) { done = true; resolveAttempt(null); }
-          }, 5000);
-          // 5s timeout per image
-          img.onerror = () => {
-            if (done) return;
-            done = true;
-            window.clearTimeout(timeout);
-            resolveAttempt(null);
-          };
-          img.onload = () => {
-            if (done) return;
-            done = true;
-            window.clearTimeout(timeout);
-            resolveAttempt(img);
-          };
-          if (withCors) img.crossOrigin = "anonymous";
-          img.src = srcUrl;
-        });
-        const promise = needCors ? attempt(true) : attempt(false);
-        return promise.then((img) => ({ ...photo, image: img, index }));
+        return loadCanvasSafeImage(srcUrl).then((img) => ({ ...photo, image: img, index }));
       });
       const results = await Promise.all(promises);
       clearPhotoSprites();
@@ -7497,33 +7530,7 @@ function openAccountActions() {
           resolve({ ...item, image: null, index });
           return;
         }
-        const attempt = (withCors) => new Promise((resolveAttempt) => {
-          const img = new Image();
-          let done = false;
-          const timeout = window.setTimeout(() => {
-            if (!done) {
-              done = true;
-              resolveAttempt(null);
-            }
-          }, 5000);
-          // 5s timeout per image
-          img.onerror = () => {
-            if (done) return;
-            done = true;
-            window.clearTimeout(timeout);
-            resolveAttempt(null);
-          };
-          img.onload = () => {
-            if (done) return;
-            done = true;
-            window.clearTimeout(timeout);
-            resolveAttempt(img);
-          };
-          if (withCors) img.crossOrigin = "anonymous";
-          img.src = srcUrl;
-        });
-        const needsCors = typeof item.url === "string" && !!item.url;
-        (needsCors ? attempt(true) : attempt(false)).then((img) => {
+        loadCanvasSafeImage(srcUrl).then((img) => {
           reportProgress();
           if (!img) { resolve({ ...item, image: null, index }); return; }
           resolve({
