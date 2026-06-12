@@ -207,6 +207,12 @@
       display: grid;
     }
 
+    body:not(.panel-hidden) .quick-actions {
+      z-index: 7;
+      opacity: 0.58;
+      pointer-events: none;
+    }
+
     .user-icon {
       position: relative;
       display: block;
@@ -1188,8 +1194,7 @@
       inset: 0;
       z-index: 11;
       display: none;
-      grid-template-rows: 1fr auto;
-      gap: 18px;
+      place-items: center;
       padding: clamp(18px, 4vw, 44px);
       background: #000;
       color: var(--ink);
@@ -1209,6 +1214,8 @@
       position: relative;
       display: grid;
       place-items: center;
+      width: 100%;
+      height: 100%;
       min-height: 0;
       overflow: hidden;
     }
@@ -1242,7 +1249,7 @@
       width: auto;
       height: auto;
       max-width: calc(100vw - clamp(36px, 8vw, 88px));
-      max-height: calc(100vh - clamp(36px, 8vw, 88px) - 78px);
+      max-height: calc(100vh - clamp(36px, 8vw, 88px));
       object-fit: contain;
       opacity: 0;
       transform: none;
@@ -1251,7 +1258,7 @@
 
     @supports (height: 100dvh) {
       .slideshow-stage img {
-        max-height: calc(100dvh - clamp(36px, 8vw, 88px) - 78px);
+        max-height: calc(100dvh - clamp(36px, 8vw, 88px));
       }
     }
 
@@ -1260,6 +1267,11 @@
     }
 
     .slideshow-meta {
+      position: absolute;
+      left: clamp(14px, 4vw, 42px);
+      right: clamp(14px, 4vw, 42px);
+      bottom: clamp(12px, 3vw, 28px);
+      z-index: 3;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto auto auto auto;
       gap: 10px;
@@ -1270,6 +1282,12 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
       background: rgba(0, 0, 0, 0.42);
+    }
+
+    .slideshow-player.controls-hidden .slideshow-meta,
+    .slideshow-player.controls-hidden .slideshow-nav {
+      opacity: 0;
+      pointer-events: none;
     }
 
     .slideshow-meta button {
@@ -1290,6 +1308,61 @@
     .slideshow-meta span {
       color: var(--muted);
       font-size: 12px;
+    }
+
+    @media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
+      body.slideshow-active .quick-actions,
+      body.slideshow-active .gesture-card,
+      body.slideshow-active .layout-float,
+      body.slideshow-active .hud,
+      body.slideshow-active .panel-toggle {
+        display: none !important;
+      }
+
+      .slideshow-player {
+        padding: max(4px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+      }
+
+      .slideshow-stage img {
+        max-width: calc(100vw - max(16px, env(safe-area-inset-left)) - max(16px, env(safe-area-inset-right)));
+        max-height: calc(100vh - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+      }
+
+      @supports (height: 100dvh) {
+        .slideshow-stage img {
+          max-height: calc(100dvh - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+        }
+      }
+
+      .slideshow-nav {
+        display: none;
+      }
+
+      .slideshow-meta {
+        left: max(10px, env(safe-area-inset-left));
+        right: max(10px, env(safe-area-inset-right));
+        bottom: max(8px, env(safe-area-inset-bottom));
+        width: auto;
+        grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+        gap: 6px;
+        padding: 7px 8px;
+        border-color: rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(8px);
+        transition: opacity 0.22s ease;
+      }
+
+      .slideshow-meta strong {
+        font-size: 13px;
+      }
+
+      .slideshow-meta button {
+        min-width: 34px;
+        min-height: 34px;
+        padding: 0 8px;
+        border-radius: 8px;
+        font-size: 16px;
+      }
     }
 
     .task-dialog {
@@ -2204,7 +2277,7 @@
       <div class="story-tools">
         <button id="prevStoryBtn" type="button">上一张</button>
         <button id="nextStoryBtn" type="button">下一张</button>
-        <button id="favoriteStoryBtn" type="button">收藏</button>
+        <button id="favoriteStoryBtn" type="button" aria-label="全屏查看当前照片">全屏</button>
         <button id="fullStoryBtn" type="button" aria-label="从当前照片播放幻灯片">播放</button>
         <button id="storyClose" type="button">关闭</button>
       </div>
@@ -2707,6 +2780,7 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
         paused: false,
         index: 0,
         timer: 0,
+        controlsTimer: 0,
         imageToken: 0
       },
       hoveredPhoto: -1,
@@ -7926,7 +8000,7 @@ function openAccountActions() {
       storyDateInput.value = photo.date || "";
       storyLocationInput.value = photo.location || "";
       storyText.value = photo.story;
-      favoriteStoryBtn.textContent = photo.favorite ? "已收藏" : "收藏";
+      favoriteStoryBtn.textContent = "全屏";
       storySaveState.textContent = "已自动保存";
       storyPanel.classList.add("show");
       playSfx("photo");
@@ -7998,6 +8072,29 @@ function openAccountActions() {
       scheduleSlideshowNext();
     }
 
+    function slideshowImmersiveLayout() {
+      return window.matchMedia("(hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 560px)").matches;
+    }
+
+    function showSlideshowControls(autoHide = true) {
+      slideshowPlayer.classList.remove("controls-hidden");
+      window.clearTimeout(state.slideshow.controlsTimer);
+      if (autoHide && slideshowImmersiveLayout() && state.slideshow.active && !state.slideshow.paused) {
+        state.slideshow.controlsTimer = window.setTimeout(() => {
+          slideshowPlayer.classList.add("controls-hidden");
+        }, 2400);
+      }
+    }
+
+    function toggleSlideshowControls() {
+      if (!slideshowImmersiveLayout()) return;
+      if (slideshowPlayer.classList.contains("controls-hidden")) showSlideshowControls(true);
+      else {
+        window.clearTimeout(state.slideshow.controlsTimer);
+        slideshowPlayer.classList.add("controls-hidden");
+      }
+    }
+
     function startSlideshow(options = {}) {
       if (!state.photos.length) {
         setStatus("还没有照片可播放。", "warn");
@@ -8008,6 +8105,7 @@ function openAccountActions() {
       closeFullImage();
       state.slideshow.active = true;
       state.slideshow.paused = false;
+      document.body.classList.add("slideshow-active");
       if (options.restart) state.slideshow.index = 0;
       if (Number.isFinite(options.startIndex)) state.slideshow.index = options.startIndex;
       else if (state.selectedPhoto >= 0) state.slideshow.index = state.selectedPhoto;
@@ -8016,6 +8114,7 @@ function openAccountActions() {
       slideshowPause.title = "暂停";
       slideshowPause.setAttribute("aria-label", "暂停");
       slideshowPlayer.classList.add("show");
+      showSlideshowControls(true);
       slideshowImage.removeAttribute("src");
       slideshowImage.classList.remove("ready");
       slideshowTitle.textContent = "照片播放";
@@ -8030,10 +8129,14 @@ function openAccountActions() {
 
     function stopSlideshow() {
       window.clearTimeout(state.slideshow.timer);
+      window.clearTimeout(state.slideshow.controlsTimer);
       state.slideshow.timer = 0;
+      state.slideshow.controlsTimer = 0;
       state.slideshow.active = false;
       state.slideshow.paused = false;
+      document.body.classList.remove("slideshow-active");
       slideshowPlayer.classList.remove("visible");
+      slideshowPlayer.classList.remove("controls-hidden");
       window.setTimeout(() => {
         if (state.slideshow.active) return;
         slideshowPlayer.classList.remove("show");
@@ -8056,9 +8159,11 @@ function openAccountActions() {
         window.clearTimeout(state.slideshow.timer);
         state.slideshow.timer = 0;
         slideshowImage.style.transitionDuration = "1.2s, 0s";
+        showSlideshowControls(false);
         setStatus("照片播放已暂停。", "ready");
       } else {
         slideshowImage.style.transitionDuration = "";
+        showSlideshowControls(true);
         scheduleSlideshowNext();
         setStatus("照片播放已继续。", "ready");
       }
@@ -8069,6 +8174,7 @@ function openAccountActions() {
       state.slideshow.timer = 0;
       state.slideshow.index = 0;
       state.slideshow.paused = false;
+      showSlideshowControls(true);
       slideshowPause.textContent = "⏸";
       slideshowPause.title = "暂停";
       slideshowPause.setAttribute("aria-label", "暂停");
@@ -9161,7 +9267,7 @@ function openAccountActions() {
       }
       updateCurrentPhoto((photo) => {
         photo.favorite = !photo.favorite;
-        favoriteStoryBtn.textContent = photo.favorite ? "已收藏" : "收藏";
+        favoriteStoryBtn.textContent = "全屏";
         playSfx("ding");
         setStatus(photo.favorite ? "已用 OK 手势收藏这张照片。" : "已取消收藏这张照片。", "ready");
       }, { immediate: true });
@@ -10079,13 +10185,7 @@ userLogoutBtn.addEventListener("click", () => {
       flushSaveProject();
       showPhotoStory((state.selectedPhoto + 1) % state.photos.length);
     });
-    favoriteStoryBtn.addEventListener("click", () => {
-      updateCurrentPhoto((photo) => {
-        photo.favorite = !photo.favorite;
-        favoriteStoryBtn.textContent = photo.favorite ? "已收藏" : "收藏";
-        playSfx("ding");
-      }, { immediate: true });
-    });
+    favoriteStoryBtn.addEventListener("click", openFullImage);
     fullStoryBtn.addEventListener("click", () => {
       if (!state.photos.length) return;
       const startIndex = state.selectedPhoto >= 0 ? state.selectedPhoto : 0;
@@ -10107,14 +10207,32 @@ userLogoutBtn.addEventListener("click", () => {
     slideshowPrev.addEventListener("click", (event) => {
       event.stopPropagation();
       stepSlideshow(-1);
+      showSlideshowControls(true);
     });
     slideshowNext.addEventListener("click", (event) => {
       event.stopPropagation();
       stepSlideshow(1);
+      showSlideshowControls(true);
     });
     slideshowClose.addEventListener("click", stopSlideshow);
     slideshowPlayer.addEventListener("click", (event) => {
-      if (event.target === slideshowPlayer) stopSlideshow();
+      if (!slideshowPlayer.classList.contains("show")) return;
+      if (event.target.closest?.("button")) return;
+      if (!slideshowImmersiveLayout()) {
+        if (event.target === slideshowPlayer) stopSlideshow();
+        return;
+      }
+      const rect = slideshowPlayer.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      if (x < rect.width * 0.35) {
+        stepSlideshow(-1);
+        showSlideshowControls(true);
+      } else if (x > rect.width * 0.65) {
+        stepSlideshow(1);
+        showSlideshowControls(true);
+      } else {
+        toggleSlideshowControls();
+      }
     });
     exportBtn.addEventListener("click", () => {
       copyShareLink("view").catch((error) => {
