@@ -215,8 +215,30 @@
     }
 
     .hud header {
+      position: relative;
       padding: 15px 15px 11px;
       border-bottom: 1px solid var(--panel-line);
+    }
+
+    .panel-close {
+      display: none;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 34px;
+      min-height: 34px;
+      padding: 0;
+      border-color: rgba(120, 216, 255, 0.22);
+      background: rgba(8, 25, 42, 0.74);
+      color: var(--muted);
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .panel-close:hover {
+      color: var(--ink);
+      border-color: rgba(91, 231, 255, 0.58);
+      background: rgba(91, 231, 255, 0.1);
     }
 
     h1 {
@@ -1338,13 +1360,16 @@
       }
 
       body:not(.panel-hidden) .panel-toggle {
-        left: auto;
-        right: max(16px, calc(env(safe-area-inset-right) + 16px));
-        top: max(10px, env(safe-area-inset-top));
+        display: none;
       }
 
       body:not(.panel-hidden) .hud header {
         padding-right: 58px;
+      }
+
+      body:not(.panel-hidden) .panel-close {
+        display: grid;
+        place-items: center;
       }
 
       .panel-toggle {
@@ -1403,22 +1428,63 @@
       }
 
       .gesture-card {
-        bottom: max(10px, env(safe-area-inset-bottom));
-        width: min(100vw - 20px, 1020px);
+        left: auto;
+        right: max(10px, env(safe-area-inset-right));
+        bottom: max(14px, calc(env(safe-area-inset-bottom) + 14px));
+        width: 44px;
+        transform: none;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        backdrop-filter: none;
+        overflow: visible;
       }
 
       .layout-float {
-        bottom: max(96px, calc(env(safe-area-inset-bottom) + 96px));
+        left: max(10px, env(safe-area-inset-left));
+        right: max(62px, calc(env(safe-area-inset-right) + 62px));
+        bottom: max(14px, calc(env(safe-area-inset-bottom) + 14px));
+        width: auto;
+        transform: none;
+        grid-template-columns: minmax(78px, 1fr) 42px minmax(78px, 1fr);
+        padding: 8px;
+      }
+
+      .layout-float.tucked {
+        transform: translateY(58px);
+      }
+
+      .gesture-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+      }
+
+      .gesture-card.tucked {
+        transform: translateY(58px);
       }
 
       .gesture {
-        min-height: 76px;
-        padding: 12px 8px;
-        font-size: 13px;
+        display: grid;
+        place-items: center;
+        width: 44px;
+        min-height: 40px;
+        padding: 0;
+        border: 1px solid var(--panel-line);
+        border-radius: 8px;
+        background: var(--panel-control);
+        backdrop-filter: blur(var(--panel-control-blur));
+        box-shadow: var(--panel-popover-shadow);
+        font-size: 0;
+      }
+
+      .gesture:last-child {
+        border-right: 1px solid var(--panel-line);
       }
 
       .gesture strong {
+        margin: 0;
         font-size: 18px;
+        line-height: 1.1;
       }
 
       .story-panel {
@@ -1867,6 +1933,7 @@
 
   <section class="hud" aria-label="控制面板">
     <header>
+      <button id="panelCloseBtn" class="panel-close" type="button" aria-label="收起面板">×</button>
       <h1 id="displayTitle">我的记忆星球</h1>
       <div class="status"><i id="statusDot" class="dot"></i><span id="statusText">上传照片，生成一个可以送人的 3D 记忆星球。</span></div>
     </header>
@@ -1987,9 +2054,9 @@
 
   <aside class="gesture-card" aria-label="手势说明">
     <div class="gesture-grid">
-      <button id="universePanoramaBtn" class="gesture" type="button" data-action="panorama"><strong>全景</strong>回到一级宇宙全景</button>
-      <button id="openBtn" class="gesture" type="button" data-gesture="open"><strong>张开</strong>整颗星球爆炸扩散</button>
-      <button id="collapseBtn" class="gesture" type="button" data-gesture="fist"><strong>收回</strong>平滑收束原始形态</button>
+      <button id="openBtn" class="gesture" type="button" data-gesture="open" aria-label="张开" title="张开"><strong>✺</strong></button>
+      <button id="collapseBtn" class="gesture" type="button" data-gesture="fist" aria-label="收回" title="收回"><strong>◉</strong></button>
+      <button id="universePanoramaBtn" class="gesture" type="button" data-action="panorama" aria-label="全景" title="全景"><strong>↩</strong></button>
     </div>
   </aside>
 
@@ -2237,6 +2304,7 @@ const userChangePasswordBtn = document.getElementById("userChangePasswordBtn");
 const userLogoutBtn = document.getElementById("userLogoutBtn");
     const adminEntryBtn = document.getElementById("adminEntryBtn");
     const panelToggle = document.getElementById("panelToggle");
+    const panelCloseBtn = document.getElementById("panelCloseBtn");
     const fullscreenToggle = document.getElementById("fullscreenToggle");
     const musicSettingsToggle = document.getElementById("musicSettingsToggle");
     const advancedSettingsToggle = document.getElementById("advancedSettingsToggle");
@@ -4889,16 +4957,10 @@ function openAccountActions() {
       }
     }
 
-    let gestureCardIdleTimer = 0;
     function revealGestureCard() {
       if (!gestureCard) return;
       gestureCard.classList.remove("tucked");
       layoutFloat.classList.remove("tucked");
-      if (gestureCardIdleTimer) window.clearTimeout(gestureCardIdleTimer);
-      gestureCardIdleTimer = window.setTimeout(() => {
-        gestureCard.classList.add("tucked");
-        layoutFloat.classList.add("tucked");
-      }, 5000);
     }
 
     function updateUniverseAlbumParticles(item, dt) {
@@ -6741,12 +6803,18 @@ function openAccountActions() {
       try {
         persistProjectNow(options).catch((error) => {
           console.warn(error);
+          if (isQuotaLimitError(error)) return;
           setStatus(`作品已更新，但云端保存失败：${error.message || "请稍后再试"}`, "warn");
         });
       } catch (error) {
         console.warn(error);
         setStatus("作品已更新，但浏览器存储空间不足，未能完整本地保存。", "warn");
       }
+    }
+
+    function isQuotaLimitError(error) {
+      const message = String(error?.message || error || "");
+      return /当前等级|最多|上限|总照片|每颗星球|存储/.test(message);
     }
 
     function scheduleSaveProject(delay = 700) {
@@ -9405,6 +9473,7 @@ function openAccountActions() {
     });
 
     panelToggle.addEventListener("click", togglePanel);
+    panelCloseBtn.addEventListener("click", () => setMainPanelHidden(true));
     fullscreenToggle.addEventListener("click", toggleFullscreen);
     musicSettingsToggle.addEventListener("click", () => setFloatingSettingsPanel("music"));
     advancedSettingsToggle.addEventListener("click", () => setFloatingSettingsPanel("advanced"));
