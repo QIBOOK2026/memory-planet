@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="记忆星球" />
-  <title>我的记忆星球</title>
+  <title>我的记忆宇宙</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/app-icon.svg" />
   <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23030a16"/><circle cx="32" cy="32" r="15" fill="none" stroke="%235be7ff" stroke-width="4"/><path d="M10 34c12-12 32-16 44-6" fill="none" stroke="%23b8f7ff" stroke-width="3" stroke-linecap="round"/><circle cx="44" cy="20" r="4" fill="%23ffd166"/></svg>' />
@@ -132,13 +132,15 @@
       position: fixed;
       top: 16px;
       z-index: 10;
-      width: 38px;
-      min-height: 38px;
+      width: 44px;
+      min-height: 44px;
       padding: 0;
       border-color: color-mix(in srgb, var(--panel-line) 80%, transparent);
+      border-radius: 999px;
       background: var(--panel-control);
       backdrop-filter: blur(var(--panel-control-blur));
-      font-size: 24px;
+      box-shadow: var(--panel-popover-shadow);
+      font-size: 22px;
       line-height: 1;
       font-weight: 700;
     }
@@ -153,45 +155,109 @@
       right: 20px;
       z-index: 10;
       display: grid;
+      grid-template-columns: 44px 44px;
+      grid-template-areas:
+        "account fullscreen"
+        ". music"
+        ". settings"
+        ". admin";
       gap: 8px;
+      align-items: start;
+      justify-items: end;
     }
 
-    .quick-actions button {
-      width: 38px;
-      min-height: 38px;
+    .quick-actions button,
+    .quick-actions .user-avatar-btn {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
       padding: 0;
       border-color: color-mix(in srgb, var(--panel-line) 80%, transparent);
+      border-radius: 999px;
       background: var(--panel-control);
       backdrop-filter: blur(var(--panel-control-blur));
       font-size: 20px;
       line-height: 1;
       font-weight: 700;
+      display: grid;
+      place-items: center;
+      box-shadow: var(--panel-popover-shadow);
     }
 
-    .quick-actions button.active {
+    .quick-actions button.active,
+    .quick-actions .user-avatar-btn:hover {
       border-color: rgba(91, 231, 255, 0.8);
       background: var(--control-active);
       box-shadow: var(--control-glow);
+    }
+
+    .quick-actions .user-menu,
+    .quick-actions #accountBtn { grid-area: account; }
+    .quick-actions #fullscreenToggle { grid-area: fullscreen; }
+    .quick-actions #musicSettingsToggle { grid-area: music; }
+    .quick-actions #advancedSettingsToggle { grid-area: settings; }
+    .quick-actions #adminEntryBtn { grid-area: admin; }
+
+    .quick-actions .admin-entry-btn {
+      display: none;
+    }
+
+    .quick-actions .admin-entry-btn.show {
+      display: grid;
+    }
+
+    .user-icon {
+      position: relative;
+      display: block;
+      width: 22px;
+      height: 22px;
+    }
+
+    .user-icon::before,
+    .user-icon::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      border: 2px solid currentColor;
+      transform: translateX(-50%);
+    }
+
+    .user-icon::before {
+      top: 2px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .user-icon::after {
+      bottom: 1px;
+      width: 16px;
+      height: 9px;
+      border-radius: 10px 10px 4px 4px;
+      border-bottom-width: 0;
     }
 
     body:not(.panel-hidden) .panel-toggle {
       left: 404px;
     }
     .account-btn {
-      width: auto;
-      min-width: 56px;
-      min-height: 34px;
-      padding: 0 14px;
+      width: 44px;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0;
       border: 1px solid var(--panel-line);
-      border-radius: 6px;
+      border-radius: 999px;
       background: var(--control-surface);
       color: var(--ink);
-      font-size: 13px;
-      font-weight: 500;
-      line-height: 34px;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1;
       letter-spacing: 0;
       transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
       white-space: nowrap;
+      align-items: center;
+      justify-content: center;
     }
     .account-btn:hover {
       border-color: rgba(91, 231, 255, 0.8);
@@ -199,11 +265,10 @@
     }
     .admin-entry-btn {
       display: none;
-      font-size: 12px;
-      padding: 0 10px;
-      min-width: 44px;
+      font-size: 19px;
+      padding: 0;
       border: 1px solid rgba(255, 209, 102, 0.25);
-      border-radius: 6px;
+      border-radius: 999px;
       background: var(--control-surface);
       transition: border-color 0.16s, background 0.16s;
       color: var(--warn);
@@ -724,7 +789,7 @@
       position: fixed;
       top: 16px;
       right: 62px;
-      z-index: 8;
+      z-index: 12;
       display: none;
       width: min(340px, calc(100vw - 92px));
       max-height: calc(100vh - 32px);
@@ -882,10 +947,10 @@
       bottom: 132px;
       z-index: 6;
       display: none;
-      grid-template-columns: minmax(86px, 1fr) 42px minmax(86px, 1fr);
+      grid-template-columns: repeat(3, 44px);
       gap: 6px;
-      width: min(340px, calc(100vw - 28px));
-      padding: 10px;
+      width: auto;
+      padding: 8px;
       border: 1px solid var(--panel-line);
       border-radius: 999px;
       background: var(--panel-popover);
@@ -901,8 +966,7 @@
 
     body.settings-open .layout-float,
     body.settings-open .gesture-card,
-    body:not(.panel-hidden) .layout-float,
-    body:not(.panel-hidden) .gesture-card {
+    body:not(.panel-hidden) .layout-float {
       display: none !important;
     }
 
@@ -912,9 +976,12 @@
     }
 
     .layout-float button {
-      min-height: 34px;
+      width: 44px;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 19px;
       white-space: nowrap;
     }
 
@@ -927,7 +994,7 @@
     .layout-float button[data-action="play"] {
       display: grid;
       place-items: center;
-      min-width: 42px;
+      min-width: 44px;
       padding: 0;
       font-size: 16px;
       font-weight: 700;
@@ -965,39 +1032,43 @@
 
     .gesture-card {
       position: fixed;
-      left: 50%;
+      right: 20px;
       bottom: 18px;
       z-index: 5;
-      width: min(1020px, calc(100vw - 32px));
-      transform: translateX(-50%);
+      width: 44px;
+      transform: none;
       transition: transform 0.34s ease, opacity 0.24s ease;
-      border: 1px solid var(--panel-line);
-      border-radius: 8px;
-      background: var(--panel-gesture);
-      backdrop-filter: blur(var(--panel-blur));
-      overflow: hidden;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      backdrop-filter: none;
+      overflow: visible;
     }
 
     .gesture-card.tucked {
-      transform: translateX(-50%) translateY(66%);
+      transform: translateY(58px);
     }
 
     .gesture-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
     }
 
     .gesture {
       appearance: none;
-      width: 100%;
-      min-height: 96px;
-      padding: 16px 12px;
-      border: 0;
-      border-right: 1px solid var(--panel-line);
-      border-radius: 0;
-      background: transparent;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      min-height: 44px;
+      padding: 0;
+      border: 1px solid var(--panel-line);
+      border-radius: 999px;
+      background: var(--panel-control);
+      backdrop-filter: blur(var(--panel-control-blur));
+      box-shadow: var(--panel-popover-shadow);
       color: var(--muted);
-      font-size: 16px;
+      font-size: 0;
       line-height: 1.35;
       text-align: center;
       cursor: pointer;
@@ -1009,7 +1080,7 @@
     }
 
     .gesture:last-child {
-      border-right: 0;
+      border-right: 1px solid var(--panel-line);
     }
 
     .gesture:hover {
@@ -1019,14 +1090,19 @@
 
     .gesture strong {
       display: block;
-      margin-bottom: 4px;
+      margin: 0;
       color: var(--ink);
-      font-size: 22px;
+      font-size: 19px;
+      line-height: 1;
     }
 
     .gesture.live {
       background: var(--control-hover);
       color: #d9faff;
+    }
+
+    .gesture[hidden] {
+      display: none !important;
     }
 
     .credit {
@@ -1352,7 +1428,8 @@
       line-height: 1.5;
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 720px),
+      (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
       .hud {
         top: max(10px, env(safe-area-inset-top));
         left: max(10px, env(safe-area-inset-left));
@@ -1383,7 +1460,7 @@
       }
 
       body:not(.panel-hidden) .quick-actions {
-        display: none;
+        display: grid;
       }
 
       body.settings-open .quick-actions,
@@ -1444,9 +1521,8 @@
         left: max(10px, env(safe-area-inset-left));
         right: max(62px, calc(env(safe-area-inset-right) + 62px));
         bottom: max(14px, calc(env(safe-area-inset-bottom) + 14px));
-        width: auto;
         transform: none;
-        grid-template-columns: minmax(78px, 1fr) 42px minmax(78px, 1fr);
+        grid-template-columns: repeat(3, 44px);
         padding: 8px;
       }
 
@@ -1467,10 +1543,10 @@
         display: grid;
         place-items: center;
         width: 44px;
-        min-height: 40px;
+        min-height: 44px;
         padding: 0;
         border: 1px solid var(--panel-line);
-        border-radius: 8px;
+        border-radius: 999px;
         background: var(--panel-control);
         backdrop-filter: blur(var(--panel-control-blur));
         box-shadow: var(--panel-popover-shadow);
@@ -1627,6 +1703,51 @@
     .admin-stat b { display: block; font-size: 24px; color: var(--accent); line-height: 1.2; }
     .admin-stat span { font-size: 12px; color: var(--muted); }
 
+    .admin-filter-bar {
+      display: grid;
+      grid-template-columns: minmax(170px, 1.4fr) repeat(2, minmax(120px, 0.8fr)) repeat(4, minmax(92px, 0.65fr)) auto;
+      gap: 8px;
+      align-items: end;
+      margin: 0 0 12px;
+      padding: 12px;
+      border: 1px solid rgba(120, 216, 255, 0.12);
+      border-radius: 8px;
+      background: rgba(2, 9, 19, 0.42);
+    }
+
+    .admin-filter-bar label {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .admin-filter-bar input,
+    .admin-filter-bar select {
+      width: 100%;
+      min-height: 34px;
+      border: 1px solid rgba(120, 216, 255, 0.18);
+      border-radius: 6px;
+      padding: 0 9px;
+      background: rgba(6, 18, 33, 0.78);
+      color: var(--ink);
+      font: inherit;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .admin-filter-bar input:focus,
+    .admin-filter-bar select:focus {
+      border-color: rgba(91, 231, 255, 0.72);
+    }
+
+    .admin-filter-bar button {
+      min-height: 34px;
+      white-space: nowrap;
+    }
+
     .admin-table-wrap { overflow-x: auto; border: 1px solid rgba(120, 216, 255, 0.12); border-radius: 8px; background: rgba(2, 9, 19, 0.58); }
     .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .admin-table th, .admin-table td {
@@ -1679,10 +1800,10 @@
     .user-menu { position: relative; display: none; }
     .user-menu.show { display: block; }
     .user-avatar-btn {
-      width: 38px; min-height: 38px; padding: 0; cursor: pointer;
+      width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; cursor: pointer;
       border: 1.5px solid rgba(120, 216, 255, 0.32); border-radius: 50%;
       background: linear-gradient(135deg, rgba(91, 231, 255, 0.18), rgba(140, 120, 255, 0.14));
-      color: var(--ink); font-weight: 600; font-size: 15px; font-family: inherit;
+      color: var(--ink); font-weight: 600; font-size: 20px; font-family: inherit;
       transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
       display: inline-flex; align-items: center; justify-content: center; line-height: 1;
     }
@@ -1804,6 +1925,8 @@
     @media (max-width: 760px) {
       .admin-panel { inset: 8px; }
       .admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .admin-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .admin-filter-bar label:first-child { grid-column: 1 / -1; }
       .quota-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .admin-content { padding: 12px; }
       .admin-tabs { overflow-x: auto; }
@@ -1818,7 +1941,7 @@
   <div class="quick-actions" aria-label="快捷设置">
 <div class="user-menu" id="userMenu">
       <button id="userAvatarBtn" class="user-avatar-btn" type="button" aria-label="用户菜单">
-        <span id="userAvatarIcon">?</span>
+        <span id="userAvatarIcon" class="user-icon" aria-hidden="true"></span>
       </button>
       <div class="user-dropdown" id="userDropdown">
         <div class="user-dropdown-header">
@@ -1835,11 +1958,11 @@
         </div>
       </div>
     </div>
-    <button id="accountBtn" class="account-btn" type="button" aria-label="账号登录">登录</button>
-    <button id="adminEntryBtn" class="account-btn admin-entry-btn" type="button" aria-label="管理后台">后台</button>
-    <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-label="全屏显示">⛶</button>
-    <button id="musicSettingsToggle" type="button" aria-label="音乐设置">♪</button>
-    <button id="advancedSettingsToggle" type="button" aria-label="高级设置">⚙</button>
+    <button id="accountBtn" class="account-btn" type="button" aria-label="账号登录" title="登录或注册"><span class="user-icon" aria-hidden="true"></span></button>
+    <button id="adminEntryBtn" class="account-btn admin-entry-btn" type="button" aria-label="管理后台" title="管理后台">⌘</button>
+    <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-label="全屏显示" title="全屏显示">⛶</button>
+    <button id="musicSettingsToggle" type="button" aria-label="音乐设置" title="音乐设置">♪</button>
+    <button id="advancedSettingsToggle" type="button" aria-label="高级设置" title="高级设置">⚙</button>
   </div>
 
   <aside id="musicSettingsPanel" class="floating-settings" aria-label="音乐设置">
@@ -1894,13 +2017,13 @@
       </div>
 
       <div class="row">
-        <label for="planetScale">星球大小 <b id="planetScaleValue">1.0x</b></label>
-        <input id="planetScale" type="range" min="1" max="3" step="0.1" value="1" />
+        <label for="planetScale">星球大小 <b id="planetScaleValue">2.0x</b></label>
+        <input id="planetScale" type="range" min="1" max="3" step="0.1" value="2" />
       </div>
 
       <label class="field checkbox-field">
         <span>星球光团</span>
-        <input id="glowCloudToggle" type="checkbox" checked />
+        <input id="glowCloudToggle" type="checkbox" />
       </label>
 
       <div class="row">
@@ -1934,7 +2057,7 @@
   <section class="hud" aria-label="控制面板">
     <header>
       <button id="panelCloseBtn" class="panel-close" type="button" aria-label="收起面板">×</button>
-      <h1 id="displayTitle">我的记忆星球</h1>
+      <h1 id="displayTitle">我的记忆宇宙</h1>
       <div class="status"><i id="statusDot" class="dot"></i><span id="statusText">上传照片，生成一个可以送人的 3D 记忆星球。</span></div>
     </header>
     <div class="controls">
@@ -1974,7 +2097,7 @@
       <div class="tab-panel" data-panel="upload">
         <div class="project-grid" aria-label="作品信息">
           <label class="field">作品标题
-            <input id="projectTitle" value="我的记忆星球" maxlength="36" />
+            <input id="projectTitle" value="我的记忆宇宙" maxlength="36" />
           </label>
           <label class="field">副标题
             <input id="projectSubtitle" value="把重要瞬间放进一颗会展开的星球" maxlength="64" />
@@ -1985,7 +2108,7 @@
         </div>
 
         <button id="dropzone" class="dropzone" type="button">
-          <strong>上传照片生成我的记忆星球</strong>
+          <strong>上传照片生成我的记忆宇宙</strong>
           <small>支持多次追加上传，最多 200 张，推荐 20-80 张效果最好。</small>
         </button>
         <input id="photoInput" type="file" accept="image/*" multiple />
@@ -2054,19 +2177,17 @@
 
   <aside class="gesture-card" aria-label="手势说明">
     <div class="gesture-grid">
-      <button id="openBtn" class="gesture" type="button" data-gesture="open" aria-label="张开" title="张开"><strong>✺</strong></button>
-      <button id="collapseBtn" class="gesture" type="button" data-gesture="fist" aria-label="收回" title="收回"><strong>◉</strong></button>
-      <button id="universePanoramaBtn" class="gesture" type="button" data-action="panorama" aria-label="全景" title="全景"><strong>↩</strong></button>
+      <button id="openBtn" class="gesture" type="button" data-gesture="open" aria-label="张开当前星球" title="张开当前星球"><strong>✺</strong></button>
+      <button id="collapseBtn" class="gesture" type="button" data-gesture="fist" aria-label="收回当前星球" title="收回当前星球" hidden><strong>◉</strong></button>
+      <button id="universePanoramaBtn" class="gesture" type="button" data-action="panorama" aria-label="返回星系" title="返回星系"><strong>↩</strong></button>
     </div>
   </aside>
 
   <div id="layoutFloat" class="layout-float" aria-label="张开排列">
-    <button type="button" data-layout="orbit">环绕散开</button>
-    <button id="slideshowPlayBtn" type="button" data-action="play" aria-label="播放照片">▶</button>
-    <button type="button" data-layout="grid">整齐铺开</button>
+    <button type="button" data-layout="orbit" aria-label="环绕散开" title="环绕散开">◎</button>
+    <button id="slideshowPlayBtn" type="button" data-action="play" aria-label="播放照片" title="播放照片">▶</button>
+    <button type="button" data-layout="grid" aria-label="整齐铺开" title="整齐铺开">▦</button>
   </div>
-
-  <div class="credit">3D MEMORY GLOBE</div>
 
   <aside id="storyPanel" class="story-panel" aria-label="照片故事">
     <img id="storyImage" alt="选中的照片" />
@@ -2137,8 +2258,8 @@
         <div class="tf-row" style="display:none"><label>荧光半径 <b id="tfGlowVal">25%</b></label>
           <input id="tfGlow" type="range" min="0.6" max="2.2" step="0.1" value="1.0" />
         </div>
-        <div class="tf-row" style="display:none"><label>星球大小 <b id="tfScaleVal">1.0x</b></label>
-          <input id="tfScale" type="range" min="1" max="3" step="0.1" value="1" />
+        <div class="tf-row" style="display:none"><label>星球大小 <b id="tfScaleVal">2.0x</b></label>
+          <input id="tfScale" type="range" min="1" max="3" step="0.1" value="2" />
         </div>
         <div class="tf-row" style="display:none"><label>旋转速度 <b id="tfSpinVal">40%</b></label>
           <input id="tfSpin" type="range" min="0" max="3" step="0.1" value="1.2" />
@@ -2237,6 +2358,35 @@
           <div class="admin-stat"><b id="adminTotalPlanets">0</b><span>星球</span></div>
           <div class="admin-stat"><b id="adminTotalPhotos">0</b><span>照片</span></div>
           <div class="admin-stat"><b id="adminTotalStorage">0 MB</b><span>存储</span></div>
+        </div>
+        <div class="admin-filter-bar" aria-label="用户筛选">
+          <label>用户名
+            <input id="adminFilterUsername" type="search" placeholder="搜索用户名" autocomplete="off" />
+          </label>
+          <label>用户等级
+            <select id="adminFilterTier"></select>
+          </label>
+          <label>审核状态
+            <select id="adminFilterStatus">
+              <option value="">全部状态</option>
+              <option value="active">通过</option>
+              <option value="pending">审核中</option>
+              <option value="blocked">锁定</option>
+            </select>
+          </label>
+          <label>星球最少
+            <input id="adminFilterPlanetMin" type="number" min="0" step="1" inputmode="numeric" />
+          </label>
+          <label>星球最多
+            <input id="adminFilterPlanetMax" type="number" min="0" step="1" inputmode="numeric" />
+          </label>
+          <label>照片最少
+            <input id="adminFilterPhotoMin" type="number" min="0" step="1" inputmode="numeric" />
+          </label>
+          <label>照片最多
+            <input id="adminFilterPhotoMax" type="number" min="0" step="1" inputmode="numeric" />
+          </label>
+          <button id="adminFilterReset" class="admin-btn-ok" type="button">重置</button>
         </div>
         <div class="admin-table-wrap">
           <table class="admin-table">
@@ -2514,15 +2664,16 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
     };
     const DEFAULT_MUSIC_TRACK = "longDark";
     const AUTOPLAY_MUSIC_TRACKS = Object.keys(MUSIC_TRACKS).filter((key) => key !== "synth");
-    const DEFAULT_ALBUM_TITLE = "我的记忆星球";
+    const LEGACY_DEFAULT_ALBUM_TITLE = "我的记忆星球";
+    const DEFAULT_ALBUM_TITLE = "我的记忆宇宙";
     const DEFAULT_ALBUM_SUBTITLE = "把重要瞬间放进一颗会展开的星球";
     const DEFAULT_ALBUM_AUTHOR = "为你收藏这些瞬间";
     const DEFAULT_RENDER_SETTINGS = {
       density: 8500,
       energy: 1.35,
       glow: 1.25,
-      planetScale: 1,
-      glowCloud: true,
+      planetScale: 2,
+      glowCloud: false,
       photoLayout: "orbit",
       rotationSpeed: 1,
       targetFps: 60,
@@ -2588,7 +2739,16 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
         users: [],
         tiers: {},
         config: null,
-        editingTier: "free"
+        editingTier: "free",
+        userFilters: {
+          username: "",
+          tier: "",
+          status: "",
+          planetMin: "",
+          planetMax: "",
+          photoMin: "",
+          photoMax: ""
+        }
       },
       restoredFromAccountCloud: false,
       universe: null,
@@ -2936,19 +3096,32 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
 
 function refreshAuthUi() {
   const user = state.auth.user;
+  const ensureUserIcon = (target) => {
+    if (!target) return;
+    if (!target.querySelector(".user-icon")) {
+      target.textContent = "";
+      const icon = document.createElement("span");
+      icon.className = "user-icon";
+      icon.setAttribute("aria-hidden", "true");
+      target.appendChild(icon);
+    }
+  };
   if (user && user.status === "active") {
     accountBtn.style.display = "none";
     userMenu.classList.add("show");
     const initial = (user.username || "?")[0].toUpperCase();
-    userAvatarIcon.textContent = initial;
+    ensureUserIcon(userAvatarBtn);
+    userAvatarBtn.title = user.username ? `${user.username} · 用户菜单` : "用户菜单";
+    userAvatarBtn.setAttribute("aria-label", userAvatarBtn.title);
     userDropdownAvatar.textContent = initial;
     userDropdownName.textContent = user.username || "账号";
     const tier = user.tierConfig;
     userDropdownTier.textContent = tier ? tier.name : (user.tier || "free");
   } else {
     accountBtn.style.display = "inline-flex";
-    accountBtn.textContent = !user ? "登录" : (user.status === "pending" ? "待审核" : "已禁用");
+    ensureUserIcon(accountBtn);
     accountBtn.title = user ? user.username + " · " + (user.tier || "free") : "登录或注册";
+    accountBtn.setAttribute("aria-label", accountBtn.title);
     userMenu.classList.remove("show");
   }
   refreshAdminEntryUi();
@@ -2965,12 +3138,52 @@ function refreshAuthUi() {
       return Boolean(
         state.admin.token
         && state.admin.username
+        && state.auth.user?.status === "active"
         && state.auth.user?.username === state.admin.username
       );
     }
 
     function refreshAdminEntryUi() {
       adminEntryBtn.classList.toggle("show", adminEntryAllowed());
+      adminEntryBtn.textContent = "⌘";
+      adminEntryBtn.title = "管理后台";
+      adminEntryBtn.setAttribute("aria-label", "管理后台");
+    }
+
+    function clearAdminSession() {
+      state.admin.token = "";
+      state.admin.username = "";
+      localStorage.removeItem(ADMIN_AUTH_KEY);
+      refreshAdminEntryUi();
+    }
+
+    async function establishAdminSession(username, password) {
+      state.admin.token = "";
+      state.admin.username = "";
+      localStorage.removeItem(ADMIN_AUTH_KEY);
+      if (!username || !password || !cloudEnabled()) {
+        clearAdminSession();
+        return false;
+      }
+      try {
+        const data = await cloudRequest("/admin/login", {
+          method: "POST",
+          body: JSON.stringify({ username, password })
+        }, true);
+        state.admin.token = data.adminToken || "";
+        state.admin.username = data.admin?.username || username;
+        if (!adminEntryAllowed()) {
+          clearAdminSession();
+          return false;
+        }
+        localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify({ token: state.admin.token, username: state.admin.username }));
+        refreshAdminEntryUi();
+        return true;
+      } catch (error) {
+        console.warn(error);
+        clearAdminSession();
+        return false;
+      }
     }
 
     function clearLargeLocalProjectCache() {
@@ -3063,6 +3276,7 @@ function openAccountActions() {
       state.auth.token = "";
       state.auth.user = null;
       localStorage.removeItem(AUTH_KEY);
+      clearAdminSession();
       refreshAuthUi();
       closeUserDropdown();
       closeAccountActions();
@@ -3106,6 +3320,7 @@ function openAccountActions() {
           state.auth.token = data.sessionToken || "";
           state.auth.user = data.user || null;
           if (state.auth.token) localStorage.setItem(AUTH_KEY, JSON.stringify({ token: state.auth.token }));
+          clearAdminSession();
           refreshAuthUi();
           closeAuthPrompt();
           if (data.user?.status === "pending") {
@@ -3123,6 +3338,11 @@ function openAccountActions() {
         state.auth.token = data.sessionToken || "";
         state.auth.user = data.user || null;
         localStorage.setItem(AUTH_KEY, JSON.stringify({ token: state.auth.token }));
+        if (state.auth.user?.status === "active") {
+          await establishAdminSession(username, password);
+        } else {
+          clearAdminSession();
+        }
         refreshAuthUi();
         closeAuthPrompt();
         if (prevUserId && state.auth.user?.userId && prevUserId !== state.auth.user.userId) {
@@ -3170,12 +3390,14 @@ function openAccountActions() {
         state.admin.username = saved.username || "";
         const data = await cloudRequest("/admin/me", { method: "GET" }, true);
         state.admin.username = data.admin?.username || state.admin.username;
+        if (!adminEntryAllowed()) {
+          clearAdminSession();
+          return;
+        }
         localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify({ token: state.admin.token, username: state.admin.username }));
       } catch (error) {
         console.warn(error);
-        state.admin.token = "";
-        state.admin.username = "";
-        localStorage.removeItem(ADMIN_AUTH_KEY);
+        clearAdminSession();
       }
       refreshAdminEntryUi();
     }
@@ -3444,7 +3666,7 @@ function openAccountActions() {
         energy: clamp(Number(settings.energy ?? DEFAULT_RENDER_SETTINGS.energy), 0.6, 2.4),
         glow: clamp(Number(settings.glow ?? DEFAULT_RENDER_SETTINGS.glow), 0.6, 2.2),
         planetScale: clamp(Number(settings.planetScale ?? DEFAULT_RENDER_SETTINGS.planetScale), 1, 3),
-        glowCloud: settings.glowCloud !== false,
+        glowCloud: Boolean(settings.glowCloud ?? DEFAULT_RENDER_SETTINGS.glowCloud),
         photoLayout,
         rotationSpeed: clamp(Number(settings.rotationSpeed ?? DEFAULT_RENDER_SETTINGS.rotationSpeed), 0, 3),
         targetFps: Math.round(clamp(Number(settings.targetFps ?? DEFAULT_RENDER_SETTINGS.targetFps), 24, 144) / 6) * 6,
@@ -3522,6 +3744,20 @@ function openAccountActions() {
         name: overrides.name || "默认空间",
         albums: Array.isArray(overrides.albums) ? overrides.albums : []
       };
+    }
+
+    function migrateDefaultUniverseTitle(payload = {}) {
+      if (!payload || typeof payload !== "object") return payload;
+      const next = payload;
+      if (next.title === LEGACY_DEFAULT_ALBUM_TITLE) next.title = DEFAULT_ALBUM_TITLE;
+      if (next.universe?.galaxies) {
+        next.universe.galaxies.forEach((galaxy) => {
+          (galaxy.albums || []).forEach((album) => {
+            if (album.title === LEGACY_DEFAULT_ALBUM_TITLE) album.title = DEFAULT_ALBUM_TITLE;
+          });
+        });
+      }
+      return next;
     }
 
     function normalizeUniverse(payload = {}) {
@@ -3912,7 +4148,7 @@ function openAccountActions() {
       projectTitle.value = state.project.title;
       projectSubtitle.value = state.project.subtitle;
       projectAuthor.value = state.project.author;
-      dropzone.querySelector("strong").textContent = state.photos.length ? `已载入 ${state.photos.length} 张照片` : "上传照片生成我的记忆星球";
+      dropzone.querySelector("strong").textContent = state.photos.length ? `已载入 ${state.photos.length} 张照片` : "上传照片生成我的记忆宇宙";
       refreshPhotoManager();
       refreshProjectInfo();
       displayTitle.textContent = state.project.title;
@@ -3957,6 +4193,7 @@ function openAccountActions() {
     }
 
     function setUniverse(payload = {}) {
+      migrateDefaultUniverseTitle(payload);
       state.universe = normalizeUniverse(payload);
       applyGlobalAudioSettings(state.universe.audio || payload.audio, { refreshPlayback: true });
       state.activeGalaxyId = state.universe.activeGalaxyId;
@@ -4568,21 +4805,31 @@ function openAccountActions() {
 
     function createLabelTexture(text, theme = currentTheme()) {
       const canvas = document.createElement("canvas");
-      canvas.width = 512;
-      canvas.height = 96;
+      canvas.width = 640;
+      canvas.height = 128;
       const context = canvas.getContext("2d");
       context.clearRect(0, 0, canvas.width, canvas.height);
-      context.font = "26px Microsoft YaHei, PingFang SC, sans-serif";
+      context.font = "700 36px Microsoft YaHei, PingFang SC, sans-serif";
       context.textAlign = "center";
       context.textBaseline = "middle";
       const label = String(text || "未命名星球").slice(0, 18);
-      const textWidth = Math.min(430, context.measureText(label).width);
-      context.fillStyle = "rgba(0, 0, 0, 0.28)";
-      context.fillRect((canvas.width - textWidth) * 0.5 - 12, 26, textWidth + 24, 44);
-      context.shadowColor = "rgba(0, 0, 0, 0.86)";
-      context.shadowBlur = 10;
-      context.fillStyle = "rgba(238, 248, 255, 0.94)";
-      context.fillText(label, canvas.width * 0.5, 48);
+      const textWidth = Math.min(540, context.measureText(label).width);
+      const boxWidth = textWidth + 44;
+      const boxX = (canvas.width - boxWidth) * 0.5;
+      context.fillStyle = "rgba(0, 0, 0, 0.48)";
+      context.strokeStyle = "rgba(190, 231, 255, 0.28)";
+      context.lineWidth = 2;
+      context.beginPath();
+      context.roundRect(boxX, 31, boxWidth, 66, 20);
+      context.fill();
+      context.stroke();
+      context.shadowColor = "rgba(0, 0, 0, 0.96)";
+      context.shadowBlur = 13;
+      context.lineWidth = 7;
+      context.strokeStyle = "rgba(0, 0, 0, 0.82)";
+      context.strokeText(label, canvas.width * 0.5, 64);
+      context.fillStyle = "rgba(248, 253, 255, 0.98)";
+      context.fillText(label, canvas.width * 0.5, 64);
       context.shadowBlur = 0;
       const texture = new THREE.CanvasTexture(canvas);
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -4593,7 +4840,7 @@ function openAccountActions() {
     function createLabelSprite(text, theme = currentTheme(), albumId = "") {
       const texture = createLabelTexture(text, theme);
       const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
-      sprite.scale.set(1.38, 0.26, 1);
+      sprite.scale.set(1.72, 0.34, 1);
       sprite.userData.labelBody = true;
       sprite.userData.albumId = albumId;
       return sprite;
@@ -5481,6 +5728,30 @@ function openAccountActions() {
       updateConstellationTwinkles(dt);
     }
 
+    function updateUniverseLabelPresentation(item) {
+      const sprite = item?.label?.userData?.labelSprite;
+      if (!sprite) return;
+      const selected = item.album?.id === state.selectedUniverseAlbumId;
+      const detailActive = state.universeDetailOpen && item.album?.id === state.universeDetailAlbumId;
+      const worldPosition = new THREE.Vector3();
+      sprite.getWorldPosition(worldPosition);
+      const distance = camera.position.distanceTo(worldPosition);
+      const distanceBoost = clamp(distance / 6.6, 1, 1.85);
+      const panoramaBoost = state.universePanoramaMode && !state.universeDetailOpen ? 1.38 : 1;
+      const selectedBoost = selected ? 1.34 : 1;
+      const detailBoost = detailActive ? 1.14 : 1;
+      const parentScale = Math.max(0.18, item.group?.scale?.x || 1);
+      const labelScale = distanceBoost * panoramaBoost * selectedBoost * detailBoost / parentScale;
+      const targetWidth = 1.72 * labelScale;
+      const targetHeight = 0.34 * labelScale;
+      sprite.scale.x = lerp(sprite.scale.x, targetWidth, 0.16);
+      sprite.scale.y = lerp(sprite.scale.y, targetHeight, 0.16);
+      sprite.scale.z = 1;
+      sprite.material.opacity = lerp(sprite.material.opacity, selected ? 1 : 0.9, 0.16);
+      sprite.material.depthTest = false;
+      sprite.renderOrder = selected ? 32 : 24;
+    }
+
     function updateUniverseView(dt) {
       updateSharedUniverseBackdrop(dt);
       const photoFocusActive = state.universeDetailOpen && (state.hoveredPhoto >= 0 || state.selectedPhoto >= 0);
@@ -5528,6 +5799,7 @@ function openAccountActions() {
           item.manualSpin.multiplyScalar((item.album.shape || "sphere") === "wave" ? 0.974 : 0.986);
         }
         item.halo.rotation.y -= item.spin * 0.7 * meshSpinSpeed * dt * 60;
+        updateUniverseLabelPresentation(item);
       });
       if (state.universeDetailOpen) {
         photoLayer.visible = true;
@@ -6499,6 +6771,19 @@ function openAccountActions() {
       document.querySelectorAll(".gesture").forEach((item) => {
         item.classList.toggle("live", item.dataset.gesture === name);
       });
+      syncPrimaryGestureButton();
+    }
+
+    function syncPrimaryGestureButton() {
+      if (!openBtn) return;
+      const expanded = state.targetMode === "explode";
+      const nextGesture = expanded ? "fist" : "open";
+      const nextLabel = expanded ? "收回当前星球" : "张开当前星球";
+      openBtn.dataset.gesture = nextGesture;
+      openBtn.setAttribute("aria-label", nextLabel);
+      openBtn.title = nextLabel;
+      const icon = openBtn.querySelector("strong");
+      if (icon) icon.textContent = expanded ? "◉" : "✺";
     }
 
     function syncPanelToggle(hidden = document.body.classList.contains("panel-hidden")) {
@@ -6507,7 +6792,7 @@ function openAccountActions() {
     }
 
     function isMobilePanelLayout() {
-      return window.matchMedia("(max-width: 720px)").matches;
+      return window.matchMedia("(max-width: 720px), (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 560px)").matches;
     }
 
     function closeFloatingSettings() {
@@ -7622,7 +7907,7 @@ function openAccountActions() {
       state.atlasTexture = createBlankAtlasTexture();
       refreshPhotoMaterial();
       refreshPhotoManager();
-      dropzone.querySelector("strong").textContent = "上传照片生成我的记忆星球";
+      dropzone.querySelector("strong").textContent = "上传照片生成我的记忆宇宙";
       saveProject();
       setStatus("已清空照片，恢复默认记忆星球。", "ready");
     }
@@ -7898,7 +8183,7 @@ function openAccountActions() {
       state.atlasTexture = createBlankAtlasTexture();
       refreshPhotoMaterial();
       refreshPhotoManager();
-      dropzone.querySelector("strong").textContent = "上传照片生成我的记忆星球";
+      dropzone.querySelector("strong").textContent = "上传照片生成我的记忆宇宙";
       refreshProjectInfo();
       refreshUniversePanel();
       setStatus(message, "ready");
@@ -8070,6 +8355,9 @@ function openAccountActions() {
 
         // Show form
         tfTitle.value = `星球 ${galaxy.albums.length + 1}`;
+        document.getElementById("tfScale").value = String(DEFAULT_RENDER_SETTINGS.planetScale);
+        document.getElementById("tfScaleVal").textContent = `${DEFAULT_RENDER_SETTINGS.planetScale.toFixed(1)}x`;
+        document.getElementById("tfGlowCloud").checked = DEFAULT_RENDER_SETTINGS.glowCloud;
         taskTitle.textContent = "生成星球";
         taskMessage.textContent = "";
         taskInput.style.display = "none";
@@ -8291,7 +8579,7 @@ function openAccountActions() {
           tryStartDefaultMusic();
         } else {
           const photos = JSON.parse(legacy);
-          await restoreProject({ photos, title: "我的记忆星球", subtitle: "从旧版本恢复的照片故事", author: "为你收藏这些瞬间", theme: "tech", shape: "sphere" });
+          await restoreProject({ photos, title: DEFAULT_ALBUM_TITLE, subtitle: "从旧版本恢复的照片故事", author: "为你收藏这些瞬间", theme: "tech", shape: "sphere" });
           setActiveTab("universe");
           tryStartDefaultMusic();
         }
@@ -8351,7 +8639,7 @@ function openAccountActions() {
       flushSaveProject();
       const payload = getProjectPayload();
       const theme = currentTheme();
-      const safeTitle = escapeHtml(payload.title || "我的记忆星球");
+      const safeTitle = escapeHtml(payload.title || DEFAULT_ALBUM_TITLE);
       const safeSubtitle = escapeHtml(payload.subtitle || "把重要瞬间放进一颗会展开的星球");
       const safeAuthor = escapeHtml(payload.author || "");
       const exportData = JSON.stringify(payload).replace(/</g, "\\u003c");
@@ -9488,6 +9776,7 @@ function openAccountActions() {
       }
       fullscreenToggle.textContent = active ? "×" : "⛶";
       fullscreenToggle.setAttribute("aria-label", active ? "退出全屏" : "全屏显示");
+      fullscreenToggle.title = active ? "退出全屏" : "全屏显示";
       setStatus(active ? "已进入全屏模式，按 Esc 或点击 × 可退出。" : "已退出全屏模式。", "ready");
       resize();
     };
@@ -10012,15 +10301,65 @@ userLogoutBtn.addEventListener("click", () => {
       });
     }
 
+    function adminFilterNumber(value) {
+      const number = Number(value);
+      return Number.isFinite(number) && value !== "" ? number : null;
+    }
+
+    function adminStatusLabel(status) {
+      const labels = {
+        active: "通过",
+        pending: "审核中",
+        blocked: "锁定"
+      };
+      return labels[status] || status || "-";
+    }
+
+    function updateAdminTierFilterOptions() {
+      const select = document.getElementById("adminFilterTier");
+      if (!select) return;
+      const current = state.admin.userFilters.tier || "";
+      const tierKeys = new Set(Object.keys(state.admin.tiers || {}));
+      (state.admin.users || []).forEach((user) => tierKeys.add(user.tier || "free"));
+      const options = ['<option value="">全部等级</option>']
+        .concat(Array.from(tierKeys).sort().map((tier) => `<option value="${escapeHtml(tier)}">${escapeHtml(tier)}</option>`));
+      select.innerHTML = options.join("");
+      select.value = tierKeys.has(current) ? current : "";
+      state.admin.userFilters.tier = select.value;
+    }
+
+    function adminUserMatchesFilters(user) {
+      const filters = state.admin.userFilters || {};
+      const stats = user.stats || {};
+      const username = String(user.username || "").toLowerCase();
+      const query = String(filters.username || "").trim().toLowerCase();
+      const planetCount = Number(stats.planetCount || 0);
+      const photoCount = Number(stats.photoCount || 0);
+      const planetMin = adminFilterNumber(filters.planetMin);
+      const planetMax = adminFilterNumber(filters.planetMax);
+      const photoMin = adminFilterNumber(filters.photoMin);
+      const photoMax = adminFilterNumber(filters.photoMax);
+      if (query && !username.includes(query)) return false;
+      if (filters.tier && (user.tier || "free") !== filters.tier) return false;
+      if (filters.status && (user.status || "") !== filters.status) return false;
+      if (planetMin !== null && planetCount < planetMin) return false;
+      if (planetMax !== null && planetCount > planetMax) return false;
+      if (photoMin !== null && photoCount < photoMin) return false;
+      if (photoMax !== null && photoCount > photoMax) return false;
+      return true;
+    }
+
     function renderAdminUsers() {
       const tbody = document.getElementById("adminUserBody");
       tbody.innerHTML = "";
-      (state.admin.users || []).forEach((user) => {
+      updateAdminTierFilterOptions();
+      const filteredUsers = (state.admin.users || []).filter(adminUserMatchesFilters);
+      filteredUsers.forEach((user) => {
         const stats = user.stats || {};
         const row = document.createElement("tr");
         row.innerHTML = "<td><code>" + escapeHtml(user.userId || "-") + "</code></td>"
           + "<td>" + escapeHtml(user.username || "-") + "</td>"
-          + "<td>" + escapeHtml(user.status || "-") + "</td>"
+          + "<td>" + escapeHtml(adminStatusLabel(user.status)) + "</td>"
           + "<td>" + escapeHtml(user.tier || "free") + "</td>"
           + "<td>" + (stats.planetCount || 0) + "</td>"
           + "<td>" + (stats.photoCount || 0) + "</td>"
@@ -10047,7 +10386,7 @@ userLogoutBtn.addEventListener("click", () => {
         const block = document.createElement("button");
         block.className = "admin-btn-danger";
         block.type = "button";
-        block.textContent = user.status === "blocked" ? "已禁用" : "禁用";
+        block.textContent = user.status === "blocked" ? "已锁定" : "锁定";
         block.disabled = user.status === "blocked";
         block.addEventListener("click", () => updateAdminUser(user.userId, { status: "blocked" }));
         const resetPassword = document.createElement("button");
@@ -10074,7 +10413,7 @@ userLogoutBtn.addEventListener("click", () => {
         tbody.appendChild(row);
       });
       if (!tbody.children.length) {
-        tbody.innerHTML = "<tr><td colspan=\"9\" class=\"admin-empty\">暂无云端用户数据。</td></tr>";
+        tbody.innerHTML = `<tr><td colspan="9" class="admin-empty">${(state.admin.users || []).length ? "没有符合筛选条件的用户。" : "暂无云端用户数据。"}</td></tr>`;
       }
     }
 
@@ -10223,17 +10562,12 @@ userLogoutBtn.addEventListener("click", () => {
         if (adminEntryAllowed()) {
           openAdminPanel().catch((error) => {
             console.warn(error);
-            state.admin.token = "";
-            state.admin.username = "";
-            localStorage.removeItem(ADMIN_AUTH_KEY);
-            refreshAdminEntryUi();
-            openAdminLock();
+            clearAdminSession();
+            setStatus("管理员状态已失效，请重新登录管理员账号。", "warn");
           });
-        } else if (state.admin.token) {
-          refreshAdminEntryUi();
-          setStatus("请先用管理员账号登录主页面，再进入后台。", "warn");
         } else {
-          openAdminLock();
+          refreshAdminEntryUi();
+          setStatus("请先登录管理员账号。", "warn");
         }
       }
     });
@@ -10241,16 +10575,13 @@ userLogoutBtn.addEventListener("click", () => {
     adminEntryBtn.addEventListener("click", () => {
       if (!adminEntryAllowed()) {
         refreshAdminEntryUi();
-        setStatus("请先用管理员账号登录主页面，再进入后台。", "warn");
+        setStatus("请先登录管理员账号。", "warn");
         return;
       }
       openAdminPanel().catch((error) => {
         console.warn(error);
-        state.admin.token = "";
-        state.admin.username = "";
-        localStorage.removeItem(ADMIN_AUTH_KEY);
-        refreshAdminEntryUi();
-        openAdminLock();
+        clearAdminSession();
+        setStatus("管理员状态已失效，请重新登录管理员账号。", "warn");
       });
     });
     document.getElementById("adminUnlockBtn").addEventListener("click", handleAdminUnlock);
@@ -10281,6 +10612,31 @@ userLogoutBtn.addEventListener("click", () => {
     });
     document.querySelectorAll(".admin-tab").forEach((tab) => {
       tab.addEventListener("click", () => switchAdminTab(tab.dataset.tab));
+    });
+    const adminFilterControls = [
+      ["adminFilterUsername", "username"],
+      ["adminFilterTier", "tier"],
+      ["adminFilterStatus", "status"],
+      ["adminFilterPlanetMin", "planetMin"],
+      ["adminFilterPlanetMax", "planetMax"],
+      ["adminFilterPhotoMin", "photoMin"],
+      ["adminFilterPhotoMax", "photoMax"]
+    ];
+    adminFilterControls.forEach(([id, key]) => {
+      const control = document.getElementById(id);
+      if (!control) return;
+      control.addEventListener(control.tagName === "INPUT" ? "input" : "change", () => {
+        state.admin.userFilters[key] = control.value.trim();
+        renderAdminUsers();
+      });
+    });
+    document.getElementById("adminFilterReset")?.addEventListener("click", () => {
+      Object.keys(state.admin.userFilters).forEach((key) => { state.admin.userFilters[key] = ""; });
+      adminFilterControls.forEach(([id]) => {
+        const control = document.getElementById(id);
+        if (control) control.value = "";
+      });
+      renderAdminUsers();
     });
     document.getElementById("adminSaveTier").addEventListener("click", () => {
       saveAdminTier().catch((error) => {
