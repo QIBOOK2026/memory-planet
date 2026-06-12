@@ -1423,6 +1423,35 @@
     .admin-actions button { flex: 1; min-width: 100px; }
     .admin-error { margin-top: 10px; color: #ff6b6b; font-size: 13px; min-height: 1.25em; }
     .admin-status { font-size: 13px; color: var(--muted); min-height: 1.25em; margin-top: 4px; }
+    .account-card {
+      width: min(360px, calc(100vw - 40px));
+      padding: 20px;
+    }
+    .account-card h2 { margin-bottom: 12px; }
+    .account-summary {
+      min-height: 42px;
+      margin: 0 0 16px;
+      padding: 11px 12px;
+      border: 1px solid rgba(120, 216, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(1, 8, 18, 0.52);
+      color: var(--ink);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .account-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .account-actions button {
+      width: auto;
+      min-width: 0;
+      padding: 0 12px;
+      white-space: nowrap;
+    }
+    .account-actions .primary { width: auto; }
 
     .admin-panel {
       position: fixed; inset: 18px; z-index: 20;
@@ -2017,11 +2046,11 @@
   </div>
 
   <div id="accountLock" class="admin-lock">
-    <div class="admin-card">
+    <div class="admin-card account-card">
       <button id="accountCloseBtn" class="fs-close" type="button">&times;</button>
       <h2>账号</h2>
-      <p id="accountSummary">当前账号</p>
-      <div class="admin-actions">
+      <p id="accountSummary" class="account-summary">当前账号</p>
+      <div class="account-actions">
         <button id="accountChangePasswordBtn" class="primary" type="button">修改密码</button>
         <button id="accountLogoutBtn" type="button">退出登录</button>
       </div>
