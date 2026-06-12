@@ -132,7 +132,7 @@
     .quick-actions {
       position: fixed;
       top: 16px;
-      right: 16px;
+      right: 20px;
       z-index: 7;
       display: grid;
       gap: 8px;
@@ -151,7 +151,7 @@
     }
 
     .quick-actions button.active {
-      border-color: var(--accent);
+      border-color: rgba(91, 231, 255, 0.8);
       background: var(--control-active);
       box-shadow: var(--control-glow);
     }
@@ -164,36 +164,36 @@
       min-width: 56px;
       min-height: 34px;
       padding: 0 14px;
-      border: 1px solid rgba(120, 216, 255, 0.28);
-      border-radius: 7px;
-      background: linear-gradient(135deg, rgba(91, 231, 255, 0.12), rgba(47, 124, 255, 0.08));
-      color: var(--accent);
+      border: 1px solid var(--panel-line);
+      border-radius: 6px;
+      background: var(--control-surface);
+      color: var(--ink);
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 500;
       line-height: 34px;
       letter-spacing: 0;
-      transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+      transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
       white-space: nowrap;
     }
     .account-btn:hover {
-      border-color: var(--accent);
-      background: linear-gradient(135deg, rgba(91, 231, 255, 0.2), rgba(47, 124, 255, 0.14));
-      box-shadow: 0 0 14px rgba(91, 231, 255, 0.2);
+      border-color: rgba(91, 231, 255, 0.8);
+      background: var(--control-hover);
     }
     .admin-entry-btn {
       display: none;
       font-size: 12px;
       padding: 0 10px;
       min-width: 44px;
-      border-color: rgba(255, 209, 102, 0.25);
-      background: linear-gradient(135deg, rgba(255, 209, 102, 0.08), rgba(255, 166, 0, 0.05));
+      border: 1px solid rgba(255, 209, 102, 0.25);
+      border-radius: 6px;
+      background: var(--control-surface);
+      transition: border-color 0.16s, background 0.16s;
       color: var(--warn);
     }
     .admin-entry-btn.show { display: inline-flex; align-items: center; justify-content: center; }
     .admin-entry-btn:hover {
       border-color: var(--warn);
-      background: linear-gradient(135deg, rgba(255, 209, 102, 0.15), rgba(255, 166, 0, 0.1));
-      box-shadow: 0 0 14px rgba(255, 209, 102, 0.2);
+      background: rgba(255, 209, 102, 0.1);
     }
 
     .hud header {
@@ -373,7 +373,7 @@
 
     .step-flow button.active {
       color: var(--ink);
-      border-color: var(--accent);
+      border-color: rgba(91, 231, 255, 0.8);
       background: var(--control-active);
     }
 
@@ -485,10 +485,11 @@
         var(--panel-surface);
       color: var(--muted);
       text-align: left;
+      white-space: nowrap;
     }
 
     .album-card.active {
-      border-color: var(--accent);
+      border-color: rgba(91, 231, 255, 0.8);
       background:
         radial-gradient(circle at 22% 20%, var(--panel-accent-glow), transparent 50px),
         color-mix(in srgb, var(--accent) 11%, var(--panel-surface));
@@ -633,7 +634,7 @@
 
     .dropzone.dragover {
       background: var(--control-active);
-      border-color: var(--accent);
+      border-color: rgba(91, 231, 255, 0.8);
     }
 
     .dropzone small {
@@ -669,7 +670,7 @@
 
     .theme-btn.active,
     .shape-btn.active {
-      border-color: var(--accent);
+      border-color: rgba(91, 231, 255, 0.8);
       background: var(--control-active);
       color: #ffffff;
     }
@@ -759,13 +760,13 @@
       gap: 8px;
       align-items: center;
       border: 1px solid rgba(120, 216, 255, 0.13);
-      border-radius: 7px;
-      padding: 6px;
+      border-radius: 6px;
+      padding: 10px;
       background: var(--panel-surface);
     }
 
     .photo-item.active {
-      border-color: var(--accent);
+      border-color: rgba(91, 231, 255, 0.8);
       background: var(--control-active);
     }
 
@@ -825,7 +826,7 @@
     }
 
     .layout-btn.active {
-      border-color: var(--accent);
+      border-color: rgba(91, 231, 255, 0.8);
       background: var(--control-active);
       color: #ffffff;
     }
@@ -839,7 +840,7 @@
       grid-template-columns: minmax(86px, 1fr) 42px minmax(86px, 1fr);
       gap: 6px;
       width: min(340px, calc(100vw - 28px));
-      padding: 6px;
+      padding: 10px;
       border: 1px solid var(--panel-line);
       border-radius: 999px;
       background: var(--panel-popover);
@@ -866,7 +867,7 @@
     }
 
     .layout-float button.active {
-      border-color: var(--accent);
+      border-color: rgba(91, 231, 255, 0.8);
       background: var(--control-active);
       color: #ffffff;
     }
@@ -978,7 +979,7 @@
 
     .credit {
       position: fixed;
-      right: 70px;
+      right: 86px;
       top: 16px;
       z-index: 5;
       color: rgba(190, 231, 255, 0.58);
@@ -1109,17 +1110,25 @@
     .slideshow-nav.next { right: clamp(10px, 3vw, 32px); }
 
     .slideshow-stage img {
-      max-width: min(100%, 1280px);
-      max-height: 100%;
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: calc(100vw - clamp(36px, 8vw, 88px));
+      max-height: calc(100vh - clamp(36px, 8vw, 88px) - 78px);
       object-fit: contain;
       opacity: 0;
-      transform: scale(0.985);
-      transition: opacity 1.2s ease, transform 4.8s ease;
+      transform: none;
+      transition: opacity 0.24s ease;
+    }
+
+    @supports (height: 100dvh) {
+      .slideshow-stage img {
+        max-height: calc(100dvh - clamp(36px, 8vw, 88px) - 78px);
+      }
     }
 
     .slideshow-player.visible .slideshow-stage img.ready {
       opacity: 1;
-      transform: scale(1.035);
     }
 
     .slideshow-meta {
@@ -1432,7 +1441,7 @@
       min-height: 42px;
       margin: 0 0 16px;
       padding: 11px 12px;
-      border: 1px solid rgba(120, 216, 255, 0.14);
+      border: 1px solid var(--panel-line);
       border-radius: 8px;
       background: rgba(1, 8, 18, 0.52);
       color: var(--ink);
@@ -1493,7 +1502,7 @@
 
     .admin-stats { display: grid; grid-template-columns: repeat(4, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
     .admin-stat {
-      border: 1px solid rgba(120, 216, 255, 0.14); border-radius: 8px;
+      border: 1px solid var(--panel-line); border-radius: 8px;
       padding: 14px; text-align: left;
       background: rgba(6, 18, 33, 0.72);
     }
@@ -1541,7 +1550,7 @@
     .admin-segment button.active {
       border-color: rgba(91, 231, 255, 0.42);
       background: rgba(91, 231, 255, 0.12);
-      color: var(--accent);
+      color: var(--ink);
     }
     .admin-table .admin-segment { margin: 0; flex-wrap: nowrap; }
     .admin-table .admin-segment button { min-height: 28px; padding: 0 8px; font-size: 12px; }
@@ -1555,18 +1564,19 @@
       width: 38px; min-height: 38px; padding: 0; cursor: pointer;
       border: 1.5px solid rgba(120, 216, 255, 0.32); border-radius: 50%;
       background: linear-gradient(135deg, rgba(91, 231, 255, 0.18), rgba(140, 120, 255, 0.14));
-      color: var(--accent); font-weight: 600; font-size: 15px; font-family: inherit;
+      color: var(--ink); font-weight: 600; font-size: 15px; font-family: inherit;
       transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
       display: inline-flex; align-items: center; justify-content: center; line-height: 1;
     }
     .user-avatar-btn:hover {
-      border-color: var(--accent);
+      border-color: rgba(91, 231, 255, 0.8);
       box-shadow: 0 0 12px rgba(91, 231, 255, 0.28);
       transform: scale(1.06);
     }
     .user-dropdown {
-      position: absolute; top: calc(100% + 6px); right: 0; z-index: 30;
-      min-width: 208px;
+      position: absolute; top: calc(100% + 6px); right: 8px; z-index: 30;
+      width: 224px;
+      max-width: calc(100vw - 32px);
       border: 1px solid rgba(120, 216, 255, 0.14);
       border-radius: 8px;
       background: rgba(6, 16, 28, 0.97);
@@ -1578,7 +1588,6 @@
       transition: opacity 0.16s, visibility 0.16s, transform 0.16s;
       pointer-events: none;
     }
-    .user-menu:hover .user-dropdown,
     .user-dropdown.show {
       opacity: 1; visibility: visible;
       transform: translateY(0);
@@ -1602,26 +1611,57 @@
     .user-dropdown-tier { font-size: 11px; color: var(--muted); }
     .user-dropdown-divider {
       height: 1px; margin: 4px 8px;
-      background: rgba(120, 216, 255, 0.1);
-    }.user-dropdown-divider {
-      height: 1px; margin: 4px 8px;
       background: rgba(120, 216, 255, 0.12);
     }
-    .user-dropdown-item {
-      display: flex; align-items: center; gap: 8px;
-      width: 100%; min-height: 36px; padding: 0 10px; border: none; border-radius: 6px;
-      background: transparent; color: var(--ink); font: inherit; font-size: 13px;
-      cursor: pointer; transition: background 0.14s, color 0.14s;
-      text-align: left;
+    .user-dropdown-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 8px 6px 6px;
     }
-    .user-dropdown-item:hover { background: rgba(120, 216, 255, 0.08); color: #fff; }
-    .user-dropdown-item-danger { color: #ff7b7b; }
-    .user-dropdown-item-danger:hover { background: rgba(255, 107, 107, 0.1); color: #ff9999; }
-    .user-dropdown-item-icon { width: 18px; text-align: center; font-size: 13px; flex-shrink: 0; }
-    .user-dropdown-item-icon { width: 18px; text-align: center; font-size: 14px; opacity: 0.8; }
+    .user-dropdown-item {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
+      height: 32px;
+      min-height: 0;
+      margin: 0;
+      padding: 0 8px;
+      box-sizing: border-box;
+      border: 1px solid rgba(120, 216, 255, 0.28);
+      border-radius: 6px;
+      background: rgba(8, 25, 42, 0.7);
+      color: var(--ink); font: inherit; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: border-color 0.14s, background 0.14s, color 0.14s;
+      text-align: center;
+      line-height: 32px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .user-dropdown-item:hover {
+      border-color: rgba(91, 231, 255, 0.52);
+      background: rgba(91, 231, 255, 0.1);
+      color: #fff;
+    }
+    .user-dropdown-item-danger {
+      color: #ff9a9a;
+      border-color: rgba(255, 107, 107, 0.42);
+      background: rgba(255, 107, 107, 0.06);
+    }
+    .user-dropdown-item-danger:hover {
+      border-color: rgba(255, 107, 107, 0.48);
+      background: rgba(255, 107, 107, 0.12);
+      color: #ffc0c0;
+    }
+    .user-dropdown-item-icon {
+      display: none;
+    }
 
-    .admin-entry-btn { display: none; color: var(--accent); border-color: rgba(91, 231, 255, 0.42); }
-    .admin-entry-btn.show { display: inline-flex; }
+
+
     .auth-mode {
       display: flex; gap: 18px; align-items: center;
       margin: 4px 0 16px;
@@ -1634,7 +1674,7 @@
       font: inherit; font-size: 14px;
     }
     .auth-mode button.active {
-      color: var(--accent);
+      color: var(--ink);
       box-shadow: inset 0 -2px 0 var(--accent);
     }
     .auth-help { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 10px; }
@@ -1668,8 +1708,10 @@
           </div>
         </div>
         <div class="user-dropdown-divider"></div>
-        <button class="user-dropdown-item" id="userChangePasswordBtn" type="button"><span class="user-dropdown-item-icon">🔑</span>修改密码</button>
-        <button class="user-dropdown-item user-dropdown-item-danger" id="userLogoutBtn" type="button"><span class="user-dropdown-item-icon">🚪</span>退出登录</button>
+        <div class="user-dropdown-actions">
+          <button class="user-dropdown-item" id="userChangePasswordBtn" type="button"><span class="user-dropdown-item-icon">🔑</span>修改密码</button>
+          <button class="user-dropdown-item user-dropdown-item-danger" id="userLogoutBtn" type="button"><span class="user-dropdown-item-icon">🚪</span>退出登录</button>
+        </div>
       </div>
     </div>
     <button id="accountBtn" class="account-btn" type="button" aria-label="账号登录">登录</button>
@@ -1924,7 +1966,7 @@
         <button id="prevStoryBtn" type="button">上一张</button>
         <button id="nextStoryBtn" type="button">下一张</button>
         <button id="favoriteStoryBtn" type="button">收藏</button>
-        <button id="fullStoryBtn" type="button">全屏</button>
+        <button id="fullStoryBtn" type="button" aria-label="从当前照片播放幻灯片">播放</button>
         <button id="storyClose" type="button">关闭</button>
       </div>
     </div>
@@ -2398,7 +2440,8 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
         active: false,
         paused: false,
         index: 0,
-        timer: 0
+        timer: 0,
+        imageToken: 0
       },
       hoveredPhoto: -1,
       hoverCandidates: [],
@@ -5053,6 +5096,35 @@ function openAccountActions() {
       setStatus("已收回到星球首页。", "ready");
     }
 
+    function resetExpandedVisualState() {
+      state.universeDetailOpen = false;
+      state.universeDetailAlbumId = "";
+      state.targetMode = "sphere";
+      state.explosion = 0;
+      state.collapseProgress = 1;
+      clearPhotoFocus();
+      hidePhotoSpritesImmediate();
+      photoLayer.visible = false;
+      if (state.geometry?.attributes?.position && state.basePositions) {
+        state.positions.set(state.basePositions);
+        state.geometry.attributes.position.needsUpdate = true;
+      }
+      if (state.velocities) state.velocities.fill(0);
+      state.universePlanets.forEach((item) => {
+        const points = item.mesh?.userData?.particleBody;
+        const geometry = points?.geometry;
+        const base = geometry?.userData?.base;
+        const position = geometry?.attributes?.position;
+        if (!base || !position) return;
+        position.array.set(base);
+        position.needsUpdate = true;
+        geometry.userData.explosion = 0;
+        geometry.userData.velocities?.fill?.(0);
+        const shell = item.mesh.userData.shellBody;
+        if (shell) shell.material.opacity = (item.album?.shape || "sphere") === "sphere" ? 0.065 : 0;
+      });
+    }
+
     async function finishUniverseEntry() {
       const albumId = state.universeEntryAlbumId;
       state.universeEntering = false;
@@ -7399,17 +7471,25 @@ function openAccountActions() {
       if (!state.photos.length) return;
       const safeIndex = ((index % state.photos.length) + state.photos.length) % state.photos.length;
       const photo = state.photos[safeIndex];
+      const src = photoSrc(photo);
+      const token = state.slideshow.imageToken + 1;
+      state.slideshow.imageToken = token;
       state.slideshow.index = safeIndex;
       state.selectedPhoto = safeIndex;
       slideshowImage.classList.remove("ready");
-      window.setTimeout(() => {
-        if (!state.slideshow.active) return;
-        slideshowImage.src = photoSrc(photo);
+      loadImageElement(src, { timeoutMs: 12000 }).then((image) => {
+        if (!state.slideshow.active || token !== state.slideshow.imageToken) return;
+        if (image) slideshowImage.src = src;
+        else slideshowImage.removeAttribute("src");
         slideshowImage.alt = photo.name || `照片 ${safeIndex + 1}`;
         slideshowTitle.textContent = photo.name || `照片 ${safeIndex + 1}`;
         slideshowCounter.textContent = `${safeIndex + 1} / ${state.photos.length}`;
-        window.setTimeout(() => slideshowImage.classList.add("ready"), 40);
-      }, 260);
+        requestAnimationFrame(() => {
+          if (state.slideshow.active && token === state.slideshow.imageToken && image) {
+            slideshowImage.classList.add("ready");
+          }
+        });
+      });
     }
 
     function scheduleSlideshowNext() {
@@ -7923,7 +8003,8 @@ function openAccountActions() {
     async function restoreProject(payload, message = "已恢复上次的记忆星球。") {
       if (!payload) return;
       setUniverse(payload);
-      await activateAlbum(state.universe.activeAlbumId, { message, keepTab: true, skipSyncCurrent: true });
+      await activateAlbum(state.universe.activeAlbumId, { message, keepTab: true, skipSyncCurrent: true, autoOpen: false });
+      resetExpandedVisualState();
     }
 
     function sharedViewPayload(payload) {
@@ -8140,7 +8221,7 @@ function openAccountActions() {
       padding: 10px 14px;
       border: 1px solid rgba(91, 231, 255, 0.38);
       border-radius: 999px;
-      color: var(--accent);
+      color: var(--ink);
       background: var(--panel);
       font-size: 13px;
     }
@@ -8194,7 +8275,7 @@ function openAccountActions() {
       padding: 18px;
     }
     .kicker {
-      color: var(--accent);
+      color: var(--ink);
       font-size: 13px;
       margin-bottom: 8px;
     }
@@ -9318,11 +9399,16 @@ function openAccountActions() {
 accountBtn.addEventListener("click", () => {
   openAuthPrompt("登录后可创建星球、云端保存和分享作品。");
 });
-userMenu.addEventListener("mouseenter", () => {
-  if (state.auth.user && state.auth.user.status === "active") userDropdown.classList.add("show");
+userAvatarBtn.addEventListener("click", (event) => {
+  event.stopPropagation();
+  if (!state.auth.user || state.auth.user.status !== "active") return;
+  userDropdown.classList.toggle("show");
 });
-userMenu.addEventListener("mouseleave", () => {
-  userDropdown.classList.remove("show");
+userDropdown.addEventListener("click", (event) => {
+  event.stopPropagation();
+});
+document.addEventListener("click", (event) => {
+  if (!userMenu.contains(event.target)) closeUserDropdown();
 });
 userChangePasswordBtn.addEventListener("click", () => {
   closeUserDropdown();
@@ -9517,7 +9603,11 @@ userLogoutBtn.addEventListener("click", () => {
         playSfx("ding");
       }, { immediate: true });
     });
-    fullStoryBtn.addEventListener("click", openFullImage);
+    fullStoryBtn.addEventListener("click", () => {
+      if (!state.photos.length) return;
+      const startIndex = state.selectedPhoto >= 0 ? state.selectedPhoto : 0;
+      startSlideshow({ startIndex });
+    });
     fullImageClose.addEventListener("click", closeFullImage);
     fullImageViewer.addEventListener("click", (event) => {
       if (event.target === fullImageViewer) closeFullImage();
@@ -9584,6 +9674,10 @@ userLogoutBtn.addEventListener("click", () => {
         }
         if (button.dataset.gesture === "fist" && state.viewMode === "universe") {
           if (!state.selectedUniverseAlbumId) return;
+          if (state.universeDetailOpen) {
+            collapseUniverseDetail();
+            return;
+          }
           resetUniverseCamera();
           return;
         }
@@ -10035,6 +10129,6 @@ userLogoutBtn.addEventListener("click", () => {
       setStatus("作品加载失败，请刷新页面或稍后再试。", "warn");
       requestAnimationFrame(frame);
     });
-  </script>
+</script>
 </body>
 </html>
