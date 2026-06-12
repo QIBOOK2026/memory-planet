@@ -1,0 +1,19 @@
+{
+  "name": "我的记忆星球",
+  "short_name": "记忆星球",
+  "description": "上传照片，生成可分享的 3D 记忆星球。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#010714",
+  "theme_color": "#010714",
+  "icons": [
+    {
+      "src": "assets/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

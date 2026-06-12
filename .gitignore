@@ -105,3 +105,14 @@ assets.zip
 # Preview screenshots
 preview-*.png
 verify-*.png
+
+# Local dev/runtime artifacts
+.server.*.log
+.vite/
+_tmp_full_script.js
+index_original.html
+aliyun-fc/update-body.json
+aliyun-fc/update-body.json.utf8
+
+# Local deployment/repair scratch tools
+tools/

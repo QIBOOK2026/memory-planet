@@ -534,7 +534,7 @@ function adminPasswordMatches(password) {
   const configuredPassword = env("ADMIN_PASSWORD");
   if (configuredHash) return hashText(password) === configuredHash;
   if (configuredPassword) return String(password) === configuredPassword;
-  return String(password) === "admin123456";
+  return false;
 }
 
 async function adminLogin(body) {
@@ -767,6 +767,8 @@ exports.handler = async function handler(event) {
 
   try {
     if (path === "/setup/cors" && method === "GET") {
+      const auth = await requireAdmin(event);
+      if (auth.error) return auth.error;
       await setupBucketCors();
       return json({ ok: true, message: "OSS bucket CORS configured successfully" });
     }

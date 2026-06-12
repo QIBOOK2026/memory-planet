@@ -13,7 +13,12 @@ ALIYUN_ACCESS_KEY_SECRET=你的 AccessKey Secret
 OSS_BUCKET=jiyiyuzhou
 OSS_ENDPOINT=oss-cn-guangzhou.aliyuncs.com
 OSS_PUBLIC_DOMAIN=https://jiyiyuzhou.oss-cn-guangzhou.aliyuncs.com
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=请设置强密码
+# 或使用 ADMIN_PASSWORD_HASH=明文密码的 SHA-256 十六进制摘要
 ```
+
+上线前必须配置 `ADMIN_PASSWORD` 或 `ADMIN_PASSWORD_HASH`，否则管理员登录会被拒绝。
 
 OSS 跨域规则建议：
 

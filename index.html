@@ -2,8 +2,15 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#010714" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="记忆星球" />
   <title>我的记忆星球</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/app-icon.svg" />
   <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23030a16"/><circle cx="32" cy="32" r="15" fill="none" stroke="%235be7ff" stroke-width="4"/><path d="M10 34c12-12 32-16 44-6" fill="none" stroke="%23b8f7ff" stroke-width="3" stroke-linecap="round"/><circle cx="44" cy="20" r="4" fill="%23ffd166"/></svg>' />
   <style>
     :root {
@@ -65,6 +72,17 @@
       cursor: grab;
     }
 
+    @supports (height: 100dvh) {
+      html,
+      body {
+        height: 100dvh;
+      }
+
+      #stage {
+        height: 100dvh;
+      }
+    }
+
     #stage:active {
       cursor: grabbing;
     }
@@ -93,7 +111,7 @@
       position: fixed;
       top: 16px;
       left: 16px;
-      z-index: 5;
+      z-index: 8;
       display: flex;
       flex-direction: column;
       width: min(372px, calc(100vw - 32px));
@@ -113,7 +131,7 @@
     .panel-toggle {
       position: fixed;
       top: 16px;
-      z-index: 7;
+      z-index: 10;
       width: 38px;
       min-height: 38px;
       padding: 0;
@@ -133,7 +151,7 @@
       position: fixed;
       top: 16px;
       right: 20px;
-      z-index: 7;
+      z-index: 10;
       display: grid;
       gap: 8px;
     }
@@ -333,17 +351,22 @@
 
     .export-row {
       display: grid;
-      grid-template-columns: minmax(0, 1.25fr) repeat(4, minmax(0, 0.82fr));
-      gap: 8px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
     }
 
     .export-row button {
       min-width: 0;
-      padding: 0 6px;
-      font-size: 12px;
+      min-height: 46px;
+      padding: 0 14px;
+      font-size: 14px;
+      font-weight: 700;
       line-height: 1.2;
-      white-space: normal;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
+    }
+
+    .export-row .primary {
+      box-shadow: 0 0 22px rgba(91, 231, 255, 0.16);
     }
 
     .step-flow {
@@ -679,7 +702,7 @@
       position: fixed;
       top: 16px;
       right: 62px;
-      z-index: 6;
+      z-index: 8;
       display: none;
       width: min(340px, calc(100vw - 92px));
       max-height: calc(100vh - 32px);
@@ -852,6 +875,13 @@
 
     .layout-float.show {
       display: grid;
+    }
+
+    body.settings-open .layout-float,
+    body.settings-open .gesture-card,
+    body:not(.panel-hidden) .layout-float,
+    body:not(.panel-hidden) .gesture-card {
+      display: none !important;
     }
 
     .layout-float.tucked {
@@ -1302,32 +1332,52 @@
 
     @media (max-width: 720px) {
       .hud {
-        top: 10px;
-        left: 10px;
+        top: max(10px, env(safe-area-inset-top));
+        left: max(10px, env(safe-area-inset-left));
         width: min(360px, calc(100vw - 20px));
       }
 
       body:not(.panel-hidden) .panel-toggle {
         left: auto;
-        right: 56px;
-        top: 10px;
+        right: max(16px, calc(env(safe-area-inset-right) + 16px));
+        top: max(10px, env(safe-area-inset-top));
+      }
+
+      body:not(.panel-hidden) .hud header {
+        padding-right: 58px;
       }
 
       .panel-toggle {
-        left: 10px;
-        top: 10px;
+        left: max(10px, env(safe-area-inset-left));
+        top: max(10px, env(safe-area-inset-top));
       }
 
       .quick-actions {
-        right: 10px;
-        top: 10px;
+        right: max(10px, env(safe-area-inset-right));
+        top: max(10px, env(safe-area-inset-top));
+      }
+
+      body:not(.panel-hidden) .quick-actions {
+        display: none;
+      }
+
+      body.settings-open .quick-actions,
+      body.settings-open .panel-toggle {
+        display: none;
       }
 
       .floating-settings {
-        top: 10px;
-        right: 56px;
-        width: min(330px, calc(100vw - 66px));
+        top: max(10px, env(safe-area-inset-top));
+        left: max(10px, env(safe-area-inset-left));
+        right: max(10px, env(safe-area-inset-right));
+        width: auto;
         max-height: calc(100vh - 20px);
+      }
+
+      @supports (height: 100dvh) {
+        .floating-settings {
+          max-height: calc(100dvh - 20px);
+        }
       }
 
       .row {
@@ -1345,11 +1395,7 @@
       }
 
       .export-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .export-row .primary {
-        grid-column: 1 / -1;
+        grid-template-columns: minmax(0, 1fr);
       }
 
       .credit {
@@ -1357,12 +1403,12 @@
       }
 
       .gesture-card {
-        bottom: 10px;
+        bottom: max(10px, env(safe-area-inset-bottom));
         width: min(100vw - 20px, 1020px);
       }
 
       .layout-float {
-        bottom: 96px;
+        bottom: max(96px, calc(env(safe-area-inset-bottom) + 96px));
       }
 
       .gesture {
@@ -1376,12 +1422,18 @@
       }
 
       .story-panel {
-        left: 10px;
-        right: 10px;
+        left: max(10px, env(safe-area-inset-left));
+        right: max(10px, env(safe-area-inset-right));
         top: auto;
-        bottom: 10px;
+        bottom: max(10px, env(safe-area-inset-bottom));
         width: auto;
         max-height: 70vh;
+      }
+
+      @supports (height: 100dvh) {
+        .story-panel {
+          max-height: 70dvh;
+        }
       }
 
       .video-probe {
@@ -1575,7 +1627,7 @@
     }
     .user-dropdown {
       position: absolute; top: calc(100% + 6px); right: 8px; z-index: 30;
-      width: 224px;
+      width: 360px;
       max-width: calc(100vw - 32px);
       border: 1px solid rgba(120, 216, 255, 0.14);
       border-radius: 8px;
@@ -1614,32 +1666,35 @@
       background: rgba(120, 216, 255, 0.12);
     }
     .user-dropdown-actions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      padding: 8px 6px 6px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 14px 8px;
     }
     .user-dropdown-item {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      width: 100%;
-      min-width: 0;
-      height: 32px;
-      min-height: 0;
+      flex: 0 0 150px;
+      width: 150px;
+      min-width: 150px;
+      max-width: 150px;
+      height: 36px;
+      min-height: 36px;
       margin: 0;
-      padding: 0 8px;
+      padding: 0 10px;
       box-sizing: border-box;
       border: 1px solid rgba(120, 216, 255, 0.28);
       border-radius: 6px;
       background: rgba(8, 25, 42, 0.7);
-      color: var(--ink); font: inherit; font-size: 12px; font-weight: 600;
+      color: var(--ink); font-size: 11px !important; font-weight: 600;
+      font-family: inherit;
       cursor: pointer; transition: border-color 0.14s, background 0.14s, color 0.14s;
       text-align: center;
-      line-height: 32px;
+      line-height: 34px;
       white-space: nowrap;
       overflow: hidden;
+      text-overflow: clip;
     }
     .user-dropdown-item:hover {
       border-color: rgba(91, 231, 255, 0.52);
@@ -1922,10 +1977,6 @@
         <div class="export-row">
           <button id="exportBtn" class="primary" type="button">复制分享链接</button>
           <button id="exportMobileBtn" type="button">复制编辑链接</button>
-          <button id="downloadJsonBtn" type="button">备份</button>
-          <button id="importJsonBtn" type="button">导入备份</button>
-          <button id="clearPhotoBtn" type="button">清空</button>
-          <input id="importJsonInput" type="file" accept="application/json,.json" />
         </div>
         <div class="hint">分享链接只用于观看；编辑链接相当于钥匙，可继续上传和修改。云端存储接入后，链接会跨设备生效。</div>
       </div>
@@ -2243,12 +2294,8 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
     const openBtn = document.getElementById("openBtn");
     const collapseBtn = document.getElementById("collapseBtn");
     const gestureCard = document.querySelector(".gesture-card");
-    const clearPhotoBtn = document.getElementById("clearPhotoBtn");
     const exportBtn = document.getElementById("exportBtn");
     const exportMobileBtn = document.getElementById("exportMobileBtn");
-    const downloadJsonBtn = document.getElementById("downloadJsonBtn");
-    const importJsonBtn = document.getElementById("importJsonBtn");
-    const importJsonInput = document.getElementById("importJsonInput");
     const photoInput = document.getElementById("photoInput");
     const photoManager = document.getElementById("photoManager");
     const photoList = document.getElementById("photoList");
@@ -2575,6 +2622,8 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
       modelLoading: false
     };
     let saveTimer = 0;
+    let lastStatusNoticeText = "";
+    let lastStatusNoticeAt = 0;
 
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x000105, 0.032);
@@ -2790,6 +2839,25 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
       return Boolean(state.auth.token && state.auth.user?.status === "active");
     }
 
+    function currentPhotoLimit() {
+      const limit = Number(currentTier()?.maxPhotosPerPlanet);
+      return Number.isFinite(limit) && limit > 0 ? limit : MAX_PHOTOS;
+    }
+
+    function photoHydrateLimit() {
+      return Math.max(currentPhotoLimit(), MAX_PHOTOS);
+    }
+
+    function refreshPhotoLimitUi() {
+      const limit = currentPhotoLimit();
+      const current = state.photos.length;
+      uploadSummary.textContent = `${current} / ${limit}`;
+      const note = dropzone.querySelector("small");
+      if (note) {
+        note.textContent = `支持多次追加上传，最多 ${limit} 张，推荐 20-80 张效果最好。`;
+      }
+    }
+
     function authStatusText() {
       const user = state.auth.user;
       if (!user) return "登录";
@@ -2816,6 +2884,7 @@ function refreshAuthUi() {
     userMenu.classList.remove("show");
   }
   refreshAdminEntryUi();
+  refreshPhotoLimitUi();
 }
 
 
@@ -2867,7 +2936,8 @@ function refreshAuthUi() {
       if (!tier || !activeUserReady()) return "";
       const usage = localProjectUsage();
       if (nextCount > tier.maxPhotosPerPlanet) return `当前等级每颗星球最多 ${tier.maxPhotosPerPlanet} 张照片。`;
-      if (usage.photoCount + 1 > tier.maxTotalPhotos) return `当前等级总照片最多 ${tier.maxTotalPhotos} 张。`;
+      const addedCount = Math.max(1, nextCount - state.photos.length);
+      if (usage.photoCount + addedCount > tier.maxTotalPhotos) return `当前等级总照片最多 ${tier.maxTotalPhotos} 张。`;
       return "";
     }
 
@@ -3783,6 +3853,7 @@ function openAccountActions() {
 
     function refreshUniversePanel() {
       if (!state.universe) return;
+      const photoLimit = currentPhotoLimit();
       galaxySelect.innerHTML = "";
       state.universe.galaxies.forEach((galaxy) => {
         const option = document.createElement("option");
@@ -3805,7 +3876,7 @@ function openAccountActions() {
         button.className = `album-card${album.id === state.selectedUniverseAlbumId ? " active" : ""}`;
         const favoriteCount = (album.photos || []).filter((photo) => photo.favorite).length;
         const photoCount = album.photos?.length || 0;
-        button.innerHTML = `<strong>${escapeHtml(album.title || "未命名星球")}</strong><span class="album-count">${photoCount} 张</span><span class="album-meta">${THEMES[album.theme]?.name || "主题"} · ${SHAPE_NAMES[album.shape] || "星球"}${favoriteCount ? ` · ${favoriteCount} 张收藏` : ""}</span>`;
+        button.innerHTML = `<strong>${escapeHtml(album.title || "未命名星球")}</strong><span class="album-count">${photoCount} / ${photoLimit} 张</span><span class="album-meta">${THEMES[album.theme]?.name || "主题"} · ${SHAPE_NAMES[album.shape] || "星球"}${favoriteCount ? ` · ${favoriteCount} 张收藏` : ""}</span>`;
         button.addEventListener("click", () => {
           if (state.viewMode === "universe") {
             selectUniverseAlbum(album.id, { revealActions: true, zoom: state.universeZoomTarget });
@@ -4991,7 +5062,7 @@ function openAccountActions() {
         const previousRenderScale = state.renderScale;
         syncRenderSettingControls(found.album.settings || DEFAULT_RENDER_SETTINGS);
         if (previousRenderScale !== state.renderScale) resize();
-        universeSelected.innerHTML = `<strong>当前选中：${escapeHtml(found.album.title || "未命名星球")}</strong><span>${found.album.photos?.length || 0} 张照片 · ${THEMES[found.album.theme]?.name || "主题"} · ${SHAPE_NAMES[found.album.shape] || "星球"}</span>`;
+        universeSelected.innerHTML = `<strong>当前选中：${escapeHtml(found.album.title || "未命名星球")}</strong><span>${found.album.photos?.length || 0} / ${currentPhotoLimit()} 张照片 · ${THEMES[found.album.theme]?.name || "主题"} · ${SHAPE_NAMES[found.album.shape] || "星球"}</span>`;
       } else {
         universeSelected.innerHTML = `<strong>当前选中：无</strong><span>点击一颗星球后，可在屏幕下方直接打开或收回。</span>`;
       }
@@ -5281,7 +5352,7 @@ function openAccountActions() {
           document.title = title;
         }
         if (state.selectedUniverseAlbumId === item.album.id) {
-          universeSelected.innerHTML = `<strong>当前选中：${escapeHtml(item.album.title || "未命名星球")}</strong><span>${item.album.photos?.length || 0} 张照片 · ${THEMES[item.album.theme]?.name || "主题"} · ${SHAPE_NAMES[item.album.shape] || "星球"}</span>`;
+          universeSelected.innerHTML = `<strong>当前选中：${escapeHtml(item.album.title || "未命名星球")}</strong><span>${item.album.photos?.length || 0} / ${currentPhotoLimit()} 张照片 · ${THEMES[item.album.theme]?.name || "主题"} · ${SHAPE_NAMES[item.album.shape] || "星球"}</span>`;
         }
         refreshUniversePanel();
         saveProject({ skipSync: true });
@@ -5589,6 +5660,41 @@ function openAccountActions() {
     function setStatus(text, mood = "idle") {
       statusText.textContent = text;
       statusDot.className = `dot ${mood === "ready" ? "ready" : mood === "warn" ? "warn" : ""}`;
+      if (mood === "warn" && shouldShowStatusNotice(text)) {
+        showStatusNotice(text);
+      }
+    }
+
+    function shouldShowStatusNotice(text = "") {
+      if (!text) return false;
+      return /上限|最多|限制|需要登录|登录|待审核|禁用|没有配置|无法|失败|请先|没有照片|未识别|不是有效|超出|达到/.test(text);
+    }
+
+    function showStatusNotice(message) {
+      const now = Date.now();
+      if (message === lastStatusNoticeText && now - lastStatusNoticeAt < 1200) return;
+      if (taskDialog.classList.contains("show")) return;
+      lastStatusNoticeText = message;
+      lastStatusNoticeAt = now;
+      requestAppNotice({
+        title: "提示",
+        message,
+        okText: "知道了"
+      });
+    }
+
+    function isStandaloneDisplay() {
+      return window.matchMedia?.("(display-mode: fullscreen)")?.matches
+        || window.matchMedia?.("(display-mode: standalone)")?.matches
+        || window.navigator.standalone === true;
+    }
+
+    function mobileFullscreenHelp() {
+      const isApple = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      if (isApple) {
+        return "iPhone/iPad 浏览器不能让普通网页真正全屏。请点 Safari 底部分享按钮，选择“添加到主屏幕”，再从桌面图标打开，就会接近全屏体验。";
+      }
+      return "当前浏览器不支持网页全屏。可以在浏览器菜单里选择“添加到主屏幕”或“安装应用”，之后从桌面图标打开会更接近全屏。";
     }
 
     function ensureAudio() {
@@ -5929,7 +6035,7 @@ function openAccountActions() {
           return;
         }
         setViewMode("album");
-        setStatus("分享：复制观看链接或编辑链接，也可以备份作品数据。", "ready");
+        setStatus("分享：复制观看链接或编辑链接。", "ready");
       } else {
         if (stayInUniverse) {
           refreshUniverseActionBar();
@@ -6338,11 +6444,16 @@ function openAccountActions() {
       panelToggle.setAttribute("aria-label", hidden ? "显示面板" : "隐藏面板");
     }
 
+    function isMobilePanelLayout() {
+      return window.matchMedia("(max-width: 720px)").matches;
+    }
+
     function closeFloatingSettings() {
       musicSettingsPanel.classList.remove("show");
       advancedSettingsPanel.classList.remove("show");
       musicSettingsToggle.classList.remove("active");
       advancedSettingsToggle.classList.remove("active");
+      document.body.classList.remove("settings-open");
     }
 
     function setMainPanelHidden(hidden) {
@@ -6352,7 +6463,7 @@ function openAccountActions() {
 
     function togglePanel() {
       const hidden = document.body.classList.contains("panel-hidden");
-      if (hidden) closeFloatingSettings();
+      if (hidden && isMobilePanelLayout()) closeFloatingSettings();
       setMainPanelHidden(!hidden);
     }
 
@@ -6368,7 +6479,8 @@ function openAccountActions() {
       advancedSettingsPanel.classList.toggle("show", showAdvanced);
       musicSettingsToggle.classList.toggle("active", showMusic);
       advancedSettingsToggle.classList.toggle("active", showAdvanced);
-      if (showMusic || showAdvanced) setMainPanelHidden(true);
+      document.body.classList.toggle("settings-open", showMusic || showAdvanced);
+      if ((showMusic || showAdvanced) && isMobilePanelLayout()) setMainPanelHidden(true);
     }
 
     async function toggleFullscreen() {
@@ -6378,7 +6490,7 @@ function openAccountActions() {
           const target = document.documentElement;
           const requestFS = target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen;
           if (!requestFS) {
-            setStatus("当前浏览器不支持网页全屏，可以用浏览器菜单进入全屏。", "warn");
+            setStatus(mobileFullscreenHelp(), "warn");
             return;
           }
           await requestFS.call(target);
@@ -6674,12 +6786,14 @@ function openAccountActions() {
       taskInput.style.display = "none";
       taskProgress.style.display = "block";
       taskActions.style.display = "none";
+      taskCancelBtn.style.display = "";
       setTaskProgress(0, message);
       taskDialog.classList.add("show");
     }
 
     function hideTaskDialog() {
       taskDialog.classList.remove("show");
+      taskCancelBtn.style.display = "";
       taskOkBtn.onclick = null;
       taskCancelBtn.onclick = null;
     }
@@ -6693,6 +6807,7 @@ function openAccountActions() {
         taskInput.placeholder = placeholder;
         taskProgress.style.display = "none";
         taskActions.style.display = "flex";
+        taskCancelBtn.style.display = "";
         taskOkBtn.textContent = "确定";
         taskCancelBtn.textContent = "取消";
         taskDialog.classList.add("show");
@@ -6721,6 +6836,7 @@ function openAccountActions() {
         taskInput.style.display = "none";
         taskProgress.style.display = "none";
         taskActions.style.display = "flex";
+        taskCancelBtn.style.display = "";
         taskOkBtn.textContent = okText;
         taskCancelBtn.textContent = cancelText;
         taskDialog.classList.add("show");
@@ -6730,6 +6846,25 @@ function openAccountActions() {
         };
         taskOkBtn.onclick = () => finish(true);
         taskCancelBtn.onclick = () => finish(false);
+      });
+    }
+
+    function requestAppNotice({ title = "提示", message = "", okText = "知道了" }) {
+      return new Promise((resolve) => {
+        taskTitle.textContent = title;
+        taskMessage.textContent = message;
+        taskInput.style.display = "none";
+        taskProgress.style.display = "none";
+        taskActions.style.display = "flex";
+        taskOkBtn.textContent = okText;
+        taskCancelBtn.style.display = "none";
+        taskDialog.classList.add("show");
+        const finish = () => {
+          taskCancelBtn.style.display = "";
+          hideTaskDialog();
+          resolve(true);
+        };
+        taskOkBtn.onclick = finish;
       });
     }
 
@@ -6860,7 +6995,7 @@ function openAccountActions() {
     }
 
     function refreshPhotoManager() {
-      uploadSummary.textContent = `${state.photos.length} / ${MAX_PHOTOS}`;
+      refreshPhotoLimitUi();
       photoManager.classList.toggle("show", state.photos.length > 0);
       photoList.innerHTML = "";
       state.photos.forEach((photo, index) => {
@@ -7304,9 +7439,10 @@ function openAccountActions() {
     async function loadPhotos(files) {
       if (cloudEnabled() && !requireActiveAccount("上传照片")) return;
       const all = Array.from(files || []);
-      const remainingSlots = MAX_PHOTOS - state.photos.length;
+      const photoLimit = currentPhotoLimit();
+      const remainingSlots = photoLimit - state.photos.length;
       if (remainingSlots <= 0) {
-        setStatus(`已经达到 ${MAX_PHOTOS} 张上限，请先删除一些照片再继续上传。`, "warn");
+        setStatus(`已经达到 ${photoLimit} 张上限，请先删除一些照片再继续上传。`, "warn");
         setActiveTab("story");
         return;
       }
@@ -7323,7 +7459,7 @@ function openAccountActions() {
         return;
       }
 
-      setStatus(`正在追加 ${selected.length} 张照片，当前 ${state.photos.length} / ${MAX_PHOTOS}。`);
+      setStatus(`正在追加 ${selected.length} 张照片，当前 ${state.photos.length} / ${photoLimit}。`);
       if (activeUserReady()) clearLargeLocalProjectCache();
       showTaskProgress("正在上传照片", `准备读取 ${selected.length} 张照片...`);
       const loaded = [];
@@ -7593,9 +7729,10 @@ function openAccountActions() {
     }
 
     async function hydratePhotos(savedPhotos, options = {}) {
+      const hydrateLimit = photoHydrateLimit();
       const usable = savedPhotos
         .filter((item) => item && (typeof item.url === "string" || typeof item.dataUrl === "string"))
-        .slice(0, MAX_PHOTOS);
+        .slice(0, hydrateLimit);
       let completed = 0;
       const reportProgress = () => {
         completed += 1;
@@ -8597,7 +8734,7 @@ function openAccountActions() {
           setStatus("这个 JSON 不是有效的记忆星球备份。", "warn");
           return;
         }
-        await restoreProject(payload, `已导入备份：${Math.min(payload.photos.length, MAX_PHOTOS)} 张照片。`);
+        await restoreProject(payload, `已导入备份：${Math.min(payload.photos.length, photoHydrateLimit())} 张照片。`);
         setActiveTab("story");
       } catch (error) {
         console.warn(error);
@@ -9288,6 +9425,9 @@ function openAccountActions() {
     document.addEventListener("fullscreenchange", onFsChange);
     document.addEventListener("webkitfullscreenchange", onFsChange);
     document.addEventListener("msfullscreenchange", onFsChange);
+    if ("serviceWorker" in navigator && window.isSecureContext) {
+      navigator.serviceWorker.register("./sw.js").catch((error) => console.warn(error));
+    }
     cameraBtn.addEventListener("click", startCamera);
     stopCameraBtn.addEventListener("click", () => stopCamera());
     musicBtn.addEventListener("click", toggleMusic);
@@ -9523,21 +9663,6 @@ userLogoutBtn.addEventListener("click", () => {
         setStatus(error.message || "照片上传或保存失败，请换一批图片重试。", "warn");
       });
     });
-    clearPhotoBtn.addEventListener("click", async () => {
-      if (!state.photos.length) {
-        clearPhotos();
-        return;
-      }
-      const ok = await requestAppConfirm({
-        title: "清空照片",
-        message: `确定清空当前 ${state.photos.length} 张照片和故事吗？建议先点“备份”保存 JSON。`,
-        okText: "清空",
-        cancelText: "取消"
-      });
-      if (ok) {
-        clearPhotos();
-      }
-    });
     photoInput.addEventListener("change", () => {
       loadPhotos(photoInput.files).catch((error) => {
         console.warn(error);
@@ -9643,13 +9768,6 @@ userLogoutBtn.addEventListener("click", () => {
       copyShareLink("edit").catch((error) => {
         console.warn(error);
         setStatus("复制编辑链接失败，请检查浏览器剪贴板权限。", "warn");
-      });
-    });
-    downloadJsonBtn.addEventListener("click", exportProjectJson);
-    importJsonBtn.addEventListener("click", () => importJsonInput.click());
-    importJsonInput.addEventListener("change", () => {
-      importProjectJson(importJsonInput.files?.[0]).finally(() => {
-        importJsonInput.value = "";
       });
     });
     document.querySelectorAll(".gesture").forEach((button) => {
