@@ -258,7 +258,7 @@ async function notifyFeishuFeedback(item) {
   if (!webhook) return false;
   const adminBase = env("ADMIN_BASE_URL") || env("SITE_URL") || "";
   const handleUrl = adminBase ? `${adminBase.replace(/\/+$/, "")}/?admin=feedback&id=${encodeURIComponent(item.id)}` : "";
-  const lines = [
+  const beforeLines = [
     "有新的用户反馈",
     "",
     `类型：${item.type || "其他"}`,
@@ -266,20 +266,50 @@ async function notifyFeishuFeedback(item) {
     item.contact ? `联系方式：${item.contact}` : "",
     item.albumTitle ? `星球：${item.albumTitle}` : "",
     item.projectId ? `项目：${item.projectId}` : "",
-    `时间：${String(item.createdAt || "").replace("T", " ").slice(0, 19)}`,
-    "",
-    `描述：${item.message || "-"}`,
-    handleUrl ? `\n处理链接：${handleUrl}` : ""
+    `时间：${String(item.createdAt || "").replace("T", " ").slice(0, 19)}`
   ].filter(Boolean);
+  const beforeText = beforeLines.join("\n") + "\n\n描述：";
+  const afterText = handleUrl ? `\n\n处理链接：${handleUrl}` : "";
+  const fixedBytes = Buffer.byteLength(beforeText, "utf8") + Buffer.byteLength(afterText, "utf8") + 3;
+  const maxMsgBytes = Math.max(40, 2000 - fixedBytes);
+
+  let msgText = item.message || "-";
+  if (Buffer.byteLength(msgText, "utf8") > maxMsgBytes) {
+    let truncated = "";
+    for (const ch of msgText) {
+      const next = truncated + ch;
+      if (Buffer.byteLength(next, "utf8") > maxMsgBytes - 3) break;
+      truncated = next;
+    }
+    msgText = truncated + "...";
+  }
+
+  const text = beforeText + msgText + afterText;
+
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
     const response = await fetch(webhook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ msg_type: "text", content: { text: lines.join("\n") } })
+      body: JSON.stringify({ msg_type: "text", content: { text } }),
+      signal: controller.signal
     });
-    return response.ok;
+    clearTimeout(timer);
+    if (!response.ok) {
+      console.warn("Feishu webhook HTTP error:", response.status);
+      return false;
+    }
+    const respBody = await response.json().catch(() => ({}));
+    const statusCode = respBody.StatusCode ?? respBody.code ?? respBody.status;
+    if (statusCode !== undefined && statusCode !== 0) {
+      console.warn("Feishu webhook API error:", JSON.stringify(respBody));
+      return false;
+    }
+    return true;
   } catch (error) {
-    console.warn("Feishu feedback notification failed:", error);
+    const reason = error.name === "AbortError" ? "timeout" : (error.message || error);
+    console.warn("Feishu feedback notification failed:", reason);
     return false;
   }
 }
