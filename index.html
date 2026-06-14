@@ -1125,7 +1125,7 @@
       position: fixed;
       right: 16px;
       top: 52px;
-      z-index: 6;
+      z-index: 16;
       display: none;
       width: min(520px, calc(100vw - 32px));
       max-height: calc(100vh - 72px);
@@ -1153,6 +1153,7 @@
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
+      padding: 10px 12px 0;
     }
 
     .story-meta-grid {
@@ -1176,7 +1177,7 @@
     .full-image-viewer {
       position: fixed;
       inset: 0;
-      z-index: 10;
+      z-index: 20;
       display: none;
       place-items: center;
       padding: 28px;
@@ -1191,7 +1192,7 @@
     .slideshow-player {
       position: fixed;
       inset: 0;
-      z-index: 11;
+      z-index: 21;
       display: none;
       place-items: center;
       padding: clamp(18px, 4vw, 44px);
@@ -1638,16 +1639,33 @@
       .story-panel {
         left: max(10px, env(safe-area-inset-left));
         right: max(10px, env(safe-area-inset-right));
-        top: auto;
+        top: max(8px, env(safe-area-inset-top));
         bottom: max(10px, env(safe-area-inset-bottom));
         width: auto;
-        max-height: 70vh;
+        max-height: calc(100vh - max(18px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom)));
+        z-index: 18;
       }
 
       @supports (height: 100dvh) {
         .story-panel {
-          max-height: 70dvh;
+          max-height: calc(100dvh - max(18px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom)));
         }
+      }
+
+      .story-panel img {
+        aspect-ratio: 16 / 8.5;
+        max-height: min(34vh, 260px);
+      }
+
+      .story-tools {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 10px 12px 2px;
+      }
+
+      .story-tools button {
+        min-height: 36px;
+        padding: 8px 6px;
+        font-size: 13px;
       }
 
       .video-probe {
@@ -2263,6 +2281,13 @@
 
   <aside id="storyPanel" class="story-panel" aria-label="照片故事">
     <img id="storyImage" alt="选中的照片" />
+    <div class="story-tools">
+      <button id="prevStoryBtn" type="button">上一张</button>
+      <button id="nextStoryBtn" type="button">下一张</button>
+      <button id="favoriteStoryBtn" type="button" aria-label="全屏查看当前照片">全屏</button>
+      <button id="fullStoryBtn" type="button" aria-label="从当前照片播放幻灯片">播放</button>
+      <button id="storyClose" type="button">关闭</button>
+    </div>
     <div class="story-body">
       <h2 id="storyTitle" class="story-title">照片故事</h2>
       <div id="storyEmotion" class="story-emotion">这颗星球里，藏着 0 个瞬间。</div>
@@ -2273,13 +2298,6 @@
       </div>
       <textarea id="storyText"></textarea>
       <div id="storySaveState" class="story-save-state">已自动保存</div>
-      <div class="story-tools">
-        <button id="prevStoryBtn" type="button">上一张</button>
-        <button id="nextStoryBtn" type="button">下一张</button>
-        <button id="favoriteStoryBtn" type="button" aria-label="全屏查看当前照片">全屏</button>
-        <button id="fullStoryBtn" type="button" aria-label="从当前照片播放幻灯片">播放</button>
-        <button id="storyClose" type="button">关闭</button>
-      </div>
     </div>
   </aside>
 
@@ -3728,6 +3746,7 @@ function openAccountActions() {
         };
         if (photo.url) payload.url = photo.url;
         if (!photo.url && photo.dataUrl) payload.dataUrl = photo.dataUrl;
+        if (photo.metadata) payload.metadata = photo.metadata;
         return payload;
       });
     }
@@ -5825,6 +5844,16 @@ function openAccountActions() {
       sprite.renderOrder = selected ? 32 : 24;
     }
 
+    function mobileUniverseDetailScale(item, desiredScale) {
+      if (!isMobileViewport() || !item) return desiredScale;
+      const radius = Math.max(0.2, planetSafetyRadius(item));
+      const zoom = Math.max(3.5, state.universeZoomTarget || state.zoom || camera.position.z);
+      const fovTan = Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5);
+      const aspect = Math.max(0.1, camera.aspect || state.width / Math.max(1, state.height) || 1);
+      const fitBand = zoom * fovTan * Math.min(aspect, 1) * 0.86;
+      return clamp(Math.min(desiredScale, fitBand / radius), 0.38, desiredScale);
+    }
+
     function updateUniverseView(dt) {
       updateSharedUniverseBackdrop(dt);
       const photoFocusActive = state.universeDetailOpen && (state.hoveredPhoto >= 0 || state.selectedPhoto >= 0);
@@ -5853,7 +5882,8 @@ function openAccountActions() {
         if (!item.album) return;
         const detailActive = state.universeDetailOpen && item.album.id === state.universeDetailAlbumId;
         const fadedByDetail = state.universeDetailOpen && !detailActive;
-        const targetScale = item.exiting ? 0.02 : detailActive ? 1.34 : fadedByDetail ? 0.72 : 1;
+        const detailScale = mobileUniverseDetailScale(item, 1.34);
+        const targetScale = item.exiting ? 0.02 : detailActive ? detailScale : fadedByDetail ? 0.72 : 1;
         const targetPosition = item.displayTargetPosition || item.targetPosition;
         if (targetPosition && !state.universeDetailOpen) {
           item.group.position.lerp(targetPosition, item.entering ? 0.1 : 0.075);
@@ -6461,6 +6491,11 @@ function openAccountActions() {
       return Math.max(min, Math.min(max, value));
     }
 
+    function isMobileViewport() {
+      return window.innerWidth < 768
+        || window.matchMedia?.("(hover: none) and (pointer: coarse) and (max-width: 920px)")?.matches;
+    }
+
     function lerp(a, b, t) {
       return a + (b - a) * t;
     }
@@ -7049,6 +7084,157 @@ function openAccountActions() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
+    }
+
+    function formatFileSize(bytes = 0) {
+      if (!Number.isFinite(bytes) || bytes <= 0) return "";
+      const units = ["B", "KB", "MB", "GB"];
+      let value = bytes;
+      let index = 0;
+      while (value >= 1024 && index < units.length - 1) {
+        value /= 1024;
+        index += 1;
+      }
+      return `${value.toFixed(index ? 1 : 0)} ${units[index]}`;
+    }
+
+    function formatExifDate(value = "") {
+      const match = String(value).trim().match(/^(\d{4}):(\d{2}):(\d{2})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/);
+      if (!match) return "";
+      return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+
+    function formatGps(value) {
+      if (!value || !Number.isFinite(value.lat) || !Number.isFinite(value.lon)) return "";
+      const latLabel = value.lat >= 0 ? "北纬" : "南纬";
+      const lonLabel = value.lon >= 0 ? "东经" : "西经";
+      return `${latLabel} ${Math.abs(value.lat).toFixed(6)}, ${lonLabel} ${Math.abs(value.lon).toFixed(6)}`;
+    }
+
+    function gpsPartToDecimal(part) {
+      if (!Array.isArray(part) || part.length < 3) return NaN;
+      return Number(part[0]) + Number(part[1]) / 60 + Number(part[2]) / 3600;
+    }
+
+    function readExifFromBuffer(buffer) {
+      const view = new DataView(buffer);
+      if (view.byteLength < 12 || view.getUint16(0, false) !== 0xffd8) return {};
+      let offset = 2;
+      while (offset + 4 < view.byteLength) {
+        if (view.getUint8(offset) !== 0xff) break;
+        const marker = view.getUint8(offset + 1);
+        const size = view.getUint16(offset + 2, false);
+        if (marker === 0xe1 && offset + 4 + size <= view.byteLength) {
+          const exifStart = offset + 4;
+          const header = String.fromCharCode(
+            view.getUint8(exifStart), view.getUint8(exifStart + 1), view.getUint8(exifStart + 2),
+            view.getUint8(exifStart + 3), view.getUint8(exifStart + 4), view.getUint8(exifStart + 5)
+          );
+          if (header !== "Exif\0\0") {
+            offset += 2 + size;
+            continue;
+          }
+          const tiffStart = exifStart + 6;
+          const little = view.getUint16(tiffStart, false) === 0x4949;
+          const readU16 = (pos) => view.getUint16(pos, little);
+          const readU32 = (pos) => view.getUint32(pos, little);
+          const typeSize = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1, 9: 4, 10: 8 };
+          const readAscii = (pos, count) => {
+            let text = "";
+            for (let i = 0; i < count && pos + i < view.byteLength; i += 1) {
+              const code = view.getUint8(pos + i);
+              if (!code) break;
+              text += String.fromCharCode(code);
+            }
+            return text.trim();
+          };
+          const valueOffset = (entry, type, count) => {
+            const bytes = (typeSize[type] || 1) * count;
+            return bytes <= 4 ? entry + 8 : tiffStart + readU32(entry + 8);
+          };
+          const readValue = (entry) => {
+            const type = readU16(entry + 2);
+            const count = readU32(entry + 4);
+            const pos = valueOffset(entry, type, count);
+            if (pos < 0 || pos >= view.byteLength) return null;
+            if (type === 2) return readAscii(pos, count);
+            if (type === 3) return count === 1 ? readU16(pos) : Array.from({ length: count }, (_, i) => readU16(pos + i * 2));
+            if (type === 4) return count === 1 ? readU32(pos) : Array.from({ length: count }, (_, i) => readU32(pos + i * 4));
+            if (type === 5) {
+              const rational = (i) => {
+                const denominator = readU32(pos + i * 8 + 4);
+                return denominator ? readU32(pos + i * 8) / denominator : 0;
+              };
+              return count === 1 ? rational(0) : Array.from({ length: count }, (_, i) => rational(i));
+            }
+            return null;
+          };
+          const readIfd = (ifdOffset) => {
+            const pos = tiffStart + ifdOffset;
+            if (pos < tiffStart || pos + 2 > view.byteLength) return {};
+            const entries = readU16(pos);
+            const tags = {};
+            for (let i = 0; i < entries; i += 1) {
+              const entry = pos + 2 + i * 12;
+              if (entry + 12 > view.byteLength) break;
+              tags[readU16(entry)] = readValue(entry);
+            }
+            return tags;
+          };
+          const root = readIfd(readU32(tiffStart + 4));
+          const exif = root[0x8769] ? readIfd(root[0x8769]) : {};
+          const gps = root[0x8825] ? readIfd(root[0x8825]) : {};
+          const lat = gpsPartToDecimal(gps[2]);
+          const lon = gpsPartToDecimal(gps[4]);
+          return {
+            make: root[0x010f] || "",
+            model: root[0x0110] || "",
+            orientation: root[0x0112] || "",
+            capturedAt: exif[0x9003] || exif[0x9004] || "",
+            gps: Number.isFinite(lat) && Number.isFinite(lon) ? {
+              lat: gps[1] === "S" ? -lat : lat,
+              lon: gps[3] === "W" ? -lon : lon
+            } : null
+          };
+        }
+        offset += 2 + size;
+      }
+      return {};
+    }
+
+    async function readPhotoMetadata(file, image) {
+      const metadata = {
+        fileName: file.name,
+        fileType: file.type || "",
+        fileSize: file.size || 0,
+        fileSizeText: formatFileSize(file.size),
+        lastModified: file.lastModified ? new Date(file.lastModified).toISOString() : "",
+        width: image?.naturalWidth || image?.width || 0,
+        height: image?.naturalHeight || image?.height || 0
+      };
+      if (/jpe?g$/i.test(file.type) || /\.jpe?g$/i.test(file.name)) {
+        try {
+          Object.assign(metadata, readExifFromBuffer(await file.arrayBuffer()));
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+      metadata.capturedDate = formatExifDate(metadata.capturedAt);
+      metadata.locationText = formatGps(metadata.gps);
+      metadata.hasGps = Boolean(metadata.locationText);
+      metadata.camera = [metadata.make, metadata.model].filter(Boolean).join(" ").trim();
+      delete metadata.gps;
+      return metadata;
+    }
+
+    function defaultStoryForFile(file, metadata = {}) {
+      const details = [];
+      if (metadata.capturedDate) details.push(`拍摄日期：${metadata.capturedDate}`);
+      if (metadata.camera) details.push(`设备：${metadata.camera}`);
+      if (metadata.width && metadata.height) details.push(`尺寸：${metadata.width}×${metadata.height}`);
+      if (metadata.fileSizeText) details.push(`文件大小：${metadata.fileSizeText}`);
+      const suffix = details.length ? `\n\n已自动读取到：${details.join(" · ")}。` : "";
+      return `这张照片来自「${file.name}」。你可以在这里补充它背后的时间、地点、人物和故事。${suffix}`;
     }
 
     function drawCover(context, image, x, y, size, enhance = false) {
@@ -7921,15 +8107,17 @@ function openAccountActions() {
             ]);
             if (loadResult.status !== "fulfilled") { failed++; return null; }
             const result = loadResult.value;
+            const metadata = await readPhotoMetadata(file, result.image);
             let remoteUrl = uploadResult.status === "fulfilled" ? (uploadResult.value || "") : "";
             if (uploadResult.status !== "fulfilled") cloudFailed++;
             return {
               name: file.name.replace(/\.[^.]+$/, ""),
               dataUrl: result.dataUrl,
               url: remoteUrl,
-              story: `这张照片来自「${file.name}」。你可以在这里补充它背后的时间、地点、人物和故事。`,
-              date: "",
-              location: "",
+              story: defaultStoryForFile(file, metadata),
+              date: metadata.capturedDate || "",
+              location: metadata.locationText || "",
+              metadata,
               favorite: false,
               image: result.image,
               index
@@ -8215,6 +8403,7 @@ function openAccountActions() {
             story: item.story || "",
             date: item.date || "",
             location: item.location || "",
+            metadata: item.metadata || null,
             favorite: Boolean(item.favorite),
             image: img,
             index
@@ -9000,7 +9189,14 @@ function openAccountActions() {
         canvas.style.width = w + "px";
         canvas.style.height = h + "px";
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        radius = Math.min(w, h) * 0.34;
+        var baseRadius = Math.min(w, h) * 0.34;
+        var projectedScale = 1.15 / (2.25 - 0.98);
+        var visualPadding = 34;
+        var margin = Math.max(16, Math.min(w, h) * 0.045);
+        var centerY = h / 2 + 28;
+        var maxByWidth = (w / 2 - margin - visualPadding) / projectedScale;
+        var maxByHeight = (Math.min(centerY - margin, h - margin - centerY) - visualPadding) / projectedScale;
+        radius = Math.min(baseRadius, Math.max(36, Math.min(maxByWidth, maxByHeight)));
       }
       function rotatePoint(p) {
         var cy = Math.cos(rotY), sy = Math.sin(rotY);
