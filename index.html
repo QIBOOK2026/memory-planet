@@ -160,6 +160,7 @@
         "account fullscreen"
         ". music"
         ". settings"
+        ". feedback"
         ". admin";
       gap: 8px;
       align-items: start;
@@ -197,6 +198,7 @@
     .quick-actions #fullscreenToggle { grid-area: fullscreen; }
     .quick-actions #musicSettingsToggle { grid-area: music; }
     .quick-actions #advancedSettingsToggle { grid-area: settings; }
+    .quick-actions #feedbackToggle { grid-area: feedback; }
     .quick-actions #adminEntryBtn { grid-area: admin; }
 
     .quick-actions .admin-entry-btn {
@@ -1281,7 +1283,8 @@
       padding: 10px 12px;
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
-      background: rgba(0, 0, 0, 0.42);
+      background: rgba(0, 0, 0, 0.68);
+      backdrop-filter: blur(14px);
     }
 
     .slideshow-player.controls-hidden .slideshow-meta,
@@ -1343,12 +1346,12 @@
         right: max(10px, env(safe-area-inset-right));
         bottom: max(8px, env(safe-area-inset-bottom));
         width: auto;
-        grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+        grid-template-columns: minmax(72px, 1fr) auto 38px 38px 38px;
         gap: 6px;
         padding: 7px 8px;
-        border-color: rgba(255, 255, 255, 0.08);
-        background: rgba(0, 0, 0, 0.28);
-        backdrop-filter: blur(8px);
+        border-color: rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.78);
+        backdrop-filter: blur(12px);
         transition: opacity 0.22s ease;
       }
 
@@ -1357,9 +1360,10 @@
       }
 
       .slideshow-meta button {
-        min-width: 34px;
+        min-width: 38px;
+        width: 38px;
         min-height: 34px;
-        padding: 0 8px;
+        padding: 0;
         border-radius: 8px;
         font-size: 16px;
       }
@@ -1591,16 +1595,19 @@
       }
 
       .layout-float {
-        left: max(10px, env(safe-area-inset-left));
-        right: max(62px, calc(env(safe-area-inset-right) + 62px));
+        left: 50%;
+        right: auto;
         bottom: max(14px, calc(env(safe-area-inset-bottom) + 14px));
-        transform: none;
+        transform: translateX(-50%);
         grid-template-columns: repeat(3, 44px);
+        justify-content: center;
+        width: max-content;
+        max-width: calc(100vw - 132px - env(safe-area-inset-left) - env(safe-area-inset-right));
         padding: 8px;
       }
 
       .layout-float.tucked {
-        transform: translateY(58px);
+        transform: translateX(-50%) translateY(58px);
       }
 
       .gesture-grid {
@@ -1642,8 +1649,14 @@
         top: max(8px, env(safe-area-inset-top));
         bottom: max(10px, env(safe-area-inset-bottom));
         width: auto;
+        display: none;
+        grid-template-rows: minmax(220px, 1fr) auto minmax(0, auto);
         max-height: calc(100vh - max(18px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom)));
         z-index: 18;
+      }
+
+      .story-panel.show {
+        display: grid;
       }
 
       @supports (height: 100dvh) {
@@ -1653,8 +1666,10 @@
       }
 
       .story-panel img {
-        aspect-ratio: 16 / 8.5;
-        max-height: min(34vh, 260px);
+        height: 100%;
+        min-height: 220px;
+        max-height: none;
+        aspect-ratio: auto;
       }
 
       .story-tools {
@@ -1665,6 +1680,39 @@
       .story-tools button {
         min-height: 36px;
         padding: 8px 6px;
+        font-size: 13px;
+      }
+
+      .story-body {
+        align-self: end;
+        max-height: min(44vh, 430px);
+        overflow: auto;
+        padding-bottom: 10px;
+      }
+
+      .story-body textarea {
+        min-height: 76px;
+      }
+
+      .slideshow-meta {
+        left: max(10px, env(safe-area-inset-left));
+        right: max(10px, env(safe-area-inset-right));
+        bottom: max(10px, env(safe-area-inset-bottom));
+        width: auto;
+        grid-template-columns: minmax(72px, 1fr) auto 44px 44px 44px;
+        gap: 7px;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.78);
+      }
+
+      .slideshow-meta button {
+        min-width: 44px;
+        width: 44px;
+        min-height: 44px;
+        padding: 0;
+      }
+
+      .slideshow-meta span {
         font-size: 13px;
       }
 
@@ -2012,6 +2060,39 @@
     .auth-help { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 10px; }
     .quota-grid { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 10px; }
     .quota-grid input { width: 100%; }
+    .feedback-dialog {
+      position: fixed; inset: 0; z-index: 38;
+      display: none; place-items: center;
+      padding: 18px;
+      background: var(--panel-scrim);
+      backdrop-filter: blur(var(--panel-control-blur));
+    }
+    .feedback-dialog.show { display: grid; }
+    .feedback-card {
+      width: min(520px, 100%);
+      border: 1px solid var(--panel-line);
+      border-radius: 8px;
+      background: var(--panel-task-card);
+      box-shadow: var(--panel-card-shadow);
+      padding: 16px;
+    }
+    .feedback-card header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .feedback-card h2 { margin: 0; font-size: 18px; }
+    .feedback-card label { display: grid; gap: 6px; margin: 10px 0; color: var(--muted); font-size: 13px; }
+    .feedback-card input,
+    .feedback-card select,
+    .feedback-card textarea {
+      width: 100%;
+      border: 1px solid var(--panel-line);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--control-surface);
+      color: var(--ink);
+      font: inherit;
+    }
+    .feedback-card textarea { min-height: 120px; resize: vertical; line-height: 1.55; }
+    .feedback-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+    .feedback-status { min-height: 18px; color: var(--muted); font-size: 12px; }
     @media (max-width: 760px) {
       .admin-panel { inset: 8px; }
       .admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2020,6 +2101,8 @@
       .quota-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .admin-content { padding: 12px; }
       .admin-tabs { overflow-x: auto; }
+      .feedback-dialog { align-items: end; padding: 10px; }
+      .feedback-card { max-height: calc(100dvh - 20px); overflow: auto; }
     }
 
   </style>
@@ -2053,6 +2136,7 @@
     <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-label="全屏显示" title="全屏显示">⛶</button>
     <button id="musicSettingsToggle" type="button" aria-label="音乐设置" title="音乐设置">♪</button>
     <button id="advancedSettingsToggle" type="button" aria-label="高级设置" title="高级设置">⚙</button>
+    <button id="feedbackToggle" type="button" aria-label="反馈问题" title="反馈问题">?</button>
   </div>
 
   <aside id="musicSettingsPanel" class="floating-settings" aria-label="音乐设置">
@@ -2428,6 +2512,36 @@
     </div>
   </div>
 
+  <div id="feedbackDialog" class="feedback-dialog" aria-label="反馈问题">
+    <div class="feedback-card">
+      <header>
+        <h2>反馈问题</h2>
+        <button id="feedbackClose" class="fs-close" type="button" aria-label="关闭">&times;</button>
+      </header>
+      <label>问题类型
+        <select id="feedbackType">
+          <option value="上传失败">上传失败</option>
+          <option value="分享打不开">分享打不开</option>
+          <option value="照片丢失">照片丢失</option>
+          <option value="账号问题">账号问题</option>
+          <option value="界面显示异常">界面显示异常</option>
+          <option value="其他">其他</option>
+        </select>
+      </label>
+      <label>联系方式
+        <input id="feedbackContact" type="text" maxlength="120" placeholder="微信、邮箱或手机号，方便我联系你" />
+      </label>
+      <label>问题描述
+        <textarea id="feedbackMessage" maxlength="2000" placeholder="请描述你遇到的问题，越具体越容易处理。"></textarea>
+      </label>
+      <div id="feedbackStatus" class="feedback-status"></div>
+      <div class="feedback-actions">
+        <button id="feedbackCancel" type="button">取消</button>
+        <button id="feedbackSubmit" class="primary" type="button">提交反馈</button>
+      </div>
+    </div>
+  </div>
+
   <div id="adminPanel" class="admin-panel">
     <header>
       <h2>⚙ 管理后台</h2>
@@ -2438,6 +2552,7 @@
     </header>
     <div class="admin-tabs">
       <button class="admin-tab active" data-tab="users">用户管理</button>
+      <button class="admin-tab" data-tab="feedback">用户反馈</button>
       <button class="admin-tab" data-tab="tiers">等级配置</button>
       <button class="admin-tab" data-tab="config">注册设置</button>
     </div>
@@ -2499,6 +2614,26 @@
           </table>
         </div>
       </div>
+      <div class="admin-tab-content" id="adminFeedbackTab">
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>类型</th>
+                <th>用户</th>
+                <th>星球</th>
+                <th>描述</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="adminFeedbackBody">
+              <tr><td colspan="7" class="admin-empty">暂无用户反馈</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <div class="admin-tab-content" id="adminTiersTab">
         <div class="admin-form">
           <label>等级</label>
@@ -2548,6 +2683,15 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
     const fullscreenToggle = document.getElementById("fullscreenToggle");
     const musicSettingsToggle = document.getElementById("musicSettingsToggle");
     const advancedSettingsToggle = document.getElementById("advancedSettingsToggle");
+    const feedbackToggle = document.getElementById("feedbackToggle");
+    const feedbackDialog = document.getElementById("feedbackDialog");
+    const feedbackClose = document.getElementById("feedbackClose");
+    const feedbackCancel = document.getElementById("feedbackCancel");
+    const feedbackSubmit = document.getElementById("feedbackSubmit");
+    const feedbackType = document.getElementById("feedbackType");
+    const feedbackContact = document.getElementById("feedbackContact");
+    const feedbackMessage = document.getElementById("feedbackMessage");
+    const feedbackStatus = document.getElementById("feedbackStatus");
     const musicSettingsPanel = document.getElementById("musicSettingsPanel");
     const advancedSettingsPanel = document.getElementById("advancedSettingsPanel");
     const statusText = document.getElementById("statusText");
@@ -2828,6 +2972,7 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
         token: "",
         username: "",
         users: [],
+        feedback: [],
         tiers: {},
         config: null,
         editingTier: "free",
@@ -2842,6 +2987,7 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
         }
       },
       restoredFromAccountCloud: false,
+      uploadSession: null,
       universe: null,
       activeGalaxyId: "",
       activeAlbumId: "",
@@ -3126,6 +3272,63 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
       return readJsonResponse(response);
     }
 
+    function openFeedbackDialog() {
+      feedbackStatus.textContent = "";
+      feedbackMessage.value = "";
+      feedbackContact.value = localStorage.getItem("memoryGlobe.feedbackContact") || "";
+      feedbackDialog.classList.add("show");
+      window.setTimeout(() => feedbackMessage.focus(), 40);
+    }
+
+    function closeFeedbackDialog() {
+      feedbackDialog.classList.remove("show");
+    }
+
+    function feedbackPayload() {
+      const album = activeAlbum();
+      return {
+        type: feedbackType.value,
+        contact: feedbackContact.value.trim(),
+        message: feedbackMessage.value.trim(),
+        username: state.auth.user?.username || "",
+        projectId: state.cloud.projectId || "",
+        albumId: album?.id || state.activeAlbumId || "",
+        albumTitle: album?.title || state.project.title || "",
+        pageUrl: location.href,
+        userAgent: navigator.userAgent,
+        viewport: `${window.innerWidth}x${window.innerHeight}@${window.devicePixelRatio || 1}`
+      };
+    }
+
+    async function submitFeedback() {
+      const payload = feedbackPayload();
+      if (!payload.message) {
+        feedbackStatus.textContent = "请先填写问题描述。";
+        return;
+      }
+      if (!cloudEnabled()) {
+        feedbackStatus.textContent = "当前还没有配置云端 API，暂时无法提交反馈。";
+        return;
+      }
+      feedbackSubmit.disabled = true;
+      feedbackStatus.textContent = "正在提交...";
+      try {
+        const data = await cloudRequest("/feedback", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        if (payload.contact) localStorage.setItem("memoryGlobe.feedbackContact", payload.contact);
+        feedbackStatus.textContent = data.notified ? "已提交，我会收到提醒。" : "已提交，提醒通道尚未配置。";
+        setStatus("反馈已提交，感谢你帮我发现问题。", "ready");
+        window.setTimeout(closeFeedbackDialog, 700);
+      } catch (error) {
+        console.warn(error);
+        feedbackStatus.textContent = error.message || "反馈提交失败，请稍后再试。";
+      } finally {
+        feedbackSubmit.disabled = false;
+      }
+    }
+
     function formatBytes(bytes = 0) {
       const value = Number(bytes) || 0;
       if (value < 1024) return `${value} B`;
@@ -3303,12 +3506,12 @@ function refreshAuthUi() {
       return "";
     }
 
-    function quotaMessageForUpload(nextCount = state.photos.length + 1) {
+    function quotaMessageForUpload(nextCount = state.photos.length + 1, currentCount = state.photos.length) {
       const tier = currentTier();
       if (!tier || !activeUserReady()) return "";
       const usage = localProjectUsage();
       if (nextCount > tier.maxPhotosPerPlanet) return `当前等级每颗星球最多 ${tier.maxPhotosPerPlanet} 张照片。`;
-      const addedCount = Math.max(1, nextCount - state.photos.length);
+      const addedCount = Math.max(1, nextCount - currentCount);
       if (usage.photoCount + addedCount > tier.maxTotalPhotos) return `当前等级总照片最多 ${tier.maxTotalPhotos} 张。`;
       return "";
     }
@@ -7077,13 +7280,39 @@ function openAccountActions() {
         const reader = new FileReader();
         reader.onload = () => {
           const image = new Image();
-          image.onload = () => resolve({ image, dataUrl: reader.result });
+          image.onload = () => {
+            const sourceWidth = image.naturalWidth || image.width || 0;
+            const sourceHeight = image.naturalHeight || image.height || 0;
+            const dataUrl = compressImageDataUrl(image, file.type);
+            const preview = new Image();
+            preview.onload = () => resolve({ image: preview, dataUrl, sourceWidth, sourceHeight });
+            preview.onerror = () => resolve({ image, dataUrl: reader.result });
+            preview.src = dataUrl;
+          };
           image.onerror = reject;
           image.src = reader.result;
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
+    }
+
+    function compressImageDataUrl(image, type = "") {
+      const sourceWidth = image.naturalWidth || image.width || 0;
+      const sourceHeight = image.naturalHeight || image.height || 0;
+      if (!sourceWidth || !sourceHeight) return image.src || "";
+      const maxEdge = isMobileViewport() ? 1280 : 1600;
+      const scale = Math.min(1, maxEdge / Math.max(sourceWidth, sourceHeight));
+      const width = Math.max(1, Math.round(sourceWidth * scale));
+      const height = Math.max(1, Math.round(sourceHeight * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#050b14";
+      context.fillRect(0, 0, width, height);
+      context.drawImage(image, 0, 0, width, height);
+      return canvas.toDataURL("image/jpeg", 0.82);
     }
 
     function formatFileSize(bytes = 0) {
@@ -7202,15 +7431,15 @@ function openAccountActions() {
       return {};
     }
 
-    async function readPhotoMetadata(file, image) {
+    async function readPhotoMetadata(file, image, source = {}) {
       const metadata = {
         fileName: file.name,
         fileType: file.type || "",
         fileSize: file.size || 0,
         fileSizeText: formatFileSize(file.size),
         lastModified: file.lastModified ? new Date(file.lastModified).toISOString() : "",
-        width: image?.naturalWidth || image?.width || 0,
-        height: image?.naturalHeight || image?.height || 0
+        width: source.sourceWidth || image?.naturalWidth || image?.width || 0,
+        height: source.sourceHeight || image?.naturalHeight || image?.height || 0
       };
       if (/jpe?g$/i.test(file.type) || /\.jpe?g$/i.test(file.name)) {
         try {
@@ -8002,6 +8231,20 @@ function openAccountActions() {
     }
 
     async function applyLoadedPhotos(loaded, message, options = {}) {
+      const target = options.targetAlbumId ? findAlbum(options.targetAlbumId) : null;
+      const targetIsActive = !target || target.album.id === state.activeAlbumId;
+      if (target && !targetIsActive) {
+        target.album.photos = loaded.map((photo) => {
+          const { image, index, ...payload } = photo;
+          return payload;
+        });
+        target.album.updatedAt = new Date().toISOString();
+        saveProject({ skipSync: true });
+        setStatus(message || `已将 ${loaded.length} 张照片保存到「${target.album.title || "目标星球"}」。`, "ready");
+        refreshUniversePanel();
+        refreshUniverseActionBar();
+        return;
+      }
       const cell = 128;
       state.atlasGrid = Math.max(1, Math.ceil(Math.sqrt(Math.max(1, loaded.length))));
       const canvas = document.createElement("canvas");
@@ -8030,9 +8273,14 @@ function openAccountActions() {
       state.atlasTexture.colorSpace = THREE.SRGBColorSpace;
       state.atlasTexture.needsUpdate = true;
       rebuildPhotoSprites(loaded);
-      state.photos = loaded.map((photo) => ({ ...photo }));
+      const nextPhotos = loaded.map((photo) => ({ ...photo }));
+      state.photos = nextPhotos;
       refreshPhotoMaterial();
       refreshPhotoManager();
+      if (target) {
+        target.album.photos = albumPhotoPayload();
+        target.album.updatedAt = new Date().toISOString();
+      }
       if (options.autoOpen !== false) openPhotosAfterLoad();
       if (!options.skipSyncCurrent) {
         if (options.awaitSave) await persistProjectNow();
@@ -8051,15 +8299,25 @@ function openAccountActions() {
     async function loadPhotos(files) {
       if (cloudEnabled() && !requireActiveAccount("上传照片")) return;
       const all = Array.from(files || []);
+      const targetGalaxyId = state.activeGalaxyId;
+      const targetAlbumId = state.activeAlbumId;
+      const target = findAlbum(targetAlbumId);
+      if (!target) {
+        setStatus("没有找到当前星球，请先选择一个星球再上传。", "warn");
+        return;
+      }
+      const startingPhotos = target.album.id === state.activeAlbumId
+        ? state.photos.map((photo) => ({ ...photo }))
+        : (target.album.photos || []).map((photo) => ({ ...photo }));
       const photoLimit = currentPhotoLimit();
-      const remainingSlots = photoLimit - state.photos.length;
+      const remainingSlots = photoLimit - startingPhotos.length;
       if (remainingSlots <= 0) {
         setStatus(`已经达到 ${photoLimit} 张上限，请先删除一些照片再继续上传。`, "warn");
         setActiveTab("story");
         return;
       }
       const imageFiles = all.filter((file) => file.type.startsWith("image/"));
-      const quotaMessage = quotaMessageForUpload(state.photos.length + imageFiles.length);
+      const quotaMessage = quotaMessageForUpload(startingPhotos.length + imageFiles.length, startingPhotos.length);
       if (quotaMessage) {
         setStatus(quotaMessage, "warn");
         return;
@@ -8071,13 +8329,15 @@ function openAccountActions() {
         return;
       }
 
-      setStatus(`正在追加 ${selected.length} 张照片，当前 ${state.photos.length} / ${photoLimit}。`);
+      const sessionId = createId("upload");
+      state.uploadSession = { id: sessionId, galaxyId: targetGalaxyId, albumId: targetAlbumId };
+      setStatus(`正在追加 ${selected.length} 张照片到「${target.album.title || "当前星球"}」，当前 ${startingPhotos.length} / ${photoLimit}。`);
       if (activeUserReady()) clearLargeLocalProjectCache();
       showTaskProgress("正在上传照片", `准备读取 ${selected.length} 张照片...`);
       const loaded = [];
       let failed = ignored;
       let cloudFailed = 0;
-      const BATCH_SIZE = 16;
+      const BATCH_SIZE = isMobileViewport() ? 4 : 10;
       for (let batchStart = 0; batchStart < selected.length; batchStart += BATCH_SIZE) {
         const batch = selected.slice(batchStart, Math.min(batchStart + BATCH_SIZE, selected.length));
         let batchTickets = null;
@@ -8107,7 +8367,7 @@ function openAccountActions() {
             ]);
             if (loadResult.status !== "fulfilled") { failed++; return null; }
             const result = loadResult.value;
-            const metadata = await readPhotoMetadata(file, result.image);
+            const metadata = await readPhotoMetadata(file, result.image, result);
             let remoteUrl = uploadResult.status === "fulfilled" ? (uploadResult.value || "") : "";
             if (uploadResult.status !== "fulfilled") cloudFailed++;
             return {
@@ -8133,20 +8393,21 @@ function openAccountActions() {
         }
       }
       if (!loaded.length) {
+        if (state.uploadSession?.id === sessionId) state.uploadSession = null;
         hideTaskDialog();
         setStatus("照片读取失败，请换一批图片重试。", "warn");
         return;
       }
-      const total = state.photos.concat(loaded);
+      const total = startingPhotos.concat(loaded);
       setTaskProgress(0.92, "正在生成照片图集...");
       await waitForNextFrame();
       let message = `已追加 ${loaded.length} 张照片，现在共有 ${total.length} 张${failed ? `，忽略/失败 ${failed} 个文件` : ""}。`;
       if (!activeUserReady()) message += " 未登录仅作本地体验，登录后可保存到云端并分享。";
       if (cloudFailed) message += ` 其中 ${cloudFailed} 张云端上传失败，已先保留在当前页面。`;
-      await applyLoadedPhotos(total, message);
+      await applyLoadedPhotos(total, message, { targetAlbumId, targetGalaxyId });
       if (activeUserReady()) {
         try {
-          await persistProjectNow();
+          await persistProjectNow({ skipSync: true });
           if (!cloudFailed) setStatus("照片已上传并保存到云端，后台统计已更新。", "ready");
         } catch (error) {
           console.warn(error);
@@ -8154,6 +8415,7 @@ function openAccountActions() {
         }
       }
       setTaskProgress(1, "上传完成");
+      if (state.uploadSession?.id === sessionId) state.uploadSession = null;
       window.setTimeout(hideTaskDialog, 260);
     }
 
@@ -10066,6 +10328,15 @@ function openAccountActions() {
     fullscreenToggle.addEventListener("click", toggleFullscreen);
     musicSettingsToggle.addEventListener("click", () => setFloatingSettingsPanel("music"));
     advancedSettingsToggle.addEventListener("click", () => setFloatingSettingsPanel("advanced"));
+    feedbackToggle.addEventListener("click", openFeedbackDialog);
+    feedbackClose.addEventListener("click", closeFeedbackDialog);
+    feedbackCancel.addEventListener("click", closeFeedbackDialog);
+    feedbackDialog.addEventListener("click", (event) => {
+      if (event.target === feedbackDialog) closeFeedbackDialog();
+    });
+    feedbackSubmit.addEventListener("click", () => {
+      submitFeedback();
+    });
     const onFsChange = () => {
       const active = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
       if (!active) {
@@ -10600,7 +10871,8 @@ userLogoutBtn.addEventListener("click", () => {
 
     async function openAdminPanel() {
       document.getElementById("adminPanel").classList.add("show");
-      switchAdminTab("users");
+      const params = new URLSearchParams(location.search);
+      switchAdminTab(params.get("admin") === "feedback" ? "feedback" : "users");
       await refreshAdminData();
     }
 
@@ -10730,6 +11002,45 @@ userLogoutBtn.addEventListener("click", () => {
       }
     }
 
+    function feedbackStatusLabel(status) {
+      return ({ open: "待处理", processing: "处理中", resolved: "已解决" })[status] || status || "待处理";
+    }
+
+    function renderAdminFeedback() {
+      const tbody = document.getElementById("adminFeedbackBody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      (state.admin.feedback || []).forEach((item) => {
+        const row = document.createElement("tr");
+        const time = (item.createdAt || "").slice(0, 19).replace("T", " ");
+        const user = item.username || item.userId || "匿名";
+        const album = item.albumTitle || item.projectId || "-";
+        const message = item.message || "";
+        row.innerHTML = "<td>" + escapeHtml(time || "-") + "</td>"
+          + "<td>" + escapeHtml(item.type || "其他") + "</td>"
+          + "<td>" + escapeHtml(user) + (item.contact ? `<br><small>${escapeHtml(item.contact)}</small>` : "") + "</td>"
+          + "<td>" + escapeHtml(album) + "</td>"
+          + "<td title=\"" + escapeHtml(message) + "\">" + escapeHtml(message.slice(0, 90)) + (message.length > 90 ? "..." : "") + "</td>"
+          + "<td>" + escapeHtml(feedbackStatusLabel(item.status)) + "</td>"
+          + "<td></td>";
+        const actions = document.createElement("div");
+        actions.className = "admin-segment";
+        ["open", "processing", "resolved"].forEach((status) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = feedbackStatusLabel(status);
+          button.classList.toggle("active", item.status === status);
+          button.addEventListener("click", () => updateAdminFeedback(item.id, { status }));
+          actions.appendChild(button);
+        });
+        row.lastChild.appendChild(actions);
+        tbody.appendChild(row);
+      });
+      if (!tbody.children.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="admin-empty">暂无用户反馈。</td></tr>`;
+      }
+    }
+
     function renderAdminStats(stats = {}) {
       document.getElementById("adminTotalUsers").textContent = String(stats.totalUsers || 0);
       document.getElementById("adminTotalPlanets").textContent = String(stats.totalPlanets || 0);
@@ -10782,16 +11093,19 @@ userLogoutBtn.addEventListener("click", () => {
 
     async function refreshAdminData() {
       try {
-        const [usersData, tiersData, configData] = await Promise.all([
+        const [usersData, feedbackData, tiersData, configData] = await Promise.all([
           cloudRequest("/admin/users", { method: "GET" }, true),
+          cloudRequest("/admin/feedback", { method: "GET" }, true),
           cloudRequest("/admin/tiers", { method: "GET" }, true),
           cloudRequest("/admin/config", { method: "GET" }, true)
         ]);
         state.admin.users = usersData.users || [];
+        state.admin.feedback = feedbackData.feedback || [];
         state.admin.tiers = tiersData.tiers || {};
         state.admin.config = configData.config || {};
         renderAdminStats(usersData.stats || {});
         renderAdminUsers();
+        renderAdminFeedback();
         renderAdminTiers();
       } catch (error) {
         console.warn(error);
@@ -10802,6 +11116,14 @@ userLogoutBtn.addEventListener("click", () => {
     async function updateAdminUser(userId, patch) {
       await cloudRequest(`/admin/users/${encodeURIComponent(userId)}`, {
         method: "PUT",
+        body: JSON.stringify(patch)
+      }, true);
+      await refreshAdminData();
+    }
+
+    async function updateAdminFeedback(id, patch) {
+      await cloudRequest(`/admin/feedback/${encodeURIComponent(id)}`, {
+        method: "PATCH",
         body: JSON.stringify(patch)
       }, true);
       await refreshAdminData();

@@ -3,7 +3,7 @@
 const jsonHeaders = {
   "content-type": "application/json;charset=utf-8",
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET,PUT,POST,OPTIONS",
+  "access-control-allow-methods": "GET,PUT,POST,PATCH,OPTIONS",
   "access-control-allow-headers": "content-type,authorization,cache-control",
   "cache-control": "no-store, no-cache, must-revalidate, max-age=0",
   "pragma": "no-cache",
@@ -220,6 +220,68 @@ async function getUsersIndex() {
 async function putUsersIndex(index) {
   index.updatedAt = new Date().toISOString();
   return putJson("admin/users-index.json", index);
+}
+
+async function getFeedbackIndex() {
+  return await readJson("admin/feedback-index.json", { feedback: [], updatedAt: "" });
+}
+
+async function putFeedbackIndex(index) {
+  index.updatedAt = new Date().toISOString();
+  index.feedback.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  return putJson("admin/feedback-index.json", index);
+}
+
+function feedbackPublicItem(item = {}) {
+  return {
+    id: item.id,
+    type: item.type || "其他",
+    status: item.status || "open",
+    message: item.message || "",
+    contact: item.contact || "",
+    username: item.username || "",
+    userId: item.userId || "",
+    projectId: item.projectId || "",
+    albumId: item.albumId || "",
+    albumTitle: item.albumTitle || "",
+    pageUrl: item.pageUrl || "",
+    userAgent: item.userAgent || "",
+    viewport: item.viewport || "",
+    adminNote: item.adminNote || "",
+    createdAt: item.createdAt || "",
+    updatedAt: item.updatedAt || ""
+  };
+}
+
+async function notifyFeishuFeedback(item) {
+  const webhook = env("FEISHU_WEBHOOK");
+  if (!webhook) return false;
+  const adminBase = env("ADMIN_BASE_URL") || env("SITE_URL") || "";
+  const handleUrl = adminBase ? `${adminBase.replace(/\/+$/, "")}/?admin=feedback&id=${encodeURIComponent(item.id)}` : "";
+  const lines = [
+    "有新的用户反馈",
+    "",
+    `类型：${item.type || "其他"}`,
+    `用户：${item.username || item.userId || "匿名"}`,
+    item.contact ? `联系方式：${item.contact}` : "",
+    item.albumTitle ? `星球：${item.albumTitle}` : "",
+    item.projectId ? `项目：${item.projectId}` : "",
+    `时间：${String(item.createdAt || "").replace("T", " ").slice(0, 19)}`,
+    "",
+    `描述：${item.message || "-"}`,
+    handleUrl ? `\n处理链接：${handleUrl}` : ""
+  ].filter(Boolean);
+  try {
+    const response = await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ msg_type: "text", content: { text: lines.join("\n") } })
+    });
+    return response.ok;
+  } catch (error) {
+    console.warn("Feishu feedback notification failed:", error);
+    return false;
+  }
 }
 
 async function calcOssPhotoBytes(userId, projectId) {
@@ -529,6 +591,58 @@ async function me(event) {
   return json({ user: publicUser(user, tiers) });
 }
 
+async function createFeedback(event, body) {
+  const user = await sessionUser(event).catch(() => null);
+  const now = new Date().toISOString();
+  const item = feedbackPublicItem({
+    id: `fb_${Date.now().toString(36)}_${crypto.randomBytes(5).toString("hex")}`,
+    type: String(body.type || "其他").slice(0, 40),
+    status: "open",
+    message: String(body.message || "").trim().slice(0, 2000),
+    contact: String(body.contact || "").trim().slice(0, 120),
+    username: user?.username || String(body.username || "").slice(0, 80),
+    userId: user?.userId || "",
+    projectId: String(body.projectId || "").slice(0, 120),
+    albumId: String(body.albumId || "").slice(0, 120),
+    albumTitle: String(body.albumTitle || "").slice(0, 120),
+    pageUrl: String(body.pageUrl || "").slice(0, 500),
+    userAgent: String(body.userAgent || "").slice(0, 500),
+    viewport: String(body.viewport || "").slice(0, 80),
+    adminNote: "",
+    createdAt: now,
+    updatedAt: now
+  });
+  if (!item.message) return json({ error: "请填写问题描述" }, 400);
+  await putJson(`admin/feedback/${item.id}.json`, item);
+  const index = await getFeedbackIndex();
+  index.feedback = [item, ...(index.feedback || []).filter((entry) => entry.id !== item.id)].slice(0, 500);
+  await putFeedbackIndex(index);
+  const notified = await notifyFeishuFeedback(item);
+  return json({ ok: true, feedback: item, notified });
+}
+
+async function listFeedback() {
+  const index = await getFeedbackIndex();
+  return json({ feedback: (index.feedback || []).map(feedbackPublicItem) });
+}
+
+async function updateFeedback(id, body) {
+  const existing = await readJson(`admin/feedback/${id}.json`, null);
+  if (!existing) return json({ error: "feedback not found" }, 404);
+  const next = feedbackPublicItem({
+    ...existing,
+    status: ["open", "processing", "resolved"].includes(body.status) ? body.status : existing.status,
+    adminNote: body.adminNote !== undefined ? String(body.adminNote || "").slice(0, 1000) : existing.adminNote,
+    updatedAt: new Date().toISOString()
+  });
+  await putJson(`admin/feedback/${id}.json`, next);
+  const index = await getFeedbackIndex();
+  index.feedback = (index.feedback || []).map((item) => item.id === id ? next : item);
+  if (!index.feedback.some((item) => item.id === id)) index.feedback.unshift(next);
+  await putFeedbackIndex(index);
+  return json({ ok: true, feedback: next });
+}
+
 function adminPasswordMatches(password) {
   const configuredHash = env("ADMIN_PASSWORD_HASH");
   const configuredPassword = env("ADMIN_PASSWORD");
@@ -777,6 +891,7 @@ exports.handler = async function handler(event) {
     if (path === "/auth/me" && method === "GET") return me(event);
     if (path === "/auth/logout" && method === "POST") return logout(event);
     if (path === "/auth/password" && method === "PUT") return changePassword(event, getBody(event));
+    if (path === "/feedback" && method === "POST") return createFeedback(event, getBody(event));
     if (path === "/admin/login" && method === "POST") return adminLogin(getBody(event));
 
     if (path.startsWith("/admin/")) {
@@ -790,6 +905,11 @@ exports.handler = async function handler(event) {
       if (path === "/admin/users" && method === "GET") {
         const index = await getUsersIndex();
         return json({ users: index.users || [], stats: aggregateStats(index.users || []) });
+      }
+      if (path === "/admin/feedback" && method === "GET") return listFeedback();
+      const feedbackMatch = path.match(/^\/admin\/feedback\/([^/]+)$/);
+      if (feedbackMatch && method === "PATCH") {
+        return updateFeedback(decodeURIComponent(feedbackMatch[1]), getBody(event));
       }
       if (path === "/admin/config" && method === "GET") return json({ config: await getAdminConfig() });
       if (path === "/admin/config" && method === "PUT") {
