@@ -1,4 +1,4 @@
-const CACHE_NAME = "memory-globe-v3-single-planet";
+const CACHE_NAME = "memory-globe-v2-upload-reset";
 const CORE_ASSETS = [
   "./",
   "./index.html",
