@@ -2830,7 +2830,7 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
     const SHARE_KEY = "photoMemoryGlobe.share.v1";
     const AUTH_KEY = "photoMemoryGlobe.auth.v1";
     const ADMIN_AUTH_KEY = "photoMemoryGlobe.adminAuth.v1";
-    const CLOUD_RESET_KEY = "photoMemoryGlobe.cloudReset.20260610.v1";
+    const CLOUD_RESET_KEY = "photoMemoryGlobe.cloudReset.20260615.uploadReset.v2";
     const MAX_PHOTOS = 200;
     const ALBUM_MIN_ZOOM = 4.5;
     const UNIVERSE_MIN_ZOOM = 4.2;
@@ -3731,7 +3731,25 @@ function openAccountActions() {
       const params = new URLSearchParams(window.location.search);
       if (params.get("id")) return false;
       const projectIds = Array.isArray(state.auth.user?.projectIds) ? state.auth.user.projectIds : [];
-      if (!projectIds.length) return false;
+      if (!projectIds.length) {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(SHARE_KEY);
+        localStorage.removeItem("photoParticleGlobe.stories");
+        state.restoredFromAccountCloud = true;
+        state.cloud.projectId = "";
+        state.cloud.editToken = "";
+        state.cloud.readOnly = false;
+        await restoreProject({
+          title: DEFAULT_ALBUM_TITLE,
+          subtitle: DEFAULT_ALBUM_SUBTITLE,
+          author: DEFAULT_ALBUM_AUTHOR,
+          theme: "tech",
+          shape: "sphere",
+          audio: { volume: state.audio.volume, sfxEnabled: state.audio.sfxEnabled, track: state.audio.track },
+          photos: []
+        }, "账号云端作品已清空，已回到初始星球。");
+        return true;
+      }
       const projectId = projectIds[projectIds.length - 1] || "";
       if (!projectId) return false;
       try {
