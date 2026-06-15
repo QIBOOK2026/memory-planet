@@ -5136,10 +5136,11 @@ function openAccountActions() {
         size: 0.075,
         vertexColors: true,
         transparent: true,
-        opacity: 0.72,
+        opacity: 0.1,
         blending: THREE.AdditiveBlending,
         depthWrite: false
       }));
+      halo.userData.albumHalo = true;
       halo.userData.safeRadius = haloRadius;
       return halo;
     }
@@ -5605,6 +5606,9 @@ function openAccountActions() {
         }
         if (node.material.uniforms?.globalOpacity) {
           node.material.uniforms.globalOpacity.value = opacity;
+        } else if (node.userData.albumHalo) {
+          node.material.opacity = 0.1 * opacity;
+          node.material.transparent = true;
         } else if (node.userData.shellBody) {
           node.material.opacity = node.parent?.userData?.albumShape === "sphere" ? 0.065 * opacity : 0;
         } else {
@@ -6220,6 +6224,12 @@ function openAccountActions() {
         }
         item.group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), item.exiting ? 0.16 : 0.08);
         setUniverseObjectOpacity(item.group, item.exiting ? 0 : fadedByDetail ? 0.18 : 0.92);
+        if (item.halo?.material) {
+          const selected = item.album.id === state.selectedUniverseAlbumId;
+          const targetHaloOpacity = item.exiting ? 0 : detailActive ? 0.42 : selected ? 0.12 : 0.06;
+          item.halo.material.opacity = lerp(item.halo.material.opacity, targetHaloOpacity, 0.18);
+          item.halo.material.transparent = true;
+        }
         updateUniverseAlbumParticles(item, dt);
         const spinSpeed = albumRenderSettings(item.album).rotationSpeed * (detailActive ? photoFocusSlowdown : 1);
         const meshSpinSpeed = (item.album.shape || "sphere") === "wave" ? 0 : spinSpeed;
