@@ -2119,10 +2119,84 @@
       color: var(--ink);
       font: inherit;
     }
+    .feedback-card select {
+      -webkit-appearance: none;
+      appearance: none;
+      color-scheme: dark;
+      background-color: #061223;
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--ink) 50%),
+        linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) 52%,
+        calc(100% - 12px) 52%;
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      padding-right: 36px;
+    }
+    .feedback-card select option {
+      background: #061326;
+      color: var(--ink);
+    }
     .feedback-card textarea { min-height: 120px; resize: vertical; line-height: 1.55; }
     .feedback-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
     .feedback-actions button { min-width: 112px; white-space: nowrap; }
     .feedback-status { min-height: 18px; color: var(--muted); font-size: 12px; }
+    .feedback-history {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--panel-line);
+    }
+    .feedback-history-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .feedback-history-head strong {
+      color: var(--ink);
+      font-size: 14px;
+    }
+    .feedback-history-head button {
+      min-width: 72px;
+      padding: 7px 10px;
+      white-space: nowrap;
+    }
+    .feedback-history-list {
+      display: grid;
+      gap: 8px;
+      max-height: 220px;
+      overflow: auto;
+      padding-right: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .feedback-history-item {
+      border: 1px solid var(--panel-line);
+      border-radius: 8px;
+      background: rgba(6, 18, 35, 0.72);
+      padding: 10px;
+    }
+    .feedback-history-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .feedback-history-title {
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .feedback-history-message {
+      color: var(--soft);
+      line-height: 1.5;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
     @media (max-width: 760px) {
       .admin-panel { inset: 8px; }
       .admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2380,9 +2454,8 @@
       <div class="tab-panel" data-panel="export">
         <div class="export-row">
           <button id="exportBtn" class="primary" type="button">复制分享链接</button>
-          <button id="exportMobileBtn" type="button">复制编辑链接</button>
         </div>
-        <div class="hint">分享链接只用于观看；编辑链接相当于钥匙，可继续上传和修改。云端存储接入后，链接会跨设备生效。</div>
+        <div class="hint">分享链接只用于观看。登录账号后会加载该账号自己的云端作品，不会同步分享页里的数据。</div>
       </div>
 
       <div class="hint" id="projectMeta">还没有照片。上传后可编辑故事、预览展开效果，并生成分享链接。</div>
@@ -2579,6 +2652,13 @@
         <button id="feedbackCancel" type="button">取消</button>
         <button id="feedbackSubmit" class="primary" type="button">提交反馈</button>
       </div>
+      <section class="feedback-history" aria-label="我的反馈记录">
+        <div class="feedback-history-head">
+          <strong>我的反馈记录</strong>
+          <button id="feedbackHistoryRefresh" type="button">刷新</button>
+        </div>
+        <div id="feedbackHistoryList" class="feedback-history-list">登录后可查看反馈记录。</div>
+      </section>
     </div>
   </div>
 
@@ -2732,6 +2812,8 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
     const feedbackContact = document.getElementById("feedbackContact");
     const feedbackMessage = document.getElementById("feedbackMessage");
     const feedbackStatus = document.getElementById("feedbackStatus");
+    const feedbackHistoryRefresh = document.getElementById("feedbackHistoryRefresh");
+    const feedbackHistoryList = document.getElementById("feedbackHistoryList");
     const musicSettingsPanel = document.getElementById("musicSettingsPanel");
     const advancedSettingsPanel = document.getElementById("advancedSettingsPanel");
     const statusText = document.getElementById("statusText");
@@ -2787,7 +2869,6 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
     const collapseBtn = document.getElementById("collapseBtn");
     const gestureCard = document.querySelector(".gesture-card");
     const exportBtn = document.getElementById("exportBtn");
-    const exportMobileBtn = document.getElementById("exportMobileBtn");
     const photoInput = document.getElementById("photoInput");
     const photoManager = document.getElementById("photoManager");
     const photoList = document.getElementById("photoList");
@@ -3253,6 +3334,25 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
       return { projectId, editToken };
     }
 
+    async function leaveSharedProjectContextForAccount(message = "已退出分享页，正在加载当前账号的数据。") {
+      const url = new URL(window.location.href);
+      if (!url.searchParams.get("id")) return false;
+      url.searchParams.delete("id");
+      url.searchParams.delete("token");
+      window.history.replaceState(null, document.title, url.toString());
+      window.clearTimeout(saveTimer);
+      saveTimer = 0;
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(SHARE_KEY);
+      localStorage.removeItem("photoParticleGlobe.stories");
+      state.cloud.projectId = "";
+      state.cloud.editToken = "";
+      state.cloud.readOnly = false;
+      state.restoredFromAccountCloud = false;
+      await restoreEmptyAccountProject(message);
+      return true;
+    }
+
     function shareUrlFor(mode = "view") {
       const identity = ensureShareIdentity();
       const url = new URL(window.location.href);
@@ -3328,11 +3428,60 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
       feedbackMessage.value = "";
       feedbackContact.value = localStorage.getItem("memoryGlobe.feedbackContact") || "";
       feedbackDialog.classList.add("show");
+      loadMyFeedbackHistory();
       window.setTimeout(() => feedbackMessage.focus(), 40);
     }
 
     function closeFeedbackDialog() {
       feedbackDialog.classList.remove("show");
+    }
+
+    function renderFeedbackHistory(items = []) {
+      if (!feedbackHistoryList) return;
+      if (!activeUserReady()) {
+        feedbackHistoryList.textContent = "登录后可查看反馈记录。";
+        return;
+      }
+      if (!items.length) {
+        feedbackHistoryList.textContent = "暂无反馈记录。";
+        return;
+      }
+      feedbackHistoryList.innerHTML = items.map((item) => {
+        const time = (item.createdAt || "").slice(0, 19).replace("T", " ") || "-";
+        const note = item.adminNote ? `<div class="feedback-history-message">处理备注：${escapeHtml(item.adminNote)}</div>` : "";
+        return `<article class="feedback-history-item">
+          <div class="feedback-history-meta">
+            <span class="feedback-history-title">${escapeHtml(item.type || "其他")}</span>
+            <span>${escapeHtml(feedbackStatusLabel(item.status))}</span>
+          </div>
+          <div class="feedback-history-message">${escapeHtml(item.message || "")}</div>
+          ${note}
+          <div class="feedback-history-meta" style="margin: 8px 0 0;">
+            <span>${escapeHtml(item.albumTitle || item.projectId || "当前作品")}</span>
+            <span>${escapeHtml(time)}</span>
+          </div>
+        </article>`;
+      }).join("");
+    }
+
+    async function loadMyFeedbackHistory() {
+      if (!feedbackHistoryList) return;
+      if (!cloudEnabled()) {
+        feedbackHistoryList.textContent = "当前还没有配置云端 API，暂时无法读取反馈记录。";
+        return;
+      }
+      if (!activeUserReady()) {
+        feedbackHistoryList.textContent = "登录后可查看反馈记录。";
+        return;
+      }
+      feedbackHistoryList.textContent = "正在读取反馈记录...";
+      try {
+        const data = await cloudRequest("/feedback/mine", { method: "GET", timeoutMs: 8000 });
+        renderFeedbackHistory(data.feedback || []);
+      } catch (error) {
+        console.warn(error);
+        feedbackHistoryList.textContent = error.message || "反馈记录读取失败，请稍后再试。";
+      }
     }
 
     function feedbackPayload() {
@@ -3371,9 +3520,10 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
         });
         if (payload.contact) localStorage.setItem("memoryGlobe.feedbackContact", payload.contact);
         const notifyReason = data.notify?.reason ? `（${data.notify.reason}）` : "";
-        feedbackStatus.textContent = data.notified ? "已提交，我会收到提醒。" : `已提交，但飞书提醒未送达${notifyReason}。`;
+        feedbackStatus.textContent = data.notified ? "已提交，可在下方查看处理进度。" : `已提交，但飞书提醒未送达${notifyReason}。`;
+        feedbackMessage.value = "";
+        loadMyFeedbackHistory();
         setStatus("反馈已提交，感谢你帮我发现问题。", "ready");
-        window.setTimeout(closeFeedbackDialog, 700);
       } catch (error) {
         console.warn(error);
         feedbackStatus.textContent = error.message || "反馈提交失败，请稍后再试。";
@@ -3674,10 +3824,11 @@ function openAccountActions() {
             setStatus("注册成功，账号等待管理员审核。刷新页面也会保留登录状态。", "warn");
             return;
           }
+          const registeredFromSharedProject = await leaveSharedProjectContextForAccount();
           const restored = await restoreUserCloudProject("注册成功，已加载账号里的云端作品。");
           if (!restored) {
             setStatus("注册成功，已开启云端保存和分享。", "ready");
-            saveProject();
+            if (!registeredFromSharedProject) saveProject();
           }
           return;
         }
@@ -3698,10 +3849,11 @@ function openAccountActions() {
         if (state.auth.user?.status === "pending") setStatus("账号待审核，通过后可创建星球和分享。", "warn");
         else if (state.auth.user?.status === "blocked") setStatus("账号已被禁用，无法使用云端功能。", "warn");
         else {
+          const loggedInFromSharedProject = await leaveSharedProjectContextForAccount();
           const restored = await restoreUserCloudProject("登录成功，已加载账号里的云端作品。");
           if (!restored) {
             if (prevUserId) { setStatus("登录成功。此账号还没有云端作品。", "ready"); } else { setStatus("登录成功，已开启云端保存和分享。", "ready"); }
-            saveProject();
+            if (!loggedInFromSharedProject) saveProject();
           }
         }
       } catch (error) {
@@ -4030,16 +4182,14 @@ function openAccountActions() {
         return;
       }
       await saveCloudProject();
-      const url = shareUrlFor(mode);
+      const url = shareUrlFor("view");
       try {
         await copyText(url);
-        setStatus(mode === "edit"
-          ? "已复制编辑链接。这个链接相当于钥匙，请只发给需要修改作品的人。"
-          : "已复制分享链接。接入云端保存后，朋友可通过这个链接观看作品。", "ready");
+        setStatus("已复制分享链接。朋友可通过这个链接观看作品。", "ready");
       } catch (error) {
         console.warn(error);
         await requestAppInput({
-          title: mode === "edit" ? "手动复制编辑链接" : "手动复制分享链接",
+          title: "手动复制分享链接",
           message: "浏览器阻止了自动复制，请手动复制下面的链接。",
           value: url
         });
@@ -6811,7 +6961,7 @@ function openAccountActions() {
           return;
         }
         setViewMode("album");
-        setStatus("分享：复制观看链接或编辑链接。", "ready");
+        setStatus("分享：复制观看链接。", "ready");
       } else {
         if (stayInUniverse) {
           refreshUniverseActionBar();
@@ -10495,6 +10645,9 @@ function openAccountActions() {
     feedbackSubmit.addEventListener("click", () => {
       submitFeedback();
     });
+    feedbackHistoryRefresh.addEventListener("click", () => {
+      loadMyFeedbackHistory();
+    });
     const onFsChange = () => {
       const active = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
       if (!active) {
@@ -10862,12 +11015,6 @@ userLogoutBtn.addEventListener("click", () => {
       copyShareLink("view").catch((error) => {
         console.warn(error);
         setStatus("复制分享链接失败，请检查浏览器剪贴板权限。", "warn");
-      });
-    });
-    exportMobileBtn.addEventListener("click", () => {
-      copyShareLink("edit").catch((error) => {
-        console.warn(error);
-        setStatus("复制编辑链接失败，请检查浏览器剪贴板权限。", "warn");
       });
     });
     document.querySelectorAll(".gesture").forEach((button) => {

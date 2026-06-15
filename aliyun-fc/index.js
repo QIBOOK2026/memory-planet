@@ -650,6 +650,17 @@ async function listFeedback() {
   return json({ feedback: (index.feedback || []).map(feedbackPublicItem) });
 }
 
+async function listMyFeedback(event) {
+  const user = await sessionUser(event);
+  if (!user) return json({ feedback: [] });
+  const index = await getFeedbackIndex();
+  const feedback = (index.feedback || [])
+    .filter((item) => item.userId === user.userId || (!item.userId && item.username && item.username === user.username))
+    .slice(0, 30)
+    .map(feedbackPublicItem);
+  return json({ feedback });
+}
+
 async function updateFeedback(id, body) {
   const existing = await readJson(`admin/feedback/${id}.json`, null);
   if (!existing) return json({ error: "feedback not found" }, 404);
@@ -1036,6 +1047,7 @@ exports.handler = async function handler(event) {
     if (path === "/auth/logout" && method === "POST") return logout(event);
     if (path === "/auth/password" && method === "PUT") return changePassword(event, getBody(event));
     if (path === "/feedback" && method === "POST") return createFeedback(event, getBody(event));
+    if (path === "/feedback/mine" && method === "GET") return listMyFeedback(event);
     if (path === "/admin/login" && method === "POST") return adminLogin(getBody(event));
 
     if (path.startsWith("/admin/")) {
