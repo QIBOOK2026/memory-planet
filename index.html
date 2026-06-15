@@ -3334,6 +3334,11 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
       return { projectId, editToken };
     }
 
+    function readonlyShareLinkActive() {
+      const params = new URLSearchParams(window.location.search);
+      return Boolean(params.get("id") && !params.get("token"));
+    }
+
     async function leaveSharedProjectContextForAccount(message = "已退出分享页，正在加载当前账号的数据。") {
       const url = new URL(window.location.href);
       if (!url.searchParams.get("id")) return false;
@@ -11598,11 +11603,19 @@ userLogoutBtn.addEventListener("click", () => {
     setAudioVolume(musicVolume.value);
     async function boot() {
       clearLocalDataAfterCloudReset();
+      const readonlyShareView = readonlyShareLinkActive();
       setUniverse({ photos: [], title: DEFAULT_ALBUM_TITLE, subtitle: DEFAULT_ALBUM_SUBTITLE, author: DEFAULT_ALBUM_AUTHOR, theme: "tech", shape: "sphere" });
       refreshProjectInfo();
       refreshPhotoManager();
-      await restoreAuthSession();
-      await restoreAdminSession();
+      if (readonlyShareView) {
+        state.auth.token = "";
+        state.auth.user = null;
+        clearAdminSession();
+        refreshAuthUi();
+      } else {
+        await restoreAuthSession();
+        await restoreAdminSession();
+      }
       await restoreSavedStories();
       revealGestureCard();
       requestAnimationFrame(frame);
