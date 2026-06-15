@@ -3739,15 +3739,7 @@ function openAccountActions() {
         state.cloud.projectId = "";
         state.cloud.editToken = "";
         state.cloud.readOnly = false;
-        await restoreProject({
-          title: DEFAULT_ALBUM_TITLE,
-          subtitle: DEFAULT_ALBUM_SUBTITLE,
-          author: DEFAULT_ALBUM_AUTHOR,
-          theme: "tech",
-          shape: "sphere",
-          audio: { volume: state.audio.volume, sfxEnabled: state.audio.sfxEnabled, track: state.audio.track },
-          photos: []
-        }, "账号云端作品已清空，已回到初始星球。");
+        await restoreEmptyAccountProject();
         return true;
       }
       const projectId = projectIds[projectIds.length - 1] || "";
@@ -9155,6 +9147,26 @@ function openAccountActions() {
       resetExpandedVisualState();
     }
 
+    async function restoreEmptyAccountProject(message = "账号云端作品已清空，已回到初始星球。") {
+      await restoreProject({
+        title: DEFAULT_ALBUM_TITLE,
+        subtitle: DEFAULT_ALBUM_SUBTITLE,
+        author: DEFAULT_ALBUM_AUTHOR,
+        theme: "tech",
+        shape: "sphere",
+        audio: { volume: state.audio.volume, sfxEnabled: state.audio.sfxEnabled, track: state.audio.track },
+        photos: []
+      }, message);
+      setViewMode("universe");
+      setActiveTab("universe");
+      const albumId = state.activeAlbumId || defaultUniverseAlbumId();
+      selectUniverseAlbum(albumId, { revealActions: true, immediate: true, zoom: 6.8 });
+      globe.visible = false;
+      photoLayer.visible = false;
+      universeGroup.visible = true;
+      resetExpandedVisualState();
+    }
+
     function sharedViewPayload(payload) {
       if (!payload?.universe?.galaxies) return payload;
       const clone = JSON.parse(JSON.stringify(payload));
@@ -9214,16 +9226,7 @@ function openAccountActions() {
         return;
       }
       if (!raw && !legacy) {
-        await restoreProject({
-          title: DEFAULT_ALBUM_TITLE,
-          subtitle: DEFAULT_ALBUM_SUBTITLE,
-          author: DEFAULT_ALBUM_AUTHOR,
-          theme: "tech",
-          shape: "sphere",
-          audio: { volume: state.audio.volume, sfxEnabled: state.audio.sfxEnabled, track: state.audio.track },
-          photos: []
-        }, "已创建默认星球首页。");
-        setActiveTab("universe");
+        await restoreEmptyAccountProject("已创建默认星球首页。");
         tryStartDefaultMusic();
         return;
       }
