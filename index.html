@@ -603,6 +603,7 @@
       color: var(--muted);
       text-align: left;
       white-space: nowrap;
+      cursor: pointer;
     }
 
     .album-card.active {
@@ -635,6 +636,22 @@
     .album-meta {
       grid-column: 1 / -1;
       color: var(--muted);
+    }
+
+    .album-enter-btn {
+      grid-column: 1 / -1;
+      justify-self: stretch;
+      min-height: 34px;
+      border-color: rgba(91, 231, 255, 0.48);
+      background: rgba(91, 231, 255, 0.1);
+      color: #e6fbff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .album-enter-btn:hover {
+      border-color: rgba(91, 231, 255, 0.9);
+      background: rgba(91, 231, 255, 0.18);
     }
 
     .universe-stats {
@@ -4556,20 +4573,37 @@ function openAccountActions() {
       albumGrid.innerHTML = "";
       const galaxy = activeGalaxy();
       (galaxy?.albums || []).forEach((album) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = `album-card${album.id === state.selectedUniverseAlbumId ? " active" : ""}`;
+        const card = document.createElement("div");
+        card.className = `album-card${album.id === state.selectedUniverseAlbumId ? " active" : ""}`;
+        card.setAttribute("role", "button");
+        card.tabIndex = 0;
         const favoriteCount = (album.photos || []).filter((photo) => photo.favorite).length;
         const photoCount = album.photos?.length || 0;
-        button.innerHTML = `<strong>${escapeHtml(album.title || "未命名星球")}</strong><span class="album-count">${photoCount} / ${photoLimit} 张</span><span class="album-meta">${THEMES[album.theme]?.name || "主题"} · ${SHAPE_NAMES[album.shape] || "星球"}${favoriteCount ? ` · ${favoriteCount} 张收藏` : ""}</span>`;
-        button.addEventListener("click", () => {
+        card.innerHTML = `<strong>${escapeHtml(album.title || "未命名星球")}</strong><span class="album-count">${photoCount} / ${photoLimit} 张</span><span class="album-meta">${THEMES[album.theme]?.name || "主题"} · ${SHAPE_NAMES[album.shape] || "星球"}${favoriteCount ? ` · ${favoriteCount} 张收藏` : ""}</span>`;
+        const enterButton = document.createElement("button");
+        enterButton.type = "button";
+        enterButton.className = "album-enter-btn";
+        enterButton.textContent = "进入星球";
+        enterButton.addEventListener("click", async (event) => {
+          event.stopPropagation();
+          selectUniverseAlbum(album.id, { revealActions: true, zoom: state.universeZoomTarget });
+          await enterUniverseAlbumFromHome(album.id);
+        });
+        card.appendChild(enterButton);
+        const selectAlbum = () => {
           if (state.viewMode === "universe") {
             selectUniverseAlbum(album.id, { revealActions: true, zoom: state.universeZoomTarget });
           } else {
             activateAlbum(album.id);
           }
+        };
+        card.addEventListener("click", selectAlbum);
+        card.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          selectAlbum();
         });
-        albumGrid.appendChild(button);
+        albumGrid.appendChild(card);
       });
     }
 
