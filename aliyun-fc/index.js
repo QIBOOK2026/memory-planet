@@ -774,6 +774,7 @@ async function putProject(event, id, body) {
   });
   for (const key of cleanupKeys) {
     if (key.endsWith(".json")) continue;
+    if (key.includes("/music/")) continue;
     if (!cleanupReferenced.has(publicOssUrl(key))) {
       try { await deleteOssKey(key); } catch {}
     }
@@ -952,6 +953,40 @@ async function prepareUpload(event, body) {
     tickets,
     quota: ctx.tier,
     usage: quota.totals
+  });
+}
+
+async function prepareMusicUpload(event, body) {
+  const auth = await requireActiveUser(event);
+  if (auth.error) return auth.error;
+  const { user } = auth;
+  const planetId = String(body.planetId || "").trim();
+  if (!planetId) return json({ error: "missing planetId" }, 400);
+  const stored = await getProjectRecord(planetId);
+  if (stored?.userId && stored.userId !== user.userId) return json({ error: "project belongs to another user" }, 403);
+  const filename = String(body.filename || "music.mp3");
+  const type = String(body.type || "");
+  const size = Number(body.size || 0);
+  if (!/^audio\//i.test(type) && !/\.(mp3|m4a|aac|wav|ogg)$/i.test(filename)) {
+    return json({ error: "请上传 MP3、M4A、AAC、WAV 或 OGG 音频文件" }, 400);
+  }
+  const tiers = await getTiers();
+  const tier = tiers[user.tier] || tiers.free || DEFAULT_TIERS.free;
+  const payload = stored?.payload || defaultProjectPayload(planetId, user.userId);
+  const quota = await quotaCheckForUpload({ user, planetId, payload, tier, extraBytes: size });
+  if (quota.error) return json({ error: quota.error, quota: tier, usage: quota.totals }, 403);
+  const suffix = Date.now().toString(36) + "-" + crypto.randomUUID().slice(0, 8);
+  const key = "planets/" + user.userId + "/" + planetId + "/music/" + suffix + "-" + safeName(filename);
+  const ticket = ossPostPolicy(key);
+  return json({
+    ticket,
+    music: {
+      name: filename,
+      url: ticket.publicUrl,
+      size,
+      type,
+      uploadedAt: new Date().toISOString()
+    }
   });
 }
 
@@ -1160,6 +1195,8 @@ exports.handler = async function handler(event) {
     }
 
     if (path === "/uploads/prepare" && method === "POST") return prepareUpload(event, getBody(event));
+
+    if (path === "/music/prepare" && method === "POST") return prepareMusicUpload(event, getBody(event));
 
     if (path === "/uploads/commit" && method === "POST") return commitUpload(event, getBody(event));
 

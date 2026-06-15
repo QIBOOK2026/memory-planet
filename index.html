@@ -2273,6 +2273,11 @@
       <label class="field">内置曲库
         <select id="musicTrack"></select>
       </label>
+      <input id="musicUploadInput" type="file" accept="audio/mpeg,audio/mp4,audio/wav,audio/x-wav,audio/aac,audio/ogg" hidden />
+      <div class="sound-row">
+        <button id="musicUploadBtn" type="button">上传音乐</button>
+        <button id="musicRemoveBtn" type="button">移除上传</button>
+      </div>
 
       <div class="row">
         <label for="musicVolume">声音音量 <b id="musicVolumeValue">35%</b></label>
@@ -2831,6 +2836,9 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
     const sfxBtn = document.getElementById("sfxBtn");
     const testSoundBtn = document.getElementById("testSoundBtn");
     const musicTrack = document.getElementById("musicTrack");
+    const musicUploadInput = document.getElementById("musicUploadInput");
+    const musicUploadBtn = document.getElementById("musicUploadBtn");
+    const musicRemoveBtn = document.getElementById("musicRemoveBtn");
     const musicCredit = document.getElementById("musicCredit");
     const musicVolume = document.getElementById("musicVolume");
     const musicVolumeValue = document.getElementById("musicVolumeValue");
@@ -3189,7 +3197,8 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
         enabled: true,
         sfxEnabled: true,
         volume: 0.35,
-        track: ""
+        track: "",
+        customTrack: null
       },
       hand: {
         active: false,
@@ -4155,6 +4164,51 @@ function openAccountActions() {
       return uploadTicket.publicUrl;
     }
 
+    async function uploadMusicFile(file) {
+      if (!requireActiveAccount("上传背景音乐")) return;
+      if (state.cloud.readOnly) {
+        setStatus("分享观看页不能上传音乐，请登录后从自己的作品页上传。", "warn");
+        return;
+      }
+      const allowed = /^audio\//i.test(file.type || "") || /\.(mp3|m4a|aac|wav|ogg)$/i.test(file.name || "");
+      if (!allowed) {
+        setStatus("请上传 MP3、M4A、AAC、WAV 或 OGG 音频文件。", "warn");
+        return;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        setStatus("音乐文件不能超过 50MB。", "warn");
+        return;
+      }
+      const identity = ensureShareIdentity();
+      setStatus("正在准备上传音乐...", "ready");
+      const data = await cloudRequest("/music/prepare", {
+        method: "POST",
+        body: JSON.stringify({
+          planetId: identity.planetId,
+          filename: file.name,
+          type: file.type,
+          size: file.size
+        })
+      });
+      const url = await uploadPhotoToCloud(file, data.ticket);
+      state.audio.customTrack = {
+        ...(data.music || {}),
+        name: file.name,
+        url,
+        size: file.size,
+        type: file.type,
+        uploadedAt: new Date().toISOString()
+      };
+      state.audio.track = "custom";
+      refreshMusicTrackOptions();
+      refreshMusicCredit();
+      saveProject();
+      if (state.audio.enabled) {
+        try { await playSelectedTrack(); } catch (error) { console.warn(error); }
+      }
+      setStatus("背景音乐已上传，当前作品会共用这首音乐。", "ready");
+    }
+
     async function prepareCloudUpload(target, files) {
       if (!cloudEnabled() || state.cloud.readOnly || !activeUserReady()) return null;
       const identity = ensureShareIdentity();
@@ -4388,10 +4442,19 @@ function openAccountActions() {
     }
 
     function normalizeAudioSettings(audio = {}) {
+      const customTrack = audio.customTrack?.url ? {
+        name: String(audio.customTrack.name || "我的上传音乐").slice(0, 120),
+        url: String(audio.customTrack.url || ""),
+        size: Number(audio.customTrack.size || 0),
+        type: String(audio.customTrack.type || ""),
+        uploadedAt: audio.customTrack.uploadedAt || ""
+      } : null;
+      const requestedTrack = audio.track === "custom" && customTrack ? "custom" : audio.track;
       return {
         volume: clamp(Number(audio.volume ?? state.audio.volume ?? 0.35), 0, 1),
         sfxEnabled: audio.sfxEnabled !== false,
-        track: MUSIC_TRACKS[audio.track] ? audio.track : DEFAULT_MUSIC_TRACK
+        track: MUSIC_TRACKS[requestedTrack] || requestedTrack === "custom" ? requestedTrack : DEFAULT_MUSIC_TRACK,
+        customTrack
       };
     }
 
@@ -4401,6 +4464,8 @@ function openAccountActions() {
       state.audio.sfxEnabled = next.sfxEnabled;
       sfxBtn.textContent = state.audio.sfxEnabled ? "音效开启" : "音效关闭";
       state.audio.track = next.track;
+      state.audio.customTrack = next.customTrack;
+      refreshMusicTrackOptions();
       musicTrack.value = state.audio.track;
       refreshMusicCredit();
       if (options.refreshPlayback && state.audio.enabled) updateAmbientMusic();
@@ -6440,6 +6505,13 @@ function openAccountActions() {
     }
 
     function currentMusicTrack() {
+      if (state.audio.track === "custom" && state.audio.customTrack?.url) {
+        return {
+          name: state.audio.customTrack.name || "我的上传音乐",
+          url: state.audio.customTrack.url,
+          credit: "当前使用你上传的背景音乐。"
+        };
+      }
       return MUSIC_TRACKS[state.audio.track] || MUSIC_TRACKS[DEFAULT_MUSIC_TRACK];
     }
 
@@ -6455,6 +6527,12 @@ function openAccountActions() {
 
     function refreshMusicTrackOptions() {
       musicTrack.innerHTML = "";
+      if (state.audio.customTrack?.url) {
+        const option = document.createElement("option");
+        option.value = "custom";
+        option.textContent = `我的音乐 · ${state.audio.customTrack.name || "上传音乐"}`;
+        musicTrack.appendChild(option);
+      }
       Object.entries(MUSIC_TRACKS).forEach(([key, track]) => {
         const option = document.createElement("option");
         option.value = key;
@@ -6467,6 +6545,7 @@ function openAccountActions() {
 
     function refreshMusicCredit() {
       musicCredit.textContent = currentMusicTrack().credit;
+      musicRemoveBtn.disabled = !state.audio.customTrack?.url;
     }
 
     function syncThemeButtons(themeKey) {
@@ -6809,8 +6888,9 @@ function openAccountActions() {
     }
 
     async function tryStartDefaultMusic() {
-      state.audio.track = DEFAULT_MUSIC_TRACK;
-      musicTrack.value = DEFAULT_MUSIC_TRACK;
+      if (!state.audio.track || (!currentMusicTrack()?.url && state.audio.track !== "synth")) state.audio.track = DEFAULT_MUSIC_TRACK;
+      refreshMusicTrackOptions();
+      musicTrack.value = state.audio.track;
       state.audio.enabled = false;
       state.audio.sfxEnabled = true;
       musicBtn.textContent = "开启氛围音乐";
@@ -6879,7 +6959,8 @@ function openAccountActions() {
     }
 
     async function changeMusicTrack(trackKey) {
-      state.audio.track = MUSIC_TRACKS[trackKey] ? trackKey : DEFAULT_MUSIC_TRACK;
+      const hasCustomTrack = trackKey === "custom" && state.audio.customTrack?.url;
+      state.audio.track = hasCustomTrack || MUSIC_TRACKS[trackKey] ? trackKey : DEFAULT_MUSIC_TRACK;
       musicTrack.value = state.audio.track;
       refreshMusicCredit();
       saveProject();
@@ -7826,7 +7907,8 @@ function openAccountActions() {
         audio: {
           volume: state.audio.volume,
           sfxEnabled: state.audio.sfxEnabled,
-          track: state.audio.track
+          track: state.audio.track,
+          customTrack: state.audio.customTrack
         },
         settings: currentRenderSettingsPayload(),
         universe: {
@@ -7834,7 +7916,8 @@ function openAccountActions() {
           audio: {
             volume: state.audio.volume,
             sfxEnabled: state.audio.sfxEnabled,
-            track: state.audio.track
+            track: state.audio.track,
+            customTrack: state.audio.customTrack
           },
           activeGalaxyId: state.activeGalaxyId,
           activeAlbumId: state.activeAlbumId,
@@ -10709,6 +10792,30 @@ function openAccountActions() {
     });
     musicTrack.addEventListener("change", () => {
       changeMusicTrack(musicTrack.value);
+    });
+    musicUploadBtn.addEventListener("click", () => {
+      if (!requireActiveAccount("上传背景音乐")) return;
+      musicUploadInput.click();
+    });
+    musicUploadInput.addEventListener("change", () => {
+      const file = musicUploadInput.files?.[0];
+      musicUploadInput.value = "";
+      if (!file) return;
+      uploadMusicFile(file).catch((error) => {
+        console.warn(error);
+        setStatus(error.message || "音乐上传失败，请稍后重试。", "warn");
+      });
+    });
+    musicRemoveBtn.addEventListener("click", () => {
+      state.audio.customTrack = null;
+      if (state.audio.track === "custom") state.audio.track = DEFAULT_MUSIC_TRACK;
+      refreshMusicTrackOptions();
+      refreshMusicCredit();
+      saveProject();
+      if (state.audio.enabled) {
+        playSelectedTrack().catch((error) => console.warn(error));
+      }
+      setStatus("已移除上传音乐，恢复使用内置曲库。", "ready");
     });
     density.addEventListener("input", () => {
       if (state.viewMode === "universe") {
