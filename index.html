@@ -590,10 +590,10 @@
 
     .album-card {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 8px;
-      min-height: 48px;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+      gap: 7px;
+      min-height: 92px;
       padding: 9px 10px;
       border: 1px solid rgba(120, 216, 255, 0.16);
       border-radius: 8px;
@@ -604,6 +604,13 @@
       text-align: left;
       white-space: nowrap;
       cursor: pointer;
+    }
+
+    .album-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
     }
 
     .album-card.active {
@@ -634,13 +641,12 @@
     }
 
     .album-meta {
-      grid-column: 1 / -1;
       color: var(--muted);
+      white-space: normal;
     }
 
     .album-enter-btn {
-      grid-column: 1 / -1;
-      justify-self: stretch;
+      width: 100%;
       min-height: 34px;
       border-color: rgba(91, 231, 255, 0.48);
       background: rgba(91, 231, 255, 0.1);
@@ -4579,7 +4585,7 @@ function openAccountActions() {
         card.tabIndex = 0;
         const favoriteCount = (album.photos || []).filter((photo) => photo.favorite).length;
         const photoCount = album.photos?.length || 0;
-        card.innerHTML = `<strong>${escapeHtml(album.title || "未命名星球")}</strong><span class="album-count">${photoCount} / ${photoLimit} 张</span><span class="album-meta">${THEMES[album.theme]?.name || "主题"} · ${SHAPE_NAMES[album.shape] || "星球"}${favoriteCount ? ` · ${favoriteCount} 张收藏` : ""}</span>`;
+        card.innerHTML = `<div class="album-main"><strong>${escapeHtml(album.title || "未命名星球")}</strong><span class="album-count">${photoCount} / ${photoLimit} 张</span></div><span class="album-meta">${THEMES[album.theme]?.name || "主题"} · ${SHAPE_NAMES[album.shape] || "星球"}${favoriteCount ? ` · ${favoriteCount} 张收藏` : ""}</span>`;
         const enterButton = document.createElement("button");
         enterButton.type = "button";
         enterButton.className = "album-enter-btn";
