@@ -3917,20 +3917,21 @@ function openAccountActions() {
         await restoreEmptyAccountProject();
         return true;
       }
-      const projectId = projectIds[projectIds.length - 1] || "";
-      if (!projectId) return false;
-      try {
-        const payload = await loadCloudProject(projectId);
-        await restoreProject(payload, message);
-        state.restoredFromAccountCloud = true;
-        state.cloud.projectId = projectId;
-        state.cloud.editToken = "";
-        return true;
-      } catch (error) {
-        console.warn(error);
-        setStatus("登录成功，但读取云端作品失败，请稍后刷新重试。", "warn");
-        return false;
+      const orderedProjectIds = [...projectIds].reverse().filter(Boolean);
+      for (const projectId of orderedProjectIds) {
+        try {
+          const payload = await loadCloudProject(projectId);
+          await restoreProject(payload, message);
+          state.restoredFromAccountCloud = true;
+          state.cloud.projectId = projectId;
+          state.cloud.editToken = "";
+          return true;
+        } catch (error) {
+          console.warn("cloud project restore failed:", projectId, error);
+        }
       }
+      setStatus("登录成功，但账号里的云端作品都读取失败，请先在管理后台执行数据对账后再刷新。", "warn");
+      return false;
     }
 
     function requireActiveAccount(action) {
