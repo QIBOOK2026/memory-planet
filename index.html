@@ -1793,6 +1793,7 @@
     .admin-actions button { flex: 1; min-width: 100px; }
     .admin-error { margin-top: 10px; color: #ff6b6b; font-size: 13px; min-height: 1.25em; }
     .admin-status { font-size: 13px; color: var(--muted); min-height: 1.25em; margin-top: 4px; }
+    .admin-status.warn { color: #ffb86b; }
     .account-card {
       width: min(360px, calc(100vw - 40px));
       padding: 20px;
@@ -1957,6 +1958,10 @@
       border-color: rgba(91, 231, 255, 0.42);
       background: rgba(91, 231, 255, 0.12);
       color: var(--ink);
+    }
+    .admin-segment button:disabled {
+      cursor: default;
+      opacity: 0.72;
     }
     .admin-table .admin-segment { margin: 0; flex-wrap: nowrap; }
     .admin-table .admin-segment button { min-height: 28px; padding: 0 8px; font-size: 12px; }
@@ -2753,6 +2758,7 @@
             </tbody>
           </table>
         </div>
+        <div id="adminFeedbackStatus" class="admin-status"></div>
       </div>
       <div class="admin-tab-content" id="adminTiersTab">
         <div class="admin-form">
@@ -11340,7 +11346,9 @@ userLogoutBtn.addEventListener("click", () => {
           const button = document.createElement("button");
           button.type = "button";
           button.textContent = feedbackStatusLabel(status);
-          button.classList.toggle("active", item.status === status);
+          const active = item.status === status;
+          button.classList.toggle("active", active);
+          button.disabled = active;
           button.addEventListener("click", () => updateAdminFeedback(item.id, { status }));
           actions.appendChild(button);
         });
@@ -11433,11 +11441,29 @@ userLogoutBtn.addEventListener("click", () => {
     }
 
     async function updateAdminFeedback(id, patch) {
-      await cloudRequest(`/admin/feedback/${encodeURIComponent(id)}`, {
-        method: "PATCH",
-        body: JSON.stringify(patch)
-      }, true);
-      await refreshAdminData();
+      const statusEl = document.getElementById("adminFeedbackStatus");
+      if (statusEl) {
+        statusEl.classList.remove("warn");
+        statusEl.textContent = "正在更新反馈状态...";
+      }
+      try {
+        const data = await cloudRequest(`/admin/feedback/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          body: JSON.stringify(patch)
+        }, true);
+        state.admin.feedback = (state.admin.feedback || []).map((item) => (
+          item.id === id ? { ...item, ...(data.feedback || patch) } : item
+        ));
+        renderAdminFeedback();
+        if (statusEl) statusEl.textContent = "反馈状态已更新。";
+        await refreshAdminData();
+      } catch (error) {
+        console.warn(error);
+        if (statusEl) {
+          statusEl.classList.add("warn");
+          statusEl.textContent = error.message || "反馈状态更新失败，请重新登录管理后台后再试。";
+        }
+      }
     }
 
     async function clearUserData(userId, username) {
