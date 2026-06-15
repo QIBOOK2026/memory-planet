@@ -3347,7 +3347,8 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
           timeoutMs: 12000
         });
         if (payload.contact) localStorage.setItem("memoryGlobe.feedbackContact", payload.contact);
-        feedbackStatus.textContent = data.notified ? "已提交，我会收到提醒。" : "已提交，提醒通道尚未配置。";
+        const notifyReason = data.notify?.reason ? `（${data.notify.reason}）` : "";
+        feedbackStatus.textContent = data.notified ? "已提交，我会收到提醒。" : `已提交，但飞书提醒未送达${notifyReason}。`;
         setStatus("反馈已提交，感谢你帮我发现问题。", "ready");
         window.setTimeout(closeFeedbackDialog, 700);
       } catch (error) {
@@ -3540,7 +3541,7 @@ function refreshAuthUi() {
       if (!tier || !activeUserReady()) return "";
       const usage = localProjectUsage();
       if (nextCount > tier.maxPhotosPerPlanet) return `当前等级每颗星球最多 ${tier.maxPhotosPerPlanet} 张照片。`;
-      const addedCount = Math.max(1, nextCount - currentCount);
+      const addedCount = Math.max(0, nextCount - currentCount);
       if (usage.photoCount + addedCount > tier.maxTotalPhotos) return `当前等级总照片最多 ${tier.maxTotalPhotos} 张。`;
       return "";
     }
@@ -3911,9 +3912,14 @@ function openAccountActions() {
 
     async function uploadPhotoToCloud(file, ticket) {
       if (!cloudEnabled() || state.cloud.readOnly || !activeUserReady()) return null;
-      const quotaMessage = quotaMessageForUpload(state.photos.length + 1);
-      if (quotaMessage) throw new Error(quotaMessage);
       const identity = ensureShareIdentity();
+      const uploadTarget = state.uploadSession || {};
+      const targetAlbum = uploadTarget.albumId ? findAlbum(uploadTarget.albumId)?.album : null;
+      const targetPhotoCount = targetAlbum
+        ? (targetAlbum.id === state.activeAlbumId ? state.photos.length : (targetAlbum.photos || []).length)
+        : state.photos.length;
+      const quotaMessage = quotaMessageForUpload(targetPhotoCount + 1, targetPhotoCount);
+      if (quotaMessage) throw new Error(quotaMessage);
       let uploadTicket = ticket;
       if (!uploadTicket) {
         const response = await fetch(`${cloudApiBase()}/uploads/token`, {
@@ -3922,6 +3928,7 @@ function openAccountActions() {
           body: JSON.stringify({
             planetId: identity.planetId,
             editToken: identity.editToken,
+            albumId: uploadTarget.albumId || state.activeAlbumId,
             filename: file.name,
             type: file.type || "application/octet-stream",
             size: file.size || 0,
@@ -8325,17 +8332,25 @@ function openAccountActions() {
       if (!options.keepTab && state.viewMode !== "universe") setActiveTab("story");
     }
 
+    function currentUploadTarget() {
+      const selected = state.viewMode === "universe" ? state.selectedUniverseAlbumId : "";
+      const albumId = selected || state.activeAlbumId;
+      const found = findAlbum(albumId);
+      if (!found) return null;
+      return { galaxyId: found.galaxy.id, albumId: found.album.id, album: found.album };
+    }
+
     async function loadPhotos(files) {
       if (cloudEnabled() && !requireActiveAccount("上传照片")) return;
       const all = Array.from(files || []);
-      const targetGalaxyId = state.activeGalaxyId;
-      const targetAlbumId = state.activeAlbumId;
-      const target = findAlbum(targetAlbumId);
+      const target = currentUploadTarget();
       if (!target) {
         setStatus("没有找到当前星球，请先选择一个星球再上传。", "warn");
         return;
       }
-      const startingPhotos = target.album.id === state.activeAlbumId
+      const targetGalaxyId = target.galaxyId;
+      const targetAlbumId = target.albumId;
+      const startingPhotos = targetAlbumId === state.activeAlbumId
         ? state.photos.map((photo) => ({ ...photo }))
         : (target.album.photos || []).map((photo) => ({ ...photo }));
       const photoLimit = currentPhotoLimit();
@@ -8378,6 +8393,7 @@ function openAccountActions() {
               body: JSON.stringify({
                 planetId: ensureShareIdentity().planetId,
                 editToken: ensureShareIdentity().editToken,
+                albumId: targetAlbumId,
                 files: selected.map(function(f) { return { filename: f.name, type: f.type, size: f.size }; })
               })
             });

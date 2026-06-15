@@ -254,8 +254,12 @@ function feedbackPublicItem(item = {}) {
 }
 
 async function notifyFeishuFeedback(item) {
-  const webhook = env("FEISHU_WEBHOOK");
-  if (!webhook) return false;
+  const webhook = env("FEISHU_WEBHOOK")
+    || env("FEISHU_WEBHOOK_URL")
+    || env("FEISHU_BOT_WEBHOOK")
+    || env("LARK_WEBHOOK")
+    || env("LARK_WEBHOOK_URL");
+  if (!webhook) return { ok: false, reason: "missing_webhook" };
   const adminBase = env("ADMIN_BASE_URL") || env("SITE_URL") || "";
   const handleUrl = adminBase ? `${adminBase.replace(/\/+$/, "")}/?admin=feedback&id=${encodeURIComponent(item.id)}` : "";
   const beforeLines = [
@@ -285,6 +289,14 @@ async function notifyFeishuFeedback(item) {
   }
 
   const text = beforeText + msgText + afterText;
+  const payload = { msg_type: "text", content: { text } };
+  const secret = env("FEISHU_SECRET") || env("FEISHU_BOT_SECRET") || env("LARK_SECRET") || env("LARK_BOT_SECRET");
+  if (secret) {
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const stringToSign = `${timestamp}\n${secret}`;
+    payload.timestamp = timestamp;
+    payload.sign = crypto.createHmac("sha256", stringToSign).update("").digest("base64");
+  }
 
   try {
     const controller = new AbortController();
@@ -292,25 +304,29 @@ async function notifyFeishuFeedback(item) {
     const response = await fetch(webhook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ msg_type: "text", content: { text } }),
+      body: JSON.stringify(payload),
       signal: controller.signal
     });
     clearTimeout(timer);
+    const respText = await response.text().catch(() => "");
+    let respBody = {};
+    try { respBody = respText ? JSON.parse(respText) : {}; } catch {}
     if (!response.ok) {
-      console.warn("Feishu webhook HTTP error:", response.status);
-      return false;
+      const reason = `http_${response.status}`;
+      console.warn("Feishu webhook HTTP error:", response.status, respText.slice(0, 500));
+      return { ok: false, reason, detail: respText.slice(0, 300) };
     }
-    const respBody = await response.json().catch(() => ({}));
     const statusCode = respBody.StatusCode ?? respBody.code ?? respBody.status;
     if (statusCode !== undefined && statusCode !== 0) {
+      const reason = `api_${statusCode}`;
       console.warn("Feishu webhook API error:", JSON.stringify(respBody));
-      return false;
+      return { ok: false, reason, detail: String(respBody.msg || respBody.message || "").slice(0, 300) };
     }
-    return true;
+    return { ok: true };
   } catch (error) {
     const reason = error.name === "AbortError" ? "timeout" : (error.message || error);
     console.warn("Feishu feedback notification failed:", reason);
-    return false;
+    return { ok: false, reason: String(reason).slice(0, 120) };
   }
 }
 
@@ -443,13 +459,13 @@ function defaultProjectPayload(projectId, userId) {
   };
 }
 
-function appendPhotoToPayload(payload = {}, photo) {
+function appendPhotoToPayload(payload = {}, photo, albumId = "") {
   const clone = JSON.parse(JSON.stringify(payload || {}));
   const albums = payloadAlbums(clone);
   if (!albums.length) {
     clone.photos = [...(clone.photos || []), photo];
   } else {
-    const activeId = clone.universe?.activeAlbumId || clone.activeAlbumId;
+    const activeId = albumId || clone.universe?.activeAlbumId || clone.activeAlbumId;
     const target = albums.find((album) => album.id === activeId) || albums[0];
     const exists = (target.photos || []).some((item) => item.url === photo.url);
     if (!exists) target.photos = [...(target.photos || []), photo];
@@ -647,8 +663,8 @@ async function createFeedback(event, body) {
   const index = await getFeedbackIndex();
   index.feedback = [item, ...(index.feedback || []).filter((entry) => entry.id !== item.id)].slice(0, 500);
   await putFeedbackIndex(index);
-  const notified = await notifyFeishuFeedback(item);
-  return json({ ok: true, feedback: item, notified });
+  const notifyResult = await notifyFeishuFeedback(item);
+  return json({ ok: true, feedback: item, notified: Boolean(notifyResult.ok), notify: notifyResult });
 }
 
 async function listFeedback() {
@@ -843,6 +859,7 @@ async function uploadToken(event, body) {
   if (auth.error) return auth.error;
   const { user } = auth;
   const planetId = String(body.planetId || "").trim();
+  const albumId = String(body.albumId || "").trim();
   if (!planetId) return json({ error: "missing planetId" }, 400);
   const stored = await getProjectRecord(planetId);
   if (stored?.userId && stored.userId !== user.userId) return json({ error: "project belongs to another user" }, 403);
@@ -861,7 +878,7 @@ async function uploadToken(event, body) {
     location: "",
     favorite: false
   };
-  const payload = appendPhotoToPayload(hydrated.payload, photo);
+  const payload = appendPhotoToPayload(hydrated.payload, photo, albumId);
   const ossBytes = await calcOssPhotoBytes(user.userId, planetId);
   const currentStats = projectStats(payload, ossBytes);
   const totals = {
@@ -1039,17 +1056,40 @@ exports.handler = async function handler(event) {
       if (auth.error) return auth.error;
       const { user } = auth;
       const planetId = String(body.planetId || "").trim();
+      const albumId = String(body.albumId || "").trim();
       if (!planetId) return json({ error: "missing planetId" }, 400);
       const files = Array.isArray(body.files) ? body.files : [];
       if (!files.length) return json({ error: "missing files" }, 400);
       const stored = await getProjectRecord(planetId);
       if (stored?.userId && stored.userId !== user.userId) return json({ error: "project belongs to another user" }, 403);
+      const tiers = await getTiers();
+      const tier = tiers[user.tier] || tiers.free || DEFAULT_TIERS.free;
+      const basePayload = stored?.payload || defaultProjectPayload(planetId, user.userId);
+      const hydrated = await hydratePayloadPhotosFromOss(user, planetId, basePayload);
       const tickets = files.map((fileInfo) => {
         const filename = String(fileInfo.filename || "photo");
         const suffix = Date.now().toString(36) + "-" + (crypto.randomUUID().slice(0, 8));
         const key = "planets/" + user.userId + "/" + planetId + "/" + suffix + "-" + safeName(filename);
         return ossPostPolicy(key);
       });
+      const payload = tickets.reduce((nextPayload, ticket) => appendPhotoToPayload(nextPayload, {
+        name: photoNameFromKey(ticket.fields.key),
+        url: ticket.publicUrl,
+        story: "",
+        date: "",
+        location: "",
+        favorite: false
+      }, albumId), hydrated.payload);
+      const ossBytes = await calcOssPhotoBytes(user.userId, planetId);
+      const currentStats = projectStats(payload, ossBytes);
+      const totals = {
+        projectCount: 1,
+        planetCount: currentStats.planetCount || 0,
+        photoCount: currentStats.photoCount || 0,
+        storageBytes: currentStats.storageBytes || 0
+      };
+      const error = quotaError(totals, tier, currentStats);
+      if (error) return json({ error, quota: tier, usage: totals }, 403);
       return json({ tickets });
     }
 
