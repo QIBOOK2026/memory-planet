@@ -431,6 +431,181 @@
       white-space: normal;
     }
 
+    .music-player {
+      display: grid;
+      gap: 12px;
+      padding: 16px 18px 14px;
+      border: 1px solid rgba(91, 231, 255, 0.18);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(216, 248, 255, 0.94), rgba(224, 255, 249, 0.88));
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+    }
+
+    .music-player-controls {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(38px, 1fr));
+      align-items: center;
+      justify-items: center;
+      gap: 10px;
+    }
+
+    .music-player-controls button {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: #05090d;
+      box-shadow: none;
+    }
+
+    .music-player-controls button:hover {
+      background: rgba(5, 9, 13, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .music-player-controls button svg {
+      width: 25px;
+      height: 25px;
+      display: block;
+      fill: currentColor;
+      stroke: currentColor;
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    #musicBtn {
+      width: 58px;
+      min-width: 58px;
+      height: 46px;
+      background: #4f8ff0;
+      color: #fff;
+      box-shadow: 0 12px 24px rgba(79, 143, 240, 0.34);
+    }
+
+    #musicBtn:hover {
+      background: #4b86e6;
+    }
+
+    #musicBtn svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    #musicBtn .pause-icon,
+    #musicModeBtn .loop-icon,
+    #musicModeBtn .random-icon,
+    #sfxBtn .volume-off-icon {
+      display: none;
+    }
+
+    #musicBtn.is-playing .play-icon,
+    #musicModeBtn.is-loop .sequence-icon,
+    #musicModeBtn.is-loop .random-icon,
+    #musicModeBtn.is-random .sequence-icon,
+    #musicModeBtn.is-random .loop-icon,
+    #sfxBtn.is-muted .volume-on-icon {
+      display: none;
+    }
+
+    #musicBtn.is-playing .pause-icon,
+    #musicModeBtn.is-loop .loop-icon,
+    #musicModeBtn.is-random .random-icon,
+    #sfxBtn.is-muted .volume-off-icon {
+      display: block;
+    }
+
+    .music-player-progress {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      color: rgba(5, 9, 13, 0.68);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .music-player-volume {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      color: rgba(5, 9, 13, 0.62);
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .music-player-progress input[type="range"] {
+      height: 18px;
+      accent-color: #05090d;
+    }
+
+    .music-player-volume input[type="range"] {
+      height: 16px;
+      accent-color: #4f8ff0;
+    }
+
+    .music-player-progress input[type="range"]::-webkit-slider-runnable-track,
+    .music-player-volume input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      border-radius: 999px;
+    }
+
+    .music-player-progress input[type="range"]::-webkit-slider-runnable-track {
+      background: linear-gradient(90deg, #05090d var(--progress-percent, 0%), rgba(5, 9, 13, 0.14) var(--progress-percent, 0%));
+    }
+
+    .music-player-volume input[type="range"]::-webkit-slider-runnable-track {
+      background: linear-gradient(90deg, #4f8ff0 var(--volume-percent, 35%), rgba(5, 9, 13, 0.14) var(--volume-percent, 35%));
+    }
+
+    .music-player-progress input[type="range"]::-webkit-slider-thumb,
+    .music-player-volume input[type="range"]::-webkit-slider-thumb {
+      width: 8px;
+      height: 8px;
+      margin-top: -2px;
+      border-radius: 999px;
+      background: #05090d;
+      box-shadow: none;
+    }
+
+    .music-player-volume input[type="range"]::-webkit-slider-thumb {
+      background: #4f8ff0;
+    }
+
+    .music-player-progress input[type="range"]::-moz-range-track,
+    .music-player-volume input[type="range"]::-moz-range-track {
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(5, 9, 13, 0.14);
+    }
+
+    .music-player-progress input[type="range"]::-moz-range-progress {
+      height: 4px;
+      border-radius: 999px;
+      background: #05090d;
+    }
+
+    .music-player-volume input[type="range"]::-moz-range-progress {
+      height: 4px;
+      border-radius: 999px;
+      background: #4f8ff0;
+    }
+
+    #musicVolumeValue {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
     .universe-tools button {
       white-space: nowrap;
       overflow: hidden;
@@ -2264,10 +2439,76 @@
       <button class="fs-close" type="button" aria-label="关闭">×</button>
     </header>
     <div class="settings-body">
-      <div class="sound-row">
-        <button id="musicBtn" class="primary" type="button">开启氛围音乐</button>
-        <button id="sfxBtn" type="button">音效开启</button>
-        <button id="testSoundBtn" type="button">试听</button>
+      <div class="music-player" aria-label="音乐播放器">
+        <div class="music-player-controls">
+          <button id="musicModeBtn" type="button" aria-label="顺序播放" title="顺序播放">
+            <svg class="sequence-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h12" fill="none"></path>
+              <path d="M13 4l3 3-3 3" fill="none"></path>
+              <path d="M4 17h12" fill="none"></path>
+              <path d="M13 14l3 3-3 3" fill="none"></path>
+            </svg>
+            <svg class="loop-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17 2l4 4-4 4" fill="none"></path>
+              <path d="M3 11V9a3 3 0 0 1 3-3h15" fill="none"></path>
+              <path d="M7 22l-4-4 4-4" fill="none"></path>
+              <path d="M21 13v2a3 3 0 0 1-3 3H3" fill="none"></path>
+              <path d="M12 9v6" fill="none"></path>
+            </svg>
+            <svg class="random-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M16 3h5v5" fill="none"></path>
+              <path d="M4 20l5.5-5.5" fill="none"></path>
+              <path d="M15.5 8.5 21 3" fill="none"></path>
+              <path d="M4 4c4.8 0 7.2 3.1 9.5 6.8" fill="none"></path>
+              <path d="M16 21h5v-5" fill="none"></path>
+              <path d="M14.5 16.5 21 21" fill="none"></path>
+            </svg>
+          </button>
+          <button id="musicPrevBtn" type="button" aria-label="上一首" title="上一首">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 5v14" fill="none"></path>
+              <path d="M19 6 9 12l10 6z" stroke="none"></path>
+            </svg>
+          </button>
+          <button id="musicBtn" type="button" aria-label="开启氛围音乐" title="开启氛围音乐">
+            <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5v14l11-7z" stroke="none"></path>
+            </svg>
+            <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 5h4v14H7z" stroke="none"></path>
+              <path d="M13 5h4v14h-4z" stroke="none"></path>
+            </svg>
+          </button>
+          <button id="musicNextBtn" type="button" aria-label="下一首" title="下一首">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 5v14" fill="none"></path>
+              <path d="m5 6 10 6-10 6z" stroke="none"></path>
+            </svg>
+          </button>
+          <button id="sfxBtn" type="button" aria-label="音效开启" title="音效开启">
+            <svg class="volume-on-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9v6h4l6 4V5L8 9H4z" fill="none"></path>
+              <path d="M18 9.5a4 4 0 0 1 0 5" fill="none"></path>
+              <path d="M20.5 7a7 7 0 0 1 0 10" fill="none"></path>
+            </svg>
+            <svg class="volume-off-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9v6h4l6 4V5L8 9H4z" fill="none"></path>
+              <path d="M18 9l4 4" fill="none"></path>
+              <path d="m22 9-4 4" fill="none"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="music-player-progress">
+          <span id="musicCurrentTime">00:00</span>
+          <input id="musicProgress" type="range" min="0" max="0" step="0.1" value="0" aria-label="音乐进度" />
+          <span id="musicDuration">00:00</span>
+        </div>
+        <div class="music-player-volume">
+          <span>音量</span>
+          <input id="musicVolume" type="range" min="0" max="100" step="5" value="35" aria-label="声音音量" />
+          <span id="musicVolumeText">35%</span>
+          <b id="musicVolumeValue">35%</b>
+        </div>
       </div>
 
       <label class="field">内置曲库
@@ -2277,11 +2518,6 @@
       <div class="sound-row">
         <button id="musicUploadBtn" type="button">上传音乐</button>
         <button id="musicRemoveBtn" type="button">移除上传</button>
-      </div>
-
-      <div class="row">
-        <label for="musicVolume">声音音量 <b id="musicVolumeValue">35%</b></label>
-        <input id="musicVolume" type="range" min="0" max="100" step="5" value="35" />
       </div>
       <div id="musicCredit" class="hint">默认使用主题合成氛围音；也可以选择开放授权的在线曲目。</div>
     </div>
@@ -2833,14 +3069,20 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
     const cameraBtn = document.getElementById("cameraBtn");
     const stopCameraBtn = document.getElementById("stopCameraBtn");
     const musicBtn = document.getElementById("musicBtn");
+    const musicModeBtn = document.getElementById("musicModeBtn");
+    const musicPrevBtn = document.getElementById("musicPrevBtn");
+    const musicNextBtn = document.getElementById("musicNextBtn");
     const sfxBtn = document.getElementById("sfxBtn");
-    const testSoundBtn = document.getElementById("testSoundBtn");
     const musicTrack = document.getElementById("musicTrack");
     const musicUploadInput = document.getElementById("musicUploadInput");
     const musicUploadBtn = document.getElementById("musicUploadBtn");
     const musicRemoveBtn = document.getElementById("musicRemoveBtn");
     const musicCredit = document.getElementById("musicCredit");
+    const musicProgress = document.getElementById("musicProgress");
+    const musicCurrentTime = document.getElementById("musicCurrentTime");
+    const musicDuration = document.getElementById("musicDuration");
     const musicVolume = document.getElementById("musicVolume");
+    const musicVolumeText = document.getElementById("musicVolumeText");
     const musicVolumeValue = document.getElementById("musicVolumeValue");
     const displayTitle = document.getElementById("displayTitle");
     const projectTitle = document.getElementById("projectTitle");
@@ -3197,6 +3439,7 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
         enabled: true,
         sfxEnabled: true,
         volume: 0.35,
+        playMode: "sequence",
         track: "",
         customTrack: null
       },
@@ -4450,9 +4693,11 @@ function openAccountActions() {
         uploadedAt: audio.customTrack.uploadedAt || ""
       } : null;
       const requestedTrack = audio.track === "custom" && customTrack ? "custom" : audio.track;
+      const requestedPlayMode = ["sequence", "loop", "random"].includes(audio.playMode) ? audio.playMode : state.audio.playMode;
       return {
         volume: clamp(Number(audio.volume ?? state.audio.volume ?? 0.35), 0, 1),
         sfxEnabled: audio.sfxEnabled !== false,
+        playMode: requestedPlayMode || "sequence",
         track: MUSIC_TRACKS[requestedTrack] || requestedTrack === "custom" ? requestedTrack : DEFAULT_MUSIC_TRACK,
         customTrack
       };
@@ -4462,7 +4707,8 @@ function openAccountActions() {
       const next = normalizeAudioSettings(audio);
       setAudioVolume(next.volume * 100);
       state.audio.sfxEnabled = next.sfxEnabled;
-      sfxBtn.textContent = state.audio.sfxEnabled ? "音效开启" : "音效关闭";
+      state.audio.playMode = next.playMode;
+      syncMusicPlayerUi();
       state.audio.track = next.track;
       state.audio.customTrack = next.customTrack;
       refreshMusicTrackOptions();
@@ -6767,9 +7013,13 @@ function openAccountActions() {
     function stopTrackMusic() {
       if (!state.audio.musicElement) return;
       state.audio.musicElement.pause();
+      state.audio.musicElement.onended = null;
+      state.audio.musicElement.onloadedmetadata = null;
+      state.audio.musicElement.ontimeupdate = null;
       state.audio.musicElement.removeAttribute("src");
       state.audio.musicElement.load();
       state.audio.musicElement = null;
+      syncMusicProgress();
     }
 
     function ambientPreset(themeKey = state.project.theme) {
@@ -6835,19 +7085,24 @@ function openAccountActions() {
       if (!track.url) {
         ensureAudio();
         updateAmbientMusic();
+        syncMusicProgress();
         return true;
       }
 
       const audio = new Audio(track.url);
-      audio.loop = true;
+      audio.loop = state.audio.playMode === "loop";
       audio.preload = "auto";
       audio.volume = state.audio.volume;
+      audio.onended = handleTrackEnded;
+      audio.onloadedmetadata = syncMusicProgress;
+      audio.ontimeupdate = syncMusicProgress;
       audio.addEventListener("error", () => {
         setStatus("本地音乐加载失败，已切回主题合成氛围。", "warn");
         state.audio.track = "synth";
         musicTrack.value = "synth";
         ensureAudio();
         updateAmbientMusic();
+        syncMusicProgress();
       }, { once: true });
       state.audio.musicElement = audio;
       // Wait for enough data before playing to avoid stutter
@@ -6859,7 +7114,81 @@ function openAccountActions() {
         });
       }
       await audio.play();
+      syncMusicProgress();
       return true;
+    }
+
+    function formatMusicTime(seconds = 0) {
+      if (!Number.isFinite(seconds) || seconds <= 0) return "00:00";
+      const whole = Math.floor(seconds);
+      const minutes = Math.floor(whole / 60);
+      const remain = whole % 60;
+      return `${String(minutes).padStart(2, "0")}:${String(remain).padStart(2, "0")}`;
+    }
+
+    function syncMusicProgress() {
+      const audio = state.audio.musicElement;
+      const duration = audio && Number.isFinite(audio.duration) ? audio.duration : 0;
+      const current = audio && Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+      musicProgress.disabled = !duration;
+      musicProgress.max = duration ? String(duration) : "0";
+      musicProgress.value = duration ? String(Math.min(current, duration)) : "0";
+      musicCurrentTime.textContent = formatMusicTime(current);
+      musicDuration.textContent = formatMusicTime(duration);
+      const percent = duration ? Math.min(100, (current / duration) * 100) : 0;
+      musicProgress.style.setProperty("--progress-percent", `${percent}%`);
+    }
+
+    function availableMusicTrackKeys() {
+      return [
+        ...(state.audio.customTrack?.url ? ["custom"] : []),
+        ...Object.keys(MUSIC_TRACKS)
+      ];
+    }
+
+    function syncMusicPlayerUi() {
+      musicBtn.classList.toggle("is-playing", !!state.audio.enabled);
+      musicBtn.setAttribute("aria-label", state.audio.enabled ? "关闭氛围音乐" : "开启氛围音乐");
+      musicBtn.title = state.audio.enabled ? "关闭氛围音乐" : "开启氛围音乐";
+      musicModeBtn.classList.toggle("is-loop", state.audio.playMode === "loop");
+      musicModeBtn.classList.toggle("is-random", state.audio.playMode === "random");
+      const modeLabel = state.audio.playMode === "loop" ? "单曲循环" : state.audio.playMode === "random" ? "随机播放" : "顺序播放";
+      musicModeBtn.setAttribute("aria-label", modeLabel);
+      musicModeBtn.title = modeLabel;
+      sfxBtn.classList.toggle("is-muted", !state.audio.sfxEnabled);
+      sfxBtn.setAttribute("aria-label", state.audio.sfxEnabled ? "音效开启" : "音效关闭");
+      sfxBtn.title = state.audio.sfxEnabled ? "音效开启" : "音效关闭";
+      musicVolume.style.setProperty("--volume-percent", `${Math.round(state.audio.volume * 100)}%`);
+    }
+
+    async function shiftMusicTrack(direction = 1) {
+      const keys = availableMusicTrackKeys();
+      const currentIndex = Math.max(0, keys.indexOf(state.audio.track));
+      const nextIndex = (currentIndex + direction + keys.length) % keys.length;
+      await changeMusicTrack(keys[nextIndex]);
+    }
+
+    async function handleTrackEnded() {
+      if (!state.audio.enabled || state.audio.playMode === "loop") return;
+      if (state.audio.playMode === "random") {
+        const keys = availableMusicTrackKeys();
+        const pool = keys.length > 1 ? keys.filter((key) => key !== state.audio.track) : keys;
+        const nextKey = pool[Math.floor(Math.random() * pool.length)] || DEFAULT_MUSIC_TRACK;
+        await changeMusicTrack(nextKey);
+        return;
+      }
+      await shiftMusicTrack(1);
+    }
+
+    function cycleMusicPlayMode() {
+      const modes = ["sequence", "loop", "random"];
+      const currentIndex = Math.max(0, modes.indexOf(state.audio.playMode));
+      state.audio.playMode = modes[(currentIndex + 1) % modes.length];
+      if (state.audio.musicElement) state.audio.musicElement.loop = state.audio.playMode === "loop";
+      syncMusicPlayerUi();
+      const label = state.audio.playMode === "loop" ? "单曲循环" : state.audio.playMode === "random" ? "随机播放" : "顺序播放";
+      setStatus(`已切换为${label}。`, "ready");
+      saveProject();
     }
 
     async function toggleMusic() {
@@ -6867,8 +7196,8 @@ function openAccountActions() {
       if (!context) return;
       if (context.state === "suspended") await context.resume();
       state.audio.enabled = !state.audio.enabled;
+      syncMusicPlayerUi();
       if (state.audio.enabled) {
-        musicBtn.textContent = "关闭氛围音乐";
         try {
           await playSelectedTrack();
           playSfx("start");
@@ -6876,11 +7205,10 @@ function openAccountActions() {
         } catch (error) {
           console.warn(error);
           state.audio.enabled = false;
-          musicBtn.textContent = "开启氛围音乐";
-          setStatus("浏览器没有放行音乐播放，请再点一次“开启氛围音乐”，或先点“试听”。", "warn");
+          syncMusicPlayerUi();
+          setStatus("浏览器没有放行音乐播放，请再点一次播放按钮。", "warn");
         }
       } else {
-        musicBtn.textContent = "开启氛围音乐";
         stopAmbientMusic();
         stopTrackMusic();
         setStatus("氛围音乐已关闭，交互音效可单独保留。", "ready");
@@ -6893,8 +7221,7 @@ function openAccountActions() {
       musicTrack.value = state.audio.track;
       state.audio.enabled = false;
       state.audio.sfxEnabled = true;
-      musicBtn.textContent = "开启氛围音乐";
-      sfxBtn.textContent = "音效开启";
+      syncMusicPlayerUi();
       setStatus("点击页面任意位置即可开启音乐。", "ready");
 
       // Preload MP3 tracks in background for later switching
@@ -6911,7 +7238,7 @@ function openAccountActions() {
         document.removeEventListener("touchstart", unlock);
         if (state.audio.enabled) return;
         state.audio.enabled = true;
-        musicBtn.textContent = "关闭氛围音乐";
+        syncMusicPlayerUi();
 
         // Create AudioContext synchronously during user gesture (required by iOS)
         const context = ensureAudio();
@@ -6924,7 +7251,7 @@ function openAccountActions() {
         }).catch(retryError => {
           console.warn(retryError);
           state.audio.enabled = false;
-          musicBtn.textContent = "开启氛围音乐";
+          syncMusicPlayerUi();
           setStatus('浏览器阻止了自动播放，请点击"开启氛围音乐"按钮。', "warn");
         });
       };
@@ -6934,7 +7261,10 @@ function openAccountActions() {
 
     function setAudioVolume(value) {
       state.audio.volume = clamp(Number(value) / 100, 0, 1);
-      musicVolumeValue.textContent = `${Math.round(state.audio.volume * 100)}%`;
+      const percent = `${Math.round(state.audio.volume * 100)}%`;
+      musicVolumeValue.textContent = percent;
+      musicVolumeText.textContent = percent;
+      musicVolume.style.setProperty("--volume-percent", `${Math.round(state.audio.volume * 100)}%`);
       if (state.audio.master) {
         state.audio.master.gain.setTargetAtTime(state.audio.volume, state.audio.context.currentTime, 0.05);
       }
@@ -6979,18 +7309,10 @@ function openAccountActions() {
 
     function toggleSfx() {
       state.audio.sfxEnabled = !state.audio.sfxEnabled;
-      sfxBtn.textContent = state.audio.sfxEnabled ? "音效开启" : "音效关闭";
+      syncMusicPlayerUi();
       setStatus(state.audio.sfxEnabled ? "交互音效已开启。" : "交互音效已关闭，只保留视觉效果。", "ready");
       if (state.audio.sfxEnabled) playSfx("ding");
       saveProject();
-    }
-
-    async function testSound() {
-      const context = ensureAudio();
-      if (!context) return;
-      if (context.state === "suspended") await context.resume();
-      playSfx("start");
-      setStatus(context.state === "running" ? "已播放试听音。如果听不到，请检查系统音量或浏览器标签页是否静音。" : "浏览器还未放行声音，请再点一次试听。", context.state === "running" ? "ready" : "warn");
     }
 
     function playSfx(type = "tap") {
@@ -7907,6 +8229,7 @@ function openAccountActions() {
         audio: {
           volume: state.audio.volume,
           sfxEnabled: state.audio.sfxEnabled,
+          playMode: state.audio.playMode,
           track: state.audio.track,
           customTrack: state.audio.customTrack
         },
@@ -7916,6 +8239,7 @@ function openAccountActions() {
           audio: {
             volume: state.audio.volume,
             sfxEnabled: state.audio.sfxEnabled,
+            playMode: state.audio.playMode,
             track: state.audio.track,
             customTrack: state.audio.customTrack
           },
@@ -9472,7 +9796,7 @@ function openAccountActions() {
         author: DEFAULT_ALBUM_AUTHOR,
         theme: "tech",
         shape: "sphere",
-        audio: { volume: state.audio.volume, sfxEnabled: state.audio.sfxEnabled, track: state.audio.track },
+        audio: { volume: state.audio.volume, sfxEnabled: state.audio.sfxEnabled, playMode: state.audio.playMode, track: state.audio.track },
         photos: []
       }, message);
       setViewMode("universe");
@@ -10784,8 +11108,19 @@ function openAccountActions() {
     cameraBtn.addEventListener("click", startCamera);
     stopCameraBtn.addEventListener("click", () => stopCamera());
     musicBtn.addEventListener("click", toggleMusic);
+    musicModeBtn.addEventListener("click", cycleMusicPlayMode);
+    musicPrevBtn.addEventListener("click", () => {
+      shiftMusicTrack(-1).catch((error) => console.warn(error));
+    });
+    musicNextBtn.addEventListener("click", () => {
+      shiftMusicTrack(1).catch((error) => console.warn(error));
+    });
     sfxBtn.addEventListener("click", toggleSfx);
-    testSoundBtn.addEventListener("click", testSound);
+    musicProgress.addEventListener("input", () => {
+      if (!state.audio.musicElement) return;
+      state.audio.musicElement.currentTime = clamp(Number(musicProgress.value), 0, state.audio.musicElement.duration || 0);
+      syncMusicProgress();
+    });
     musicVolume.addEventListener("input", () => {
       setAudioVolume(musicVolume.value);
       scheduleSaveProject();
