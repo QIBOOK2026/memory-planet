@@ -420,6 +420,13 @@ function payloadAlbums(payload = {}) {
   return albums;
 }
 
+function payloadAlbumById(payload = {}, albumId = "") {
+  const albums = payloadAlbums(payload);
+  if (!albums.length) return null;
+  if (!albumId && !payload.universe?.galaxies && !payload.albums) return albums[0];
+  return albums.find((album) => album.id === albumId) || null;
+}
+
 function photoNameFromKey(key) {
   const file = String(key).split("/").pop() || "photo";
   return file.replace(/^[a-z0-9]+-[a-f0-9]+-/i, "").replace(/\.[^.]+$/, "") || "photo";
@@ -471,6 +478,10 @@ function appendPhotoToPayload(payload = {}, photo, albumId = "") {
     if (!exists) target.photos = [...(target.photos || []), photo];
   }
   return clone;
+}
+
+function appendPhotosToPayload(payload = {}, photos = [], albumId = "") {
+  return photos.reduce((nextPayload, photo) => appendPhotoToPayload(nextPayload, photo, albumId), payload);
 }
 
 function preferAlbumWithPhotos(payload = {}) {
@@ -893,6 +904,125 @@ async function uploadToken(event, body) {
   return json(ticket);
 }
 
+async function uploadContext(event, body) {
+  const auth = await requireActiveUser(event);
+  if (auth.error) return { error: auth.error };
+  const { user } = auth;
+  const planetId = String(body.planetId || "").trim();
+  const albumId = String(body.albumId || "").trim();
+  if (!planetId) return { error: json({ error: "missing planetId" }, 400) };
+  if (!albumId) return { error: json({ error: "missing albumId" }, 400) };
+  const stored = await getProjectRecord(planetId);
+  if (stored?.userId && stored.userId !== user.userId) {
+    return { error: json({ error: "project belongs to another user" }, 403) };
+  }
+  const payload = stored?.payload || defaultProjectPayload(planetId, user.userId);
+  const album = payloadAlbumById(payload, albumId);
+  if (!album) return { error: json({ error: "target album not found" }, 404) };
+  const tiers = await getTiers();
+  const tier = tiers[user.tier] || tiers.free || DEFAULT_TIERS.free;
+  return { user, planetId, albumId, stored, payload, album, tiers, tier };
+}
+
+function quotaCheckForUpload({ user, planetId, payload, tier, extraBytes = 0 }) {
+  return calcOssPhotoBytes(user.userId, planetId).then((ossBytes) => {
+    const currentStats = projectStats(payload, ossBytes + Math.max(0, Number(extraBytes) || 0));
+    const totals = {
+      projectCount: 1,
+      planetCount: currentStats.planetCount || 0,
+      photoCount: currentStats.photoCount || 0,
+      storageBytes: currentStats.storageBytes || 0
+    };
+    const error = quotaError(totals, tier, currentStats);
+    return { error, currentStats, totals };
+  });
+}
+
+async function prepareUpload(event, body) {
+  const ctx = await uploadContext(event, body);
+  if (ctx.error) return ctx.error;
+  const files = Array.isArray(body.files) ? body.files : [];
+  if (!files.length) return json({ error: "missing files" }, 400);
+  const tickets = files.map((fileInfo) => {
+    const filename = String(fileInfo.filename || "photo");
+    const suffix = Date.now().toString(36) + "-" + crypto.randomUUID().slice(0, 8);
+    const key = "planets/" + ctx.user.userId + "/" + ctx.planetId + "/" + suffix + "-" + safeName(filename);
+    return ossPostPolicy(key);
+  });
+  const placeholderPhotos = tickets.map((ticket) => ({
+    name: photoNameFromKey(ticket.key),
+    url: ticket.publicUrl,
+    story: "",
+    date: "",
+    location: "",
+    favorite: false
+  }));
+  const nextPayload = appendPhotosToPayload(ctx.payload, placeholderPhotos, ctx.albumId);
+  const extraBytes = files.reduce((sum, fileInfo) => sum + (Number(fileInfo.size) || 0), 0);
+  const quota = await quotaCheckForUpload({
+    user: ctx.user,
+    planetId: ctx.planetId,
+    payload: nextPayload,
+    tier: ctx.tier,
+    extraBytes
+  });
+  if (quota.error) return json({ error: quota.error, quota: ctx.tier, usage: quota.totals }, 403);
+  return json({
+    uploadId: "up_" + crypto.randomBytes(10).toString("hex"),
+    albumId: ctx.albumId,
+    acceptedCount: tickets.length,
+    tickets,
+    quota: ctx.tier,
+    usage: quota.totals
+  });
+}
+
+async function commitUpload(event, body) {
+  const ctx = await uploadContext(event, body);
+  if (ctx.error) return ctx.error;
+  const publicPrefix = publicOssUrl("planets/" + ctx.user.userId + "/" + ctx.planetId + "/");
+  const incoming = Array.isArray(body.photos) ? body.photos : [];
+  const photos = incoming
+    .filter((photo) => photo?.url && String(photo.url).startsWith(publicPrefix))
+    .map((photo) => ({
+      name: String(photo.name || photoNameFromKey(photo.url)).slice(0, 120),
+      url: String(photo.url),
+      story: String(photo.story || "").slice(0, 2000),
+      date: String(photo.date || "").slice(0, 40),
+      location: String(photo.location || "").slice(0, 120),
+      favorite: Boolean(photo.favorite),
+      metadata: photo.metadata && typeof photo.metadata === "object" ? photo.metadata : undefined
+    }))
+    .map((photo) => {
+      if (!photo.metadata) delete photo.metadata;
+      return photo;
+    });
+  if (!photos.length) return json({ error: "missing uploaded photos" }, 400);
+  const payload = appendPhotosToPayload(ctx.payload, photos, ctx.albumId);
+  const quota = await quotaCheckForUpload({
+    user: ctx.user,
+    planetId: ctx.planetId,
+    payload,
+    tier: ctx.tier
+  });
+  if (quota.error) return json({ error: quota.error, quota: ctx.tier, usage: quota.totals }, 403);
+  const result = await writeProjectForUser(
+    ctx.user,
+    ctx.planetId,
+    payload,
+    { ...ctx.stored, editToken: body.editToken || ctx.stored?.editToken || "" },
+    ctx.tiers
+  );
+  return json({
+    ok: true,
+    albumId: ctx.albumId,
+    committedCount: photos.length,
+    user: result.user,
+    usage: result.usage,
+    quota: ctx.tier
+  });
+}
+
 async function setupBucketCors() {
   const bucket = env("OSS_BUCKET");
   const endpoint = env("OSS_ENDPOINT").replace(/^https?:\/\//, "");
@@ -1049,6 +1179,10 @@ exports.handler = async function handler(event) {
       }
       return json({ ok: true, ...results });
     }
+
+    if (path === "/uploads/prepare" && method === "POST") return prepareUpload(event, getBody(event));
+
+    if (path === "/uploads/commit" && method === "POST") return commitUpload(event, getBody(event));
 
     if (path === "/uploads/batch-tokens" && method === "POST") {
       const body = getBody(event);
