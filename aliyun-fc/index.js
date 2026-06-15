@@ -385,7 +385,7 @@ async function upsertUserIndex(user) {
   const existing = index.users.findIndex((item) => item.userId === user.userId);
   if (existing >= 0) index.users[existing] = summary;
   else index.users.push(summary);
-  index.users.sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)));
+  index.users.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
   await putUsersIndex(index);
 }
 

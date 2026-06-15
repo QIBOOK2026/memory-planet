@@ -2729,7 +2729,7 @@
                 <th>星球</th>
                 <th>照片</th>
                 <th>存储</th>
-                <th>最后更新</th>
+                <th>创建时间</th>
                 <th>操作</th>
               </tr>
             </thead>
@@ -3458,7 +3458,7 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
         return;
       }
       feedbackHistoryList.innerHTML = items.map((item) => {
-        const time = (item.createdAt || "").slice(0, 19).replace("T", " ") || "-";
+        const time = formatChinaDateTime(item.createdAt);
         const note = item.adminNote ? `<div class="feedback-history-message">处理备注：${escapeHtml(item.adminNote)}</div>` : "";
         return `<article class="feedback-history-item">
           <div class="feedback-history-meta">
@@ -3548,6 +3548,22 @@ const userLogoutBtn = document.getElementById("userLogoutBtn");
       if (value < 1024) return `${value} B`;
       if (value < 1048576) return `${(value / 1024).toFixed(1)} KB`;
       return `${(value / 1048576).toFixed(1)} MB`;
+    }
+
+    function formatChinaDateTime(value = "") {
+      if (!value) return "-";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value).slice(0, 19).replace("T", " ") || "-";
+      return new Intl.DateTimeFormat("zh-CN", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      }).format(date).replace(/\//g, "-");
     }
 
     function localProjectUsage(payload = getProjectPayload({ skipSync: true })) {
@@ -11255,7 +11271,10 @@ userLogoutBtn.addEventListener("click", () => {
       const tbody = document.getElementById("adminUserBody");
       tbody.innerHTML = "";
       updateAdminTierFilterOptions();
-      const filteredUsers = (state.admin.users || []).filter(adminUserMatchesFilters);
+      const filteredUsers = (state.admin.users || [])
+        .slice()
+        .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+        .filter(adminUserMatchesFilters);
       filteredUsers.forEach((user) => {
         const stats = user.stats || {};
         const row = document.createElement("tr");
@@ -11266,7 +11285,7 @@ userLogoutBtn.addEventListener("click", () => {
           + "<td>" + (stats.planetCount || 0) + "</td>"
           + "<td>" + (stats.photoCount || 0) + "</td>"
           + "<td>" + formatBytes(stats.storageBytes || 0) + "</td>"
-          + "<td>" + escapeHtml((user.updatedAt || user.createdAt || "").slice(0, 19).replace("T", " ")) + "</td>"
+          + "<td>" + escapeHtml(formatChinaDateTime(user.createdAt || user.updatedAt || "")) + "</td>"
           + "<td></td>";
         const cell = row.lastChild;
         const tierActions = document.createElement("div");
@@ -11329,7 +11348,7 @@ userLogoutBtn.addEventListener("click", () => {
       tbody.innerHTML = "";
       (state.admin.feedback || []).forEach((item) => {
         const row = document.createElement("tr");
-        const time = (item.createdAt || "").slice(0, 19).replace("T", " ");
+        const time = formatChinaDateTime(item.createdAt);
         const user = item.username || item.userId || "匿名";
         const album = item.albumTitle || item.projectId || "-";
         const message = item.message || "";
