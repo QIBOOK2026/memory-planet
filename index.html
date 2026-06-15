@@ -5136,11 +5136,12 @@ function openAccountActions() {
         size: 0.075,
         vertexColors: true,
         transparent: true,
-        opacity: 0.1,
+        opacity: 0,
         blending: THREE.AdditiveBlending,
         depthWrite: false
       }));
       halo.userData.albumHalo = true;
+      halo.visible = false;
       halo.userData.safeRadius = haloRadius;
       return halo;
     }
@@ -6225,8 +6226,9 @@ function openAccountActions() {
         item.group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), item.exiting ? 0.16 : 0.08);
         setUniverseObjectOpacity(item.group, item.exiting ? 0 : fadedByDetail ? 0.18 : 0.92);
         if (item.halo?.material) {
-          const selected = item.album.id === state.selectedUniverseAlbumId;
-          const targetHaloOpacity = item.exiting ? 0 : detailActive ? 0.42 : selected ? 0.12 : 0.06;
+          const hasPhotos = (item.album.photos || []).length > 0;
+          const targetHaloOpacity = item.exiting || !detailActive || !hasPhotos ? 0 : 0.32;
+          item.halo.visible = targetHaloOpacity > 0.01;
           item.halo.material.opacity = lerp(item.halo.material.opacity, targetHaloOpacity, 0.18);
           item.halo.material.transparent = true;
         }
@@ -6240,7 +6242,7 @@ function openAccountActions() {
           item.mesh.rotation.x += item.manualSpin.y * dt * 60;
           item.manualSpin.multiplyScalar((item.album.shape || "sphere") === "wave" ? 0.974 : 0.986);
         }
-        item.halo.rotation.y -= item.spin * 0.7 * meshSpinSpeed * dt * 60;
+        if (item.halo.visible) item.halo.rotation.y -= item.spin * 0.7 * meshSpinSpeed * dt * 60;
         updateUniverseLabelPresentation(item);
       });
       if (state.universeDetailOpen) {
