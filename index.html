@@ -2730,11 +2730,12 @@
                 <th>照片</th>
                 <th>存储</th>
                 <th>创建时间</th>
+                <th>最后活跃</th>
                 <th>操作</th>
               </tr>
             </thead>
             <tbody id="adminUserBody">
-              <tr><td colspan="9" class="admin-empty">暂无用户数据</td></tr>
+              <tr><td colspan="10" class="admin-empty">暂无用户数据</td></tr>
             </tbody>
           </table>
         </div>
@@ -11286,6 +11287,7 @@ userLogoutBtn.addEventListener("click", () => {
           + "<td>" + (stats.photoCount || 0) + "</td>"
           + "<td>" + formatBytes(stats.storageBytes || 0) + "</td>"
           + "<td>" + escapeHtml(formatChinaDateTime(user.createdAt || user.updatedAt || "")) + "</td>"
+          + "<td>" + escapeHtml(formatChinaDateTime(user.lastLoginAt || "")) + "</td>"
           + "<td></td>";
         const cell = row.lastChild;
         const tierActions = document.createElement("div");
@@ -11334,7 +11336,7 @@ userLogoutBtn.addEventListener("click", () => {
         tbody.appendChild(row);
       });
       if (!tbody.children.length) {
-        tbody.innerHTML = `<tr><td colspan="9" class="admin-empty">${(state.admin.users || []).length ? "没有符合筛选条件的用户。" : "暂无云端用户数据。"}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="admin-empty">${(state.admin.users || []).length ? "没有符合筛选条件的用户。" : "暂无云端用户数据。"}</td></tr>`;
       }
     }
 
@@ -11447,7 +11449,7 @@ userLogoutBtn.addEventListener("click", () => {
         renderAdminTiers();
       } catch (error) {
         console.warn(error);
-        document.getElementById("adminUserBody").innerHTML = `<tr><td colspan="9" class="admin-empty">${escapeHtml(error.message || "后台数据加载失败")}</td></tr>`;
+        document.getElementById("adminUserBody").innerHTML = `<tr><td colspan="10" class="admin-empty">${escapeHtml(error.message || "后台数据加载失败")}</td></tr>`;
       }
     }
 
@@ -11467,7 +11469,7 @@ userLogoutBtn.addEventListener("click", () => {
       }
       try {
         const data = await cloudRequest(`/admin/feedback/${encodeURIComponent(id)}`, {
-          method: "PATCH",
+          method: "PUT",
           body: JSON.stringify(patch)
         }, true);
         state.admin.feedback = (state.admin.feedback || []).map((item) => (

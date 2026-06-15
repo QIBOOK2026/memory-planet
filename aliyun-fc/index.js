@@ -1064,7 +1064,7 @@ exports.handler = async function handler(event) {
       }
       if (path === "/admin/feedback" && method === "GET") return listFeedback();
       const feedbackMatch = path.match(/^\/admin\/feedback\/([^/]+)$/);
-      if (feedbackMatch && method === "PATCH") {
+      if (feedbackMatch && (method === "PUT" || method === "PATCH")) {
         return updateFeedback(decodeURIComponent(feedbackMatch[1]), getBody(event));
       }
       if (path === "/admin/config" && method === "GET") return json({ config: await getAdminConfig() });
