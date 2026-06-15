@@ -507,40 +507,7 @@ function preferAlbumWithPhotos(payload = {}) {
 }
 
 async function hydratePayloadPhotosFromOss(user, projectId, payload = {}) {
-  if (!user?.userId || !projectId) return { payload, hydrated: false };
-  const prefix = `planets/${user.userId}/${projectId}/`;
-  const allKeys = (await listOssKeys(prefix))
-    .filter((key) => /\.(png|jpe?g|webp|gif|avif)$/i.test(key))
-    .sort();
-  if (!allKeys.length) return { payload, hydrated: false };
-  const ossCount = allKeys.length;
-  const payloadCount = payloadAlbums(payload).reduce((sum, album) => sum + ((album.photos || []).length), 0);
-  if (ossCount === payloadCount) return { payload, hydrated: false };
-  const clone = JSON.parse(JSON.stringify(payload || {}));
-  const albums = payloadAlbums(clone);
-  const target = (() => {
-    if (!albums.length) return null;
-    const activeId = clone.universe?.activeAlbumId || clone.activeAlbumId;
-    return albums.find((album) => album.id === activeId) || albums[0];
-  })();
-  const existingUrls = new Set((target?.photos || clone.photos || []).map((p) => p?.url));
-  const missing = allKeys.filter((key) => !existingUrls.has(publicOssUrl(key)));
-  if (!missing.length) return { payload, hydrated: false };
-  const newPhotos = missing.map((key, index) => ({
-    name: photoNameFromKey(key),
-    url: publicOssUrl(key),
-    story: "",
-    date: "",
-    location: "",
-    favorite: false,
-    index: payloadCount + index
-  }));
-  if (!target) {
-    clone.photos = [...(clone.photos || []), ...newPhotos];
-  } else {
-    target.photos = [...(target.photos || []), ...newPhotos];
-  }
-  return { payload: clone, hydrated: true };
+  return { payload, hydrated: false };
 }
 
 function quotaError(stats, tier, currentProjectStats = emptyStats()) {
