@@ -8473,22 +8473,28 @@ function openAccountActions() {
         return;
       }
 
+      const sessionId = createId("upload");
+      state.uploadSession = { id: sessionId, galaxyId: targetGalaxyId, albumId: targetAlbumId };
+      setStatus(`正在追加 ${selected.length} 张照片到「${target.album.title || "当前星球"}」，当前 ${startingPhotos.length} / ${photoLimit}。`);
+      if (activeUserReady()) clearLargeLocalProjectCache();
+      showTaskProgress("正在上传照片", activeUserReady() ? "正在准备云端上传..." : `准备读取 ${selected.length} 张照片...`);
+      await waitForNextFrame();
+
       let uploadPlan = null;
       if (cloudEnabled() && activeUserReady()) {
         try {
+          setTaskProgress(0.02, "正在检查空间并准备上传...");
           uploadPlan = await prepareCloudUpload({ albumId: targetAlbumId }, selected);
         } catch (error) {
           console.warn(error);
+          if (state.uploadSession?.id === sessionId) state.uploadSession = null;
+          hideTaskDialog();
           setStatus(error.message || "云端准备上传失败，请稍后再试。", "warn");
           return;
         }
       }
 
-      const sessionId = createId("upload");
-      state.uploadSession = { id: sessionId, galaxyId: targetGalaxyId, albumId: targetAlbumId };
-      setStatus(`正在追加 ${selected.length} 张照片到「${target.album.title || "当前星球"}」，当前 ${startingPhotos.length} / ${photoLimit}。`);
-      if (activeUserReady()) clearLargeLocalProjectCache();
-      showTaskProgress("正在上传照片", `准备读取 ${selected.length} 张照片...`);
+      setTaskProgress(0.04, `准备读取 ${selected.length} 张照片...`);
       const loaded = [];
       let failed = ignored;
       let cloudFailed = 0;
