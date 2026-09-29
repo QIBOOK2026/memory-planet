@@ -103,7 +103,7 @@ async function load() {
   const res = await fetch(`${CLOUD_API_BASE}/projects/${encodeURIComponent(LETTER_ID)}`, {cache:'no-store'});
   if (!res.ok) throw new Error('内容加载失败');
   const record = await res.json();
-  content = record.payload?.letterContent;
+  content = record.payload?.published ? record.payload.letterContent : null;
   if (!content) throw new Error('信件尚未迁移');
   renderLetter();
   openBtn.disabled = false;
