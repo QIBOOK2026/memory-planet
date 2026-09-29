@@ -4,8 +4,15 @@ const $=q=>document.querySelector(q);
 const fields=['title','date','intro','letter','signature','musicTitle'];
 let token=sessionStorage.getItem('letterAliyunToken')||'';
 if(!token){try{token=JSON.parse(localStorage.getItem('photoMemoryGlobe.auth.v1')||'null')?.token||''}catch{}}
-let record=null, content=null, published=false, draftPhotos=null, layoutDirty=false, previewTimer=0;
+let record=null, content=null, published=false, draftPhotos=null, layoutDirty=false, previewTimer=0, selectedPhotoSrc='';
 function copyPhotos(photos){return JSON.parse(JSON.stringify(photos||[]))}
+function paragraphCount(){return String(content?.letter||'').replace(/\r/g,'').split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean).length}
+function effectivePosition(photo,index,photos,count){
+  const auto=count?Math.min(count,Math.max(1,Math.round((index+1)*count/(photos.length+1)))):0;
+  const chosen=Number(photo.afterParagraph);
+  return photo.afterParagraph===null||photo.afterParagraph===undefined||photo.afterParagraph===''||!Number.isInteger(chosen)?auto:Math.max(0,Math.min(count,chosen));
+}
+function positionName(n){return n===0?'正文开始前':'第 '+n+' 段后'}
 function status(s,error=false){$('#status').textContent=s;$('#status').classList.toggle('error',error)}
 async function request(path,method='GET',body){
   const r=await fetch(API+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,cache:'no-store'});
@@ -43,18 +50,21 @@ function renderPhotoEditor(){
   const paragraphs=String(content.letter||'').replace(/\r/g,'').split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean);
   (draftPhotos||[]).forEach((p,i)=>{
     const item=document.createElement('div'),img=document.createElement('img'),caption=document.createElement('input'),position=document.createElement('select'),size=document.createElement('select'),btn=document.createElement('button');
+    if(p.src===selectedPhotoSrc)item.classList.add('selected-photo');
     img.src=p.src;img.alt=p.caption||'';caption.type='text';caption.value=p.caption||'';caption.placeholder='照片 '+(i+1)+' 的说明';caption.style.width='100%';
     const choice=(select,value,label)=>{const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option)};
-    choice(position,'auto','自动分布');choice(position,'0','正文开始前');
+    const current=effectivePosition(p,i,draftPhotos,paragraphs.length);
+    choice(position,'auto','自动分布（目前：'+positionName(current)+'）');choice(position,'0','正文开始前');
     paragraphs.forEach((para,n)=>choice(position,String(n+1),'第 '+(n+1)+' 段后 · '+para.slice(0,16)));
     position.value=p.afterParagraph===null||p.afterParagraph===undefined?'auto':String(p.afterParagraph);
     if(position.selectedIndex<0)position.value='auto';
     [['normal','标准'],['compact','窄幅'],['wide','通栏']].forEach(([value,label])=>choice(size,value,label));
     size.value=p.layout||'normal';
     const label=(text,control)=>{const el=document.createElement('label');el.textContent=text;item.append(el,control)};
-    item.append(img);label('照片说明',caption);label('放置位置',position);label('显示尺寸',size);
+    const currentLabel=document.createElement('div');currentLabel.className='current-location';currentLabel.textContent='照片 '+(i+1)+'：'+positionName(current)+(p.afterParagraph===null||p.afterParagraph===undefined?'（自动）':'（手动）');
+    item.append(img,currentLabel);label('照片说明',caption);label('放置位置',position);label('显示尺寸',size);
     caption.oninput=()=>{p.caption=caption.value;markLayoutDirty()};
-    position.onchange=()=>{p.afterParagraph=position.value==='auto'?null:Number(position.value);markLayoutDirty()};
+    position.onchange=()=>{p.afterParagraph=position.value==='auto'?null:Number(position.value);markLayoutDirty();renderPhotoEditor()};
     size.onchange=()=>{p.layout=size.value;markLayoutDirty()};
     const move=(delta)=>{
       const other=i+delta;if(other<0||other>=draftPhotos.length)return;
@@ -64,11 +74,23 @@ function renderPhotoEditor(){
     const up=document.createElement('button'),down=document.createElement('button');
     up.type=down.type='button';up.textContent='上移';down.textContent='下移';up.disabled=i===0;down.disabled=i===draftPhotos.length-1;
     up.onclick=()=>move(-1);down.onclick=()=>move(1);
+    const locate=document.createElement('button');locate.type='button';locate.textContent='在正文中定位';locate.onclick=()=>selectPhoto(p.src);
     btn.textContent='移除';btn.type='button';
-    btn.onclick=()=>{draftPhotos.splice(i,1);markLayoutDirty();renderPhotoEditor()};
-    item.append(up,down,btn);grid.append(item);
+    btn.onclick=()=>{draftPhotos.splice(i,1);if(selectedPhotoSrc===p.src)selectedPhotoSrc='';markLayoutDirty();renderPhotoEditor()};
+    item.append(locate,up,down,btn);grid.append(item);
   });
-  renderLayoutPreview();
+  clearTimeout(previewTimer);renderLayoutPreview();
+}
+function selectPhoto(src){
+  selectedPhotoSrc=src;$('#previewDetails').open=true;renderPhotoEditor();
+  const fig=[...$('#layoutPreview').querySelectorAll('figure')].find(el=>el.dataset.photoSrc===src);
+  fig?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function placeSelected(n){
+  const photo=draftPhotos?.find(p=>p.src===selectedPhotoSrc);
+  if(!photo)return status('先点一张照片，再点正文里的“放这里”',true);
+  photo.afterParagraph=n;markLayoutDirty();renderPhotoEditor();
+  status('已移到'+positionName(n)+'；还未保存');
 }
 function renderLayoutPreview(){
   if(!$('#previewDetails').open||!content)return;
@@ -76,16 +98,31 @@ function renderLayoutPreview(){
   const paras=String(content.letter||'').replace(/\r/g,'').split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean);
   const photos=draftPhotos||[],positions=new Map();
   photos.forEach((p,i)=>{
-    const auto=paras.length?Math.min(paras.length,Math.max(1,Math.round((i+1)*paras.length/(photos.length+1)))):0;
-    const chosen=Number(p.afterParagraph);
-    const pos=p.afterParagraph===null||p.afterParagraph===undefined||p.afterParagraph===''||!Number.isInteger(chosen)?auto:Math.max(0,Math.min(paras.length,chosen));
-    if(!positions.has(pos))positions.set(pos,[]);positions.get(pos).push(p);
+    const pos=effectivePosition(p,i,photos,paras.length);
+    if(!positions.has(pos))positions.set(pos,[]);positions.get(pos).push({p,i});
   });
-  const addPhotos=n=>(positions.get(n)||[]).forEach(p=>{
-    const fig=document.createElement('figure'),img=document.createElement('img');fig.className=p.layout==='wide'?'wide':p.layout==='compact'?'compact':'';img.src=p.src;img.loading='lazy';fig.append(img);
+  const addPhotos=n=>(positions.get(n)||[]).forEach(({p,i})=>{
+    const fig=document.createElement('figure'),img=document.createElement('img'),badge=document.createElement('span');fig.className=p.layout==='wide'?'wide':p.layout==='compact'?'compact':'';
+    if(p.src===selectedPhotoSrc)fig.classList.add('selected-photo');
+    fig.dataset.photoSrc=p.src;fig.draggable=true;fig.title='点击选中；电脑可拖到“放这里”';
+    fig.ondragstart=e=>{selectedPhotoSrc=p.src;e.dataTransfer.setData('text/plain',p.src);e.dataTransfer.effectAllowed='move'};
+    fig.onclick=()=>selectPhoto(p.src);
+    img.src=p.src;img.loading='lazy';img.draggable=false;badge.className='photo-badge';badge.textContent='照片 '+(i+1);fig.append(img,badge);
     if(p.caption){const cap=document.createElement('figcaption');cap.textContent=p.caption;fig.append(cap)}area.append(fig);
   });
-  addPhotos(0);paras.forEach((para,i)=>{const el=document.createElement('p');el.textContent=para;area.append(el);addPhotos(i+1)});
+  const addTarget=n=>{
+    const target=document.createElement('button');target.type='button';target.className='place-target';target.textContent=positionName(n)+' · 放这里';
+    target.onclick=()=>placeSelected(n);
+    target.ondragover=e=>{e.preventDefault();target.classList.add('drop-active')};
+    target.ondragleave=()=>target.classList.remove('drop-active');
+    target.ondrop=e=>{e.preventDefault();target.classList.remove('drop-active');selectedPhotoSrc=e.dataTransfer.getData('text/plain');placeSelected(n)};
+    area.append(target);
+  };
+  addTarget(0);addPhotos(0);
+  paras.forEach((para,i)=>{
+    const number=document.createElement('div'),el=document.createElement('p');number.className='paragraph-number';number.textContent='第 '+(i+1)+' 段';
+    el.textContent=para;area.append(number,el);addTarget(i+1);addPhotos(i+1);
+  });
 }
 $('#previewDetails').ontoggle=renderLayoutPreview;
 $('#saveLayout').onclick=async()=>{
@@ -95,7 +132,7 @@ $('#saveLayout').onclick=async()=>{
   try{await save();layoutDirty=false;draftPhotos=copyPhotos(content.photos);renderPhotoEditor();status('全部照片排版已保存，前台刷新后生效')}
   catch(e){content.photos=old;status('保存失败，调整仍留在本页：'+e.message,true)}finally{button.disabled=false}
 };
-$('#discardLayout').onclick=()=>{draftPhotos=copyPhotos(content.photos);layoutDirty=false;renderPhotoEditor();status('已放弃本次调整')};
+$('#discardLayout').onclick=()=>{draftPhotos=copyPhotos(content.photos);layoutDirty=false;selectedPhotoSrc='';renderPhotoEditor();status('已放弃本次调整')};
 window.addEventListener('beforeunload',e=>{if(layoutDirty){e.preventDefault();e.returnValue=''}});
 async function load(){
   record=await request('/projects/'+encodeURIComponent(PROJECT));
