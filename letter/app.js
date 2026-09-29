@@ -59,7 +59,7 @@ function renderLetter() {
   $('#pageTitle').textContent = content.title || '';
   $('#pageDate').textContent = content.date || '';
   $('#signature').textContent = content.signature || '';
-  $('.ending-copy').textContent = content.endingCopy || '';
+  if (content.endingCopy) $('.ending-copy').textContent = content.endingCopy;
   $('#musicLabel').textContent = content.musicTitle || '背景音乐';
 
   if (content.hero) {
