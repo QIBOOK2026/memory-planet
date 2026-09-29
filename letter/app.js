@@ -38,7 +38,7 @@ function splitParagraphs(text) {
 
 function addPhoto(container, photo) {
   const fig = document.createElement('figure');
-  fig.className = 'memory-photo fade-in';
+  fig.className = 'memory-photo fade-in' + (photo.layout === 'wide' ? ' photo-wide' : photo.layout === 'compact' ? ' photo-compact' : '');
   const img = document.createElement('img');
   img.src = photo.src;
   img.alt = photo.caption || '我们的照片';
@@ -84,10 +84,15 @@ function renderLetter() {
   const positions = new Map();
 
   photos.forEach((photo, i) => {
-    const pos = Math.min(paras.length, Math.max(1, Math.round(((i + 1) * paras.length) / (photos.length + 1))));
+    const automatic = paras.length ? Math.min(paras.length, Math.max(1, Math.round(((i + 1) * paras.length) / (photos.length + 1)))) : 0;
+    const chosen = Number(photo.afterParagraph);
+    const pos = photo.afterParagraph === null || photo.afterParagraph === undefined || photo.afterParagraph === '' || !Number.isInteger(chosen)
+      ? automatic : Math.max(0, Math.min(paras.length, chosen));
     if (!positions.has(pos)) positions.set(pos, []);
     positions.get(pos).push(photo);
   });
+
+  (positions.get(0) || []).forEach(photo => addPhoto(body, photo));
 
   paras.forEach((text, i) => {
     const p = document.createElement('p');

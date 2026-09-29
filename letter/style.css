@@ -126,6 +126,8 @@ body {
   font-size: 13px;
   letter-spacing: .04em;
 }
+.memory-photo.photo-compact { width: 82%; margin-left: auto; margin-right: auto; }
+.memory-photo.photo-wide { width: 100vw; max-width: 100vw; margin-left: calc((min(86vw, 720px) - 100vw) / 2); border-radius: 0; }
 .ending { text-align: center; padding: 86px 0 20px; }
 .ending-line { width: 48px; height: 1px; background: var(--line); margin: 0 auto 30px; }
 .ending-copy { color: var(--muted); line-height: 1.9; font-size: 14px; }
@@ -139,4 +141,6 @@ body {
 @media (min-width: 760px) {
   .letter-page { padding-bottom: 140px; }
   .memory-photo { margin-left: -36px; margin-right: -36px; }
+  .memory-photo.photo-compact { width: 72%; margin-left: auto; margin-right: auto; }
+  .memory-photo.photo-wide { width: calc(100% + 112px); max-width: calc(100% + 112px); margin-left: -56px; border-radius: 18px; }
 }

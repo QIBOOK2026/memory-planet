@@ -30,14 +30,36 @@ function show(){
     row.append(name,preview,remove);media.append(row);
   }
   const grid=$('#photos');grid.replaceChildren();
+  const paragraphs=String(content.letter||'').replace(/\r/g,'').split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean);
   (content.photos||[]).forEach((p,i)=>{
-    const item=document.createElement('div'),img=document.createElement('img'),caption=document.createElement('input'),saveCaption=document.createElement('button'),btn=document.createElement('button');
+    const item=document.createElement('div'),img=document.createElement('img'),caption=document.createElement('input'),position=document.createElement('select'),size=document.createElement('select'),savePhoto=document.createElement('button'),btn=document.createElement('button');
     img.src=p.src;img.alt=p.caption||'';caption.type='text';caption.value=p.caption||'';caption.placeholder='照片 '+(i+1)+' 的说明';caption.style.width='100%';
-    saveCaption.textContent='保存说明';saveCaption.type='button';
-    saveCaption.onclick=async()=>{const old=p.caption;p.caption=caption.value.trim();try{await save();status('照片说明已保存')}catch(e){p.caption=old;status(e.message,true)}};
+    const choice=(select,value,label)=>{const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option)};
+    choice(position,'auto','自动分布');choice(position,'0','正文开始前');
+    paragraphs.forEach((para,n)=>choice(position,String(n+1),'第 '+(n+1)+' 段后 · '+para.slice(0,16)));
+    position.value=p.afterParagraph===null||p.afterParagraph===undefined?'auto':String(p.afterParagraph);
+    if(position.selectedIndex<0)position.value='auto';
+    [['normal','标准'],['compact','窄幅'],['wide','通栏']].forEach(([value,label])=>choice(size,value,label));
+    size.value=p.layout||'normal';
+    const label=(text,control)=>{const el=document.createElement('label');el.textContent=text;item.append(el,control)};
+    item.append(img);label('照片说明',caption);label('放置位置',position);label('显示尺寸',size);
+    savePhoto.textContent='保存排版';savePhoto.type='button';savePhoto.className='save-photo';
+    savePhoto.onclick=async()=>{
+      const old={caption:p.caption,afterParagraph:p.afterParagraph,layout:p.layout};
+      p.caption=caption.value.trim();p.afterParagraph=position.value==='auto'?null:Number(position.value);p.layout=size.value;
+      try{await save();status('第 '+(i+1)+' 张照片的排版已保存')}catch(e){Object.assign(p,old);status(e.message,true)}
+    };
+    const move=(delta)=>{
+      const other=i+delta;if(other<0||other>=content.photos.length)return;
+      [content.photos[i],content.photos[other]]=[content.photos[other],content.photos[i]];
+      save().then(()=>{show();status('照片顺序已调整')}).catch(e=>{[content.photos[i],content.photos[other]]=[content.photos[other],content.photos[i]];status(e.message,true)});
+    };
+    const up=document.createElement('button'),down=document.createElement('button');
+    up.type=down.type='button';up.textContent='上移';down.textContent='下移';up.disabled=i===0;down.disabled=i===content.photos.length-1;
+    up.onclick=()=>move(-1);down.onclick=()=>move(1);
     btn.textContent='移除';btn.type='button';
     btn.onclick=async()=>{if(!confirm('确定移除这张照片吗？'))return;const prior=content.photos;content.photos=prior.filter((_,n)=>n!==i);try{await save();show();status('照片已移除')}catch(e){content.photos=prior;status(e.message,true)}};
-    item.append(img,caption,saveCaption,btn);grid.append(item);
+    item.append(savePhoto,up,down,btn);grid.append(item);
   });
 }
 async function load(){
