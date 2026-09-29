@@ -6,7 +6,8 @@
 <section class="card" id="migration" hidden><h2>从原站迁移</h2><p class="muted">选择下载的“一封信_迁移预览包.zip”，页面会把原信和媒体逐件上传到记忆宇宙阿里云。正文按备份原文保存；中断后重新选择同一个包可继续。</p><input id="backupZip" type="file" accept=".zip,application/zip"><p><label><input id="optimizePhotos" type="checkbox" checked> 为手机浏览压缩照片（保留原件在备份包中，上传版控制在约 2000 像素）</label></p><button id="migrate" type="button">开始迁移</button></section>
 <details class="card"><summary style="cursor:pointer;font-weight:600">手动编辑文字和照片（需要时再打开）</summary>
 <form class="card" id="editor" hidden><h2>文字</h2><div class="row"><div><label>标题</label><input name="title" type="text"></div><div><label>日期</label><input name="date" type="text"></div></div><label>封面短句</label><input name="intro" type="text"><label>正文</label><textarea name="letter"></textarea><div class="row"><div><label>落款</label><input name="signature" type="text"></div><div><label>音乐显示名称</label><input name="musicTitle" type="text"></div></div><h2>素材</h2><label>封面</label><input name="hero" type="file" accept="image/*"><label>照片（支持多选，按顺序追加）</label><input name="photos" type="file" accept="image/*" multiple><label>新照片说明，每行对应一张</label><textarea name="captions" style="min-height:75px"></textarea><label>背景音乐</label><input name="music" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg"><label>语音留言</label><input name="voice" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg"><p class="muted">单个文件最多 20 MB。当前阿里云账号的照片数与存储容量仍受记忆宇宙现有配额限制。</p><button type="submit">保存文字并上传素材</button></form>
-<section class="card" id="existing" hidden><h2>已上传照片</h2><div class="photo-grid" id="photos"></div></section>
+<section class="card" id="media" hidden><h2>当前封面和声音</h2><div id="mediaItems"></div></section>
+<section class="card" id="existing" hidden><h2>已上传照片</h2><p class="muted">可修改每张照片的说明，也可移除照片。</p><div class="photo-grid" id="photos"></div></section>
 
 </details>
 </main><script src="./admin.js"></script></body></html>
