@@ -11,14 +11,33 @@ async function request(path,method='GET',body){
   const j=await r.json().catch(()=>({})); if(!r.ok)throw Error(j.error||'请求失败（'+r.status+'）'); return j;
 }
 function show(){
-  $('#editor').hidden=false;$('#existing').hidden=false;$('#migration').hidden=false;
+  $('#editor').hidden=false;$('#existing').hidden=false;$('#media').hidden=false;$('#migration').hidden=false;
   fields.forEach(k=>$('#editor [name='+k+']').value=content[k]||'');
+  const media=$('#mediaItems');media.replaceChildren();
+  for(const [key,label] of [['hero','封面'],['music','背景音乐'],['voice','语音留言']]){
+    if(!content[key])continue;
+    const row=document.createElement('div'),name=document.createElement('strong'),preview=document.createElement(key==='hero'?'img':'audio'),remove=document.createElement('button');
+    row.style.cssText='display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0';name.textContent=label;
+    preview.src=content[key];
+    if(key==='hero')preview.style.cssText='width:90px;height:70px;object-fit:cover;border-radius:8px';
+    else{preview.controls=true;preview.preload='metadata';preview.style.maxWidth='100%'}
+    remove.type='button';remove.textContent='删除'+label;
+    remove.onclick=async()=>{
+      if(!confirm('确定删除'+label+'吗？'))return;
+      const old=content[key];content[key]='';
+      try{await save();show();status(label+'已删除');await removeStoredFile(old)}catch(e){content[key]=old;show();status('删除失败：'+e.message,true)}
+    };
+    row.append(name,preview,remove);media.append(row);
+  }
   const grid=$('#photos');grid.replaceChildren();
   (content.photos||[]).forEach((p,i)=>{
-    const item=document.createElement('div'),img=document.createElement('img'),caption=document.createElement('small'),btn=document.createElement('button');
-    img.src=p.src;img.alt=p.caption||'';caption.textContent=p.caption||'照片 '+(i+1);btn.textContent='移除';btn.type='button';
+    const item=document.createElement('div'),img=document.createElement('img'),caption=document.createElement('input'),saveCaption=document.createElement('button'),btn=document.createElement('button');
+    img.src=p.src;img.alt=p.caption||'';caption.type='text';caption.value=p.caption||'';caption.placeholder='照片 '+(i+1)+' 的说明';caption.style.width='100%';
+    saveCaption.textContent='保存说明';saveCaption.type='button';
+    saveCaption.onclick=async()=>{const old=p.caption;p.caption=caption.value.trim();try{await save();status('照片说明已保存')}catch(e){p.caption=old;status(e.message,true)}};
+    btn.textContent='移除';btn.type='button';
     btn.onclick=async()=>{if(!confirm('确定移除这张照片吗？'))return;const prior=content.photos;content.photos=prior.filter((_,n)=>n!==i);try{await save();show();status('照片已移除')}catch(e){content.photos=prior;status(e.message,true)}};
-    item.append(img,caption,btn);grid.append(item);
+    item.append(img,caption,saveCaption,btn);grid.append(item);
   });
 }
 async function load(){
@@ -47,7 +66,7 @@ $('#login').onclick=async()=>{
     $('#password').value='';
   }catch(e){status(e.message,true)}
 };
-$('#logout').onclick=()=>{sessionStorage.removeItem('letterAliyunToken');token='';record=null;content=null;$('#editor').hidden=true;$('#existing').hidden=true;$('#migration').hidden=true;status('已退出')};
+$('#logout').onclick=()=>{sessionStorage.removeItem('letterAliyunToken');token='';record=null;content=null;$('#editor').hidden=true;$('#existing').hidden=true;$('#media').hidden=true;$('#migration').hidden=true;status('已退出')};
 function payload(){
   const references=[...(content.photos||[]).map(p=>({url:p.src,name:p.caption||'照片'}))];
   if(content.hero&&!references.some(p=>p.url===content.hero))references.push({url:content.hero,name:'封面'});
@@ -55,6 +74,9 @@ function payload(){
 }
 async function save(){
   await request('/projects/'+encodeURIComponent(PROJECT),'PUT',{payload:payload()});
+}
+async function removeStoredFile(url){
+  try{await request('/photos/delete','POST',{urls:[url]})}catch(e){status('页面已更新，但旧文件清理失败：'+e.message,true)}
 }
 async function upload(file,kind){
   if(file.size>20*1024*1024)throw Error(file.name+' 超过阿里云单文件 20 MB 限制');
@@ -76,7 +98,8 @@ $('#editor').onsubmit=async e=>{
     const hero=$('#editor [name=hero]'),music=$('#editor [name=music]'),voice=$('#editor [name=voice]');
     for(const [input,key,kind] of [[hero,'hero','image'],[music,'music','audio'],[voice,'voice','audio']]){
       if(!input.files.length)continue;status('正在上传 '+input.files[0].name+'…');
-      const next=await upload(input.files[0],kind);content[key]=next;await save();input.value='';
+      const old=content[key],next=await upload(input.files[0],kind);content[key]=next;await save();input.value='';
+      if(old&&old!==next)await removeStoredFile(old);
     }
     const input=$('#editor [name=photos]'),files=[...input.files],captions=$('#editor [name=captions]').value.split('\n');
     for(let i=0;i<files.length;i++){
