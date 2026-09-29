@@ -3,6 +3,7 @@ const PROJECT='memory-letter-platform';
 const $=q=>document.querySelector(q);
 const fields=['title','date','intro','letter','signature','musicTitle'];
 let token=sessionStorage.getItem('letterAliyunToken')||'';
+if(!token){try{token=JSON.parse(localStorage.getItem('photoMemoryGlobe.auth.v1')||'null')?.token||''}catch{}}
 let record=null, content=null;
 function status(s,error=false){$('#status').textContent=s;$('#status').classList.toggle('error',error)}
 async function request(path,method='GET',body){
@@ -27,6 +28,16 @@ async function load(){
   show();status('已连接阿里云。当前 '+content.photos.length+' 张照片。');
 }
 let currentUserId='';
+async function connectExistingSession(){
+  if(!token)return;
+  try{
+    const me=await request('/auth/me');if(!me.user)throw Error('登录已过期');
+    currentUserId=me.user.userId;
+    await load().catch(e=>{if(/404|not found/i.test(e.message)){record={payload:null};content={title:'',date:'',intro:'',letter:'',signature:'',musicTitle:'',hero:'',photos:[],music:'',voice:''};show()}else throw e});
+    const quota=me.user.tierConfig||{};
+    status('已使用记忆宇宙登录状态。当前档位：'+(quota.name||me.user.tier)+'；照片上限 '+(quota.maxPhotosPerPlanet||'?')+' 张，存储上限 '+(quota.maxStorageMb||'?')+' MB。');
+  }catch(e){token='';status('请使用记忆宇宙账号登录：'+e.message,true)}
+}
 $('#login').onclick=async()=>{
   try{
     const login=await request('/auth/login','POST',{username:$('#username').value,password:$('#password').value});
@@ -138,3 +149,4 @@ $('#migrate').onclick=async()=>{
     show();status('迁移完成：原信全文、封面、音乐和 '+content.photos.length+' 张照片已保存到阿里云。');
   }catch(e){show();status('迁移暂停：'+e.message+'。已完成的部分留在云端，检查配额或网络后可重新选择同一个包继续。',true)}finally{button.disabled=false}
 };
+connectExistingSession();
