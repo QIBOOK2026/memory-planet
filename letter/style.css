@@ -1,0 +1,142 @@
+:root {
+  --paper: #f7f3ec;
+  --ink: #28231f;
+  --muted: #8d8178;
+  --line: rgba(40,35,31,.16);
+  --card: rgba(255,255,255,.68);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255,255,255,.9), transparent 28%),
+    linear-gradient(180deg, #f5efe6 0%, #f7f3ec 45%, #efe7dc 100%);
+  font-family: "Songti SC", "STSong", "Noto Serif SC", Georgia, serif;
+}
+.hidden { display: none !important; }
+.cover {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #1c1917;
+}
+.cover-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.04);
+  filter: saturate(.78);
+}
+.cover-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.30), rgba(0,0,0,.58));
+}
+.cover-inner {
+  position: relative;
+  z-index: 2;
+  width: min(88vw, 620px);
+  text-align: center;
+  color: #fff;
+  padding: 48px 20px;
+}
+.eyebrow { font: 500 11px/1.2 system-ui,sans-serif; letter-spacing: .34em; opacity: .72; }
+.cover h1 { margin: 18px 0 8px; font-size: clamp(34px, 9vw, 64px); font-weight: 500; letter-spacing: .04em; }
+.cover-date { margin: 0; opacity: .72; font-size: 14px; letter-spacing: .08em; }
+.cover-intro { margin: 34px auto 28px; max-width: 34em; line-height: 1.9; opacity: .90; }
+.open-btn {
+  border: 1px solid rgba(255,255,255,.58);
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  padding: 13px 30px;
+  border-radius: 999px;
+  font-size: 15px;
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+}
+.open-btn:active { transform: scale(.98); }
+.open-btn:disabled { opacity: .62; cursor: wait; }
+.hint { margin-top: 14px; font: 400 11px/1.5 system-ui,sans-serif; opacity: .54; }
+.topbar {
+  position: fixed;
+  z-index: 20;
+  right: 14px;
+  top: max(14px, env(safe-area-inset-top));
+}
+.music-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(70,60,54,.12);
+  border-radius: 999px;
+  padding: 8px 12px 8px 8px;
+  background: rgba(255,255,255,.76);
+  backdrop-filter: blur(18px);
+  color: #4f4741;
+  font-size: 12px;
+  box-shadow: 0 8px 24px rgba(73,58,46,.09);
+}
+.music-status { display: block; margin-top: 7px; max-width: 220px; padding: 7px 11px; border-radius: 10px; background: rgba(47,42,38,.88); color: #fff; font: 13px/1.5 system-ui,sans-serif; text-align: center; }
+.disc {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #2f2a26;
+  color: white;
+}
+.disc.playing { animation: spin 5s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.letter-page { min-height: 100vh; padding: 68px 0 100px; }
+.opening, .letter-body, .ending { width: min(86vw, 720px); margin: 0 auto; }
+.opening { text-align: center; padding: 60px 0 36px; }
+.date-line { color: var(--muted); font-size: 12px; letter-spacing: .14em; }
+.opening h2 { font-size: clamp(30px, 6vw, 46px); font-weight: 500; margin: 16px 0; }
+.divider { color: #9e8c7c; opacity: .8; }
+.letter-body p {
+  font-size: clamp(17px, 4.2vw, 19px);
+  line-height: 2.05;
+  margin: 0 0 1.3em;
+  letter-spacing: .02em;
+  text-align: justify;
+}
+.memory-photo {
+  margin: 42px 0 48px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--card);
+  box-shadow: 0 18px 60px rgba(72,57,46,.12);
+}
+.memory-photo img {
+  display: block;
+  width: 100%;
+  max-height: 75svh;
+  object-fit: cover;
+}
+.memory-photo figcaption {
+  padding: 12px 16px 14px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: .04em;
+}
+.ending { text-align: center; padding: 86px 0 20px; }
+.ending-line { width: 48px; height: 1px; background: var(--line); margin: 0 auto 30px; }
+.ending-copy { color: var(--muted); line-height: 1.9; font-size: 14px; }
+.signature { margin-top: 38px; font-size: 22px; }
+.voice-note { margin: 70px auto 0; max-width: 420px; }
+.voice-rule { width: 38px; height: 1px; background: var(--line); margin: 0 auto 30px; }
+.voice-note p { font-size: 17px; line-height: 1.8; margin: 0 0 20px; }
+.voice-note audio { width: 100%; max-width: 360px; }
+.fade-in { animation: fade .9s ease both; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (min-width: 760px) {
+  .letter-page { padding-bottom: 140px; }
+  .memory-photo { margin-left: -36px; margin-right: -36px; }
+}

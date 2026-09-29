@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>给你的一封信</title>
+  <link rel="stylesheet" href="./style.css" />
+  <meta name="robots" content="noindex,nofollow" />
+</head>
+<body>
+  <div id="cover" class="cover">
+    <div class="cover-bg" id="coverBg"></div>
+    <div class="cover-shade"></div>
+    <main class="cover-inner">
+      <div class="eyebrow">A LETTER FOR YOU</div>
+      <h1 id="coverTitle">给你的一封信</h1>
+      <p id="coverDate" class="cover-date"></p>
+      <p id="coverIntro" class="cover-intro"></p>
+      <button id="openBtn" class="open-btn" disabled>正在准备这封信…</button>
+      <p class="hint">点击后进入正文 · 音乐将随之播放</p>
+    </main>
+  </div>
+
+  <header class="topbar hidden" id="topbar">
+    <button id="musicBtn" class="music-btn" aria-label="播放或暂停音乐">
+      <span class="disc" id="disc">♪</span>
+      <span id="musicLabel">背景音乐</span>
+    </button>
+    <span id="musicStatus" class="music-status hidden" role="status"></span>
+  </header>
+
+  <main id="letterPage" class="letter-page hidden">
+    <section class="opening">
+      <div class="date-line" id="pageDate"></div>
+      <h2 id="pageTitle"></h2>
+      <div class="divider">✦</div>
+    </section>
+
+    <article id="letterBody" class="letter-body"></article>
+
+    <section class="ending">
+      <div class="ending-line"></div>
+      <p class="ending-copy">愿多年以后，再想起这一页时，记得的仍然是那些真实发生过的温柔。</p>
+      <p class="signature" id="signature"></p>
+      <div id="voiceNote" class="voice-note hidden"><div class="voice-rule"></div><p>还有几句话，想亲口对你说。</p><audio id="voiceAudio" controls preload="metadata" aria-label="语音留言"></audio></div>
+    </section>
+  </main>
+
+  <audio id="bgm" loop preload="metadata"></audio>
+  <script src="./app.js"></script>
+</body>
+</html>
