@@ -4,7 +4,8 @@ const $=q=>document.querySelector(q);
 const fields=['title','date','intro','letter','signature','musicTitle'];
 let token=sessionStorage.getItem('letterAliyunToken')||'';
 if(!token){try{token=JSON.parse(localStorage.getItem('photoMemoryGlobe.auth.v1')||'null')?.token||''}catch{}}
-let record=null, content=null, published=false;
+let record=null, content=null, published=false, draftPhotos=null, layoutDirty=false, previewTimer=0;
+function copyPhotos(photos){return JSON.parse(JSON.stringify(photos||[]))}
 function status(s,error=false){$('#status').textContent=s;$('#status').classList.toggle('error',error)}
 async function request(path,method='GET',body){
   const r=await fetch(API+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,cache:'no-store'});
@@ -12,6 +13,7 @@ async function request(path,method='GET',body){
 }
 function show(){
   $('#editor').hidden=false;$('#existing').hidden=false;$('#media').hidden=false;$('#migration').hidden=false;
+  if(!draftPhotos)draftPhotos=copyPhotos(content.photos);
   fields.forEach(k=>$('#editor [name='+k+']').value=content[k]||'');
   const media=$('#mediaItems');media.replaceChildren();
   for(const [key,label] of [['hero','封面'],['music','背景音乐'],['voice','语音留言']]){
@@ -29,10 +31,18 @@ function show(){
     };
     row.append(name,preview,remove);media.append(row);
   }
+  renderPhotoEditor();
+}
+function markLayoutDirty(){
+  layoutDirty=true;$('#layoutState').textContent='有未保存的调整';
+  clearTimeout(previewTimer);previewTimer=setTimeout(renderLayoutPreview,120);
+}
+function renderPhotoEditor(){
   const grid=$('#photos');grid.replaceChildren();
+  $('#layoutState').textContent=layoutDirty?'有未保存的调整':'当前排版已保存';
   const paragraphs=String(content.letter||'').replace(/\r/g,'').split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean);
-  (content.photos||[]).forEach((p,i)=>{
-    const item=document.createElement('div'),img=document.createElement('img'),caption=document.createElement('input'),position=document.createElement('select'),size=document.createElement('select'),savePhoto=document.createElement('button'),btn=document.createElement('button');
+  (draftPhotos||[]).forEach((p,i)=>{
+    const item=document.createElement('div'),img=document.createElement('img'),caption=document.createElement('input'),position=document.createElement('select'),size=document.createElement('select'),btn=document.createElement('button');
     img.src=p.src;img.alt=p.caption||'';caption.type='text';caption.value=p.caption||'';caption.placeholder='照片 '+(i+1)+' 的说明';caption.style.width='100%';
     const choice=(select,value,label)=>{const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option)};
     choice(position,'auto','自动分布');choice(position,'0','正文开始前');
@@ -43,30 +53,56 @@ function show(){
     size.value=p.layout||'normal';
     const label=(text,control)=>{const el=document.createElement('label');el.textContent=text;item.append(el,control)};
     item.append(img);label('照片说明',caption);label('放置位置',position);label('显示尺寸',size);
-    savePhoto.textContent='保存排版';savePhoto.type='button';savePhoto.className='save-photo';
-    savePhoto.onclick=async()=>{
-      const old={caption:p.caption,afterParagraph:p.afterParagraph,layout:p.layout};
-      p.caption=caption.value.trim();p.afterParagraph=position.value==='auto'?null:Number(position.value);p.layout=size.value;
-      try{await save();status('第 '+(i+1)+' 张照片的排版已保存')}catch(e){Object.assign(p,old);status(e.message,true)}
-    };
+    caption.oninput=()=>{p.caption=caption.value;markLayoutDirty()};
+    position.onchange=()=>{p.afterParagraph=position.value==='auto'?null:Number(position.value);markLayoutDirty()};
+    size.onchange=()=>{p.layout=size.value;markLayoutDirty()};
     const move=(delta)=>{
-      const other=i+delta;if(other<0||other>=content.photos.length)return;
-      [content.photos[i],content.photos[other]]=[content.photos[other],content.photos[i]];
-      save().then(()=>{show();status('照片顺序已调整')}).catch(e=>{[content.photos[i],content.photos[other]]=[content.photos[other],content.photos[i]];status(e.message,true)});
+      const other=i+delta;if(other<0||other>=draftPhotos.length)return;
+      [draftPhotos[i],draftPhotos[other]]=[draftPhotos[other],draftPhotos[i]];
+      markLayoutDirty();renderPhotoEditor();
     };
     const up=document.createElement('button'),down=document.createElement('button');
-    up.type=down.type='button';up.textContent='上移';down.textContent='下移';up.disabled=i===0;down.disabled=i===content.photos.length-1;
+    up.type=down.type='button';up.textContent='上移';down.textContent='下移';up.disabled=i===0;down.disabled=i===draftPhotos.length-1;
     up.onclick=()=>move(-1);down.onclick=()=>move(1);
     btn.textContent='移除';btn.type='button';
-    btn.onclick=async()=>{if(!confirm('确定移除这张照片吗？'))return;const prior=content.photos;content.photos=prior.filter((_,n)=>n!==i);try{await save();show();status('照片已移除')}catch(e){content.photos=prior;status(e.message,true)}};
-    item.append(savePhoto,up,down,btn);grid.append(item);
+    btn.onclick=()=>{draftPhotos.splice(i,1);markLayoutDirty();renderPhotoEditor()};
+    item.append(up,down,btn);grid.append(item);
   });
+  renderLayoutPreview();
 }
+function renderLayoutPreview(){
+  if(!$('#previewDetails').open||!content)return;
+  const area=$('#layoutPreview');area.replaceChildren();
+  const paras=String(content.letter||'').replace(/\r/g,'').split(/\n\s*\n+/).map(s=>s.trim()).filter(Boolean);
+  const photos=draftPhotos||[],positions=new Map();
+  photos.forEach((p,i)=>{
+    const auto=paras.length?Math.min(paras.length,Math.max(1,Math.round((i+1)*paras.length/(photos.length+1)))):0;
+    const chosen=Number(p.afterParagraph);
+    const pos=p.afterParagraph===null||p.afterParagraph===undefined||p.afterParagraph===''||!Number.isInteger(chosen)?auto:Math.max(0,Math.min(paras.length,chosen));
+    if(!positions.has(pos))positions.set(pos,[]);positions.get(pos).push(p);
+  });
+  const addPhotos=n=>(positions.get(n)||[]).forEach(p=>{
+    const fig=document.createElement('figure'),img=document.createElement('img');fig.className=p.layout==='wide'?'wide':p.layout==='compact'?'compact':'';img.src=p.src;img.loading='lazy';fig.append(img);
+    if(p.caption){const cap=document.createElement('figcaption');cap.textContent=p.caption;fig.append(cap)}area.append(fig);
+  });
+  addPhotos(0);paras.forEach((para,i)=>{const el=document.createElement('p');el.textContent=para;area.append(el);addPhotos(i+1)});
+}
+$('#previewDetails').ontoggle=renderLayoutPreview;
+$('#saveLayout').onclick=async()=>{
+  if(!layoutDirty)return status('排版没有新的调整');
+  const button=$('#saveLayout'),old=content.photos;button.disabled=true;
+  content.photos=copyPhotos(draftPhotos);
+  try{await save();layoutDirty=false;draftPhotos=copyPhotos(content.photos);renderPhotoEditor();status('全部照片排版已保存，前台刷新后生效')}
+  catch(e){content.photos=old;status('保存失败，调整仍留在本页：'+e.message,true)}finally{button.disabled=false}
+};
+$('#discardLayout').onclick=()=>{draftPhotos=copyPhotos(content.photos);layoutDirty=false;renderPhotoEditor();status('已放弃本次调整')};
+window.addEventListener('beforeunload',e=>{if(layoutDirty){e.preventDefault();e.returnValue=''}});
 async function load(){
   record=await request('/projects/'+encodeURIComponent(PROJECT));
   if(record.userId && record.userId!==currentUserId)throw Error('这个信件属于另一个记忆宇宙账号');
   content=record.payload?.letterContent||{title:'',date:'',intro:'',letter:'',signature:'',musicTitle:'',hero:'',photos:[],music:'',voice:''};
   published=Boolean(record.payload?.published);
+  draftPhotos=copyPhotos(content.photos);layoutDirty=false;
   show();status('已连接阿里云。当前 '+content.photos.length+' 张照片。');
 }
 let currentUserId='';
@@ -88,7 +124,7 @@ $('#login').onclick=async()=>{
     $('#password').value='';
   }catch(e){status(e.message,true)}
 };
-$('#logout').onclick=()=>{sessionStorage.removeItem('letterAliyunToken');token='';record=null;content=null;$('#editor').hidden=true;$('#existing').hidden=true;$('#media').hidden=true;$('#migration').hidden=true;status('已退出')};
+$('#logout').onclick=()=>{if(layoutDirty&&!confirm('照片排版尚未保存，确定退出吗？'))return;sessionStorage.removeItem('letterAliyunToken');token='';record=null;content=null;draftPhotos=null;layoutDirty=false;$('#editor').hidden=true;$('#existing').hidden=true;$('#media').hidden=true;$('#migration').hidden=true;status('已退出')};
 function payload(){
   const references=[...(content.photos||[]).map(p=>({url:p.src,name:p.caption||'照片'}))];
   if(content.hero&&!references.some(p=>p.url===content.hero))references.push({url:content.hero,name:'封面'});
@@ -112,7 +148,8 @@ async function upload(file,kind){
   return ticket.publicUrl;
 }
 $('#editor').onsubmit=async e=>{
-  e.preventDefault();const btn=$('#editor button[type=submit]');btn.disabled=true;
+  e.preventDefault();if(layoutDirty)return status('请先点“保存全部排版”，再保存文字或上传素材',true);
+  const btn=$('#editor button[type=submit]');btn.disabled=true;
   try{
     published=false;
     fields.forEach(k=>content[k]=$('#editor [name='+k+']').value);
@@ -128,7 +165,7 @@ $('#editor').onsubmit=async e=>{
       status('正在上传照片 '+(i+1)+' / '+files.length+'…');
       const src=await upload(files[i],'image');content.photos.push({src,caption:captions[i]?.trim()||''});await save();
     }
-    input.value='';$('#editor [name=captions]').value='';published=Boolean(content.letter);await save();show();status('保存成功，照片 '+content.photos.length+' 张。');
+    input.value='';$('#editor [name=captions]').value='';published=Boolean(content.letter);await save();draftPhotos=copyPhotos(content.photos);show();status('保存成功，照片 '+content.photos.length+' 张。');
   }catch(err){status(err.message+'。已保存的部分会保留，请检查后继续。',true)}finally{btn.disabled=false}
 };
 
@@ -167,6 +204,7 @@ async function imageForUpload(blob,name){
 function basename(path){return String(path||'').split('/').pop()}
 $('#migrate').onclick=async()=>{
   const zip=$('#backupZip').files[0];if(!zip)return status('请先选择备份包',true);
+  if(layoutDirty)return status('请先保存或放弃本次照片排版，再重新迁移',true);
   const button=$('#migrate');button.disabled=true;
   try{
     published=false;
@@ -194,7 +232,7 @@ $('#migrate').onclick=async()=>{
       status('上传照片 '+(i+1)+' / '+source.photos.length+'…');
       const src=await transfer(p.src,'image');content.photos.push({...p,src,sourceName:name});await save();
     }
-    published=true;await save();show();status('迁移完成：原信全文、封面、音乐和 '+content.photos.length+' 张照片已保存到阿里云。');
+    published=true;await save();draftPhotos=copyPhotos(content.photos);show();status('迁移完成：原信全文、封面、音乐和 '+content.photos.length+' 张照片已保存到阿里云。');
   }catch(e){show();status('迁移暂停：'+e.message+'。已完成的部分留在云端，检查配额或网络后可重新选择同一个包继续。',true)}finally{button.disabled=false}
 };
 connectExistingSession();
